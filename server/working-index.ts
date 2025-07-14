@@ -320,11 +320,13 @@ async function setupApp() {
         "⚠️ Vite not available, using fallback static serving:",
         viteError.message,
       );
-      // Fallback to static serving
+      // Fallback to static serving without Vite
       const path = await import("path");
       const fs = await import("fs");
 
-      // Serve static files from client/src
+      console.log("Setting up fallback static serving...");
+
+      // Serve client static files
       app.use(
         "/src",
         express.static(
@@ -337,6 +339,22 @@ async function setupApp() {
           path.resolve(import.meta.dirname, "..", "client", "public"),
         ),
       );
+      app.use(
+        "/client",
+        express.static(path.resolve(import.meta.dirname, "..", "client")),
+      );
+
+      // Try to serve built files if they exist
+      const distPath = path.resolve(
+        import.meta.dirname,
+        "..",
+        "dist",
+        "public",
+      );
+      if (fs.existsSync(distPath)) {
+        console.log("Serving built files from:", distPath);
+        app.use(express.static(distPath));
+      }
 
       app.get("*", (req, res) => {
         try {
@@ -346,7 +364,81 @@ async function setupApp() {
             "client",
             "index.html",
           );
-          const template = fs.readFileSync(clientTemplate, "utf-8");
+          let template = fs.readFileSync(clientTemplate, "utf-8");
+
+          // In fallback mode, serve a simple error page explaining the issue
+          template = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>BizModelAI</title>
+                <style>
+                  body {
+                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    margin: 0;
+                    padding: 40px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  }
+                  .container {
+                    text-align: center;
+                    max-width: 600px;
+                    padding: 40px;
+                    background: rgba(255,255,255,0.1);
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                  }
+                  .logo {
+                    font-size: 3em;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    background: linear-gradient(45deg, #FFD700, #FFA500);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                  }
+                  .message {
+                    font-size: 1.2em;
+                    margin-bottom: 30px;
+                    line-height: 1.6;
+                  }
+                  .button {
+                    display: inline-block;
+                    padding: 15px 30px;
+                    background: linear-gradient(45deg, #FFD700, #FFA500);
+                    color: #333;
+                    text-decoration: none;
+                    border-radius: 25px;
+                    font-weight: bold;
+                    transition: transform 0.2s;
+                  }
+                  .button:hover {
+                    transform: scale(1.05);
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="logo">BizModelAI</div>
+                  <div class="message">
+                    The application is starting up in development mode.<br>
+                    Some features may be temporarily unavailable while the build system initializes.
+                  </div>
+                  <a href="javascript:window.location.reload()" class="button">Refresh Page</a>
+                </div>
+                <script>
+                  // Auto-refresh every 10 seconds to check if the app is ready
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 10000);
+                </script>
+              </body>
+            </html>
+          `;
+
           res.status(200).set({ "Content-Type": "text/html" }).end(template);
         } catch (e) {
           console.error("Error serving HTML:", e);
@@ -359,7 +451,7 @@ async function setupApp() {
               <body>
                 <div id="root">
                   <h1>BizModelAI</h1>
-                  <p>Loading application...</p>
+                  <p>Server Error - Please try again</p>
                 </div>
               </body>
             </html>
