@@ -1,0 +1,1 @@
+export { businessPaths } from '../../../shared/businessPaths';

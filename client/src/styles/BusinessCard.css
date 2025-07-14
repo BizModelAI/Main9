@@ -1,0 +1,160 @@
+/* Business Card Component Styles */
+
+.business-card {
+  /* Ensure proper flexbox layout for sticky positioning */
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.business-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.business-card-actions {
+  /* Sticky positioning for buttons */
+  position: sticky;
+  bottom: 0;
+  background: inherit;
+  padding-top: 1rem;
+  margin-top: auto;
+}
+
+/* Skills expansion animation */
+.skills-container {
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  transition: all 0.3s ease-in-out;
+}
+
+.skill-bubble {
+  transition: all 0.2s ease-in-out;
+  transform-origin: center;
+}
+
+.skill-bubble:hover {
+  transform: scale(1.05);
+}
+
+/* Learn More Link Hover Animation */
+.learn-more-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.learn-more-link .arrow-icon {
+  transition: transform 0.3s ease;
+}
+
+.learn-more-link:hover .arrow-icon {
+  transform: translateX(5px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .business-card {
+    min-height: 350px;
+  }
+  
+  .business-card-content {
+    padding: 1rem;
+  }
+  
+  .skills-grid {
+    gap: 0.25rem;
+  }
+  
+  .skill-bubble {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .business-card {
+    min-height: 320px;
+  }
+  
+  .business-card-actions {
+    padding-top: 0.75rem;
+  }
+  
+  .learn-more-link {
+    font-size: 0.75rem;
+  }
+}
+
+/* Animation for expanding content */
+.expandable-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.expandable-content.expanded {
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.expandable-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* Button positioning utilities */
+.button-container {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+.secondary-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Accessibility improvements */
+.business-card:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.skill-bubble:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .business-card {
+    border-width: 3px;
+  }
+  
+  .skill-bubble {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .business-card,
+  .skill-bubble,
+  .learn-more-link .arrow-icon,
+  .expandable-content {
+    transition: none;
+  }
+  
+  .business-card:hover {
+    transform: none;
+  }
+}

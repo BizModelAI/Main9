@@ -1,0 +1,115 @@
+{/* AI Analysis Content - Use cached AI data from the full report */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 mb-6">
+            <div className="space-y-4 text-gray-700 leading-relaxed">
+              {(() => {
+                // Use the fullAnalysis from the cached data, or fall back to the summary
+                const analysisText =
+                  aiAnalysis?.fullAnalysis ||
+                  aiInsights?.personalizedSummary ||
+                  "";
+
+                if (!analysisText) {
+                  return (
+                    <p>
+                      Based on your quiz responses, our AI has identified key patterns in your entrepreneurial profile 
+                      that suggest strong potential for success in {topThreePaths[0]?.name.toLowerCase()} and similar business models. 
+                      Your unique combination of traits and preferences positions you well for entrepreneurial success in your chosen field.
+                    </p>
+                  );
+                }
+
+                // Split the analysis into paragraphs for better formatting
+                const paragraphs = analysisText
+                  .split("\n\n")
+                  .filter((p: string) => p.trim().length > 0);
+
+                return (
+                  <div className="space-y-4">
+                    {paragraphs.map((paragraph: string, index: number) => (
+                      <p key={index} className="text-gray-700 leading-relaxed">
+                        {paragraph.trim()}
+                      </p>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Key Insights Grid - Use cached AI data */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <Star className="h-6 w-6 mr-2 text-yellow-500" />
+                Key Success Indicators
+              </h3>
+              <ul className="space-y-3">
+                {aiInsights?.successStrategies?.slice(0, 4)?.map((strategy: string, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <Star className="h-5 w-5 text-yellow-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span 
+                      className="text-gray-700"
+                      dangerouslySetInnerHTML={renderMarkdownContent(strategy)}
+                    />
+                  </li>
+                )) || [
+                  <li key="1" className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">Strong alignment with your natural working style and preferences</span>
+                  </li>,
+                  <li key="2" className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">Optimal time investment matching your availability</span>
+                  </li>
+                ]}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <Lightbulb className="h-6 w-6 mr-2 text-blue-500" />
+                Personalized Recommendations
+              </h3>
+              <ul className="space-y-3">
+                {aiInsights?.customRecommendations?.slice(0, 4)?.map((rec: string, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span 
+                      className="text-gray-700"
+                      dangerouslySetInnerHTML={renderMarkdownContent(rec)}
+                    />
+                  </li>
+                )) || [
+                  <li key="1" className="flex items-start">
+                    <Target className="h-5 w-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">Start with your highest-scoring business model for best initial success</span>
+                  </li>,
+                  <li key="2" className="flex items-start">
+                    <Target className="h-5 w-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">Focus on building consistent habits matching your preferences</span>
+                  </li>
+                ]}
+              </ul>
+            </div>
+          </div>
+
+          {/* Potential Challenges - Use cached AI data */}
+          {aiInsights?.potentialChallenges && aiInsights.potentialChallenges.length > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <AlertTriangle className="h-5 w-5 text-orange-500 mr-2" />
+                Potential Challenges
+              </h3>
+              <ul className="space-y-3">
+                {aiInsights.potentialChallenges.map((challenge: string, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 mt-1 flex-shrink-0" />
+                    <span 
+                      className="text-gray-700"
+                      dangerouslySetInnerHTML={renderMarkdownContent(challenge)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}

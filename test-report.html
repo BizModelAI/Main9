@@ -1,0 +1,63 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Business Path Report</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            @media print {
+                body { print-color-adjust: exact; }
+                .page-break { page-break-before: always; }
+            }
+        </style>
+    </head>
+    <body class="bg-white text-gray-900">
+        <div class="max-w-4xl mx-auto p-8">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-lg mb-8">
+                <h1 class="text-3xl font-bold mb-4">Business Path Analysis Report</h1>
+                <p class="text-lg">Personalized for test@example.com</p>
+                <p class="text-sm opacity-75">Generated on 7/8/2025</p>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h2 class="text-xl font-semibold mb-4">Your Profile</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="font-medium">Income Goal:</span>
+                            <span class="ml-2">$5,000/month</span>
+                        </div>
+                        <div>
+                            <span class="font-medium">Timeline:</span>
+                            <span class="ml-2">3 6-months</span>
+                        </div>
+                        <div>
+                            <span class="font-medium">Investment:</span>
+                            <span class="ml-2">$1,000</span>
+                        </div>
+                        <div>
+                            <span class="font-medium">Time Commitment:</span>
+                            <span class="ml-2">20 hours/week</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 p-6 rounded-lg">
+                    <h2 class="text-xl font-semibold mb-4">Report Complete</h2>
+                    <p class="text-gray-700">Your comprehensive business analysis is ready.</p>
+                    <p class="text-sm text-gray-600 mt-2">Visit the full report page for detailed insights and recommendations.</p>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // Auto-print when loaded
+            window.onload = function() {
+                window.print();
+            };
+        </script>
+    </body>
+    </html>
+    
