@@ -319,8 +319,8 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
     }
 
     // Handle access control and AI analysis generation
-    // In development mode, authenticated users get access
-    if (import.meta.env.MODE === "development" && user) {
+    // Development mode access disabled
+    if (false && user) {
       console.log(
         "BusinessModelDetail: Development mode - authenticated user gets access",
       );
