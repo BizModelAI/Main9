@@ -5,7 +5,13 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      // Disable development features in production
+      include: "**/*.{jsx,tsx}",
+      babel: {
+        plugins: process.env.NODE_ENV === "production" ? [] : [],
+      },
+    }),
     // runtimeErrorOverlay(),
     // ...(process.env.NODE_ENV !== "production" &&
     // process.env.REPL_ID !== undefined
