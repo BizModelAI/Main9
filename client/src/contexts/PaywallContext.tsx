@@ -108,9 +108,10 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
 
           // Update localStorage for consistency
           localStorage.setItem("hasCompletedQuiz", "true");
-          if (import.meta.env.MODE === "development") {
-            localStorage.setItem("hasUnlockedAnalysis", "true");
-          }
+          // Development mode bypass disabled
+          // if (import.meta.env.MODE === "development") {
+          //   localStorage.setItem("hasUnlockedAnalysis", "true");
+          // }
         }
       }
     };
