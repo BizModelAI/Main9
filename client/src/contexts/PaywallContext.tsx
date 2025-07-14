@@ -77,13 +77,13 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
         );
         setHasCompletedQuiz(true);
 
-        // In development mode, also unlock analysis for testing
-        if (import.meta.env.MODE === "development") {
-          console.log(
-            "PaywallContext: Development mode - also unlocking analysis",
-          );
-          setHasUnlockedAnalysis(true);
-        }
+        // Development mode bypass disabled to ensure paywall always works
+        // if (import.meta.env.MODE === "development") {
+        //   console.log(
+        //     "PaywallContext: Development mode - also unlocking analysis",
+        //   );
+        //   setHasUnlockedAnalysis(true);
+        // }
 
         // Update localStorage for consistency
         localStorage.setItem("hasCompletedQuiz", "true");
