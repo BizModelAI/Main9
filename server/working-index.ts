@@ -330,22 +330,50 @@ async function setupApp() {
       });
     });
 
-    // Fallback to basic HTML for non-API routes
+    // Fallback to serve the actual React app without Vite
+    const express = require("express");
+    const path = require("path");
+    const fs = require("fs");
+
+    // Serve static files from client/src
+    app.use(
+      "/src",
+      express.static(path.resolve(import.meta.dirname, "..", "client", "src")),
+    );
+    app.use(
+      "/public",
+      express.static(
+        path.resolve(import.meta.dirname, "..", "client", "public"),
+      ),
+    );
+
     app.get("*", (req, res) => {
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>BizModelAI</title>
-          </head>
-          <body>
-            <div id="root">
-              <h1>Server is running!</h1>
-              <p>Server failed to start properly. Check console for errors.</p>
-            </div>
-          </body>
-        </html>
-      `);
+      try {
+        const clientTemplate = path.resolve(
+          import.meta.dirname,
+          "..",
+          "client",
+          "index.html",
+        );
+        const template = fs.readFileSync(clientTemplate, "utf-8");
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        console.error("Error serving HTML:", e);
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>BizModelAI</title>
+            </head>
+            <body>
+              <div id="root">
+                <h1>Server is running!</h1>
+                <p>Loading application...</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
     });
 
     // Create basic server as fallback
