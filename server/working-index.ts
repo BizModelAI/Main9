@@ -312,8 +312,61 @@ async function setupApp() {
     });
 
     // Setup Vite development server AFTER API routes
-    const { setupVite } = await import("./vite.js");
-    await setupVite(app, server);
+    try {
+      const { setupVite } = await import("./vite.js");
+      await setupVite(app, server);
+    } catch (viteError) {
+      console.warn(
+        "⚠️ Vite not available, using fallback static serving:",
+        viteError.message,
+      );
+      // Fallback to static serving
+      const path = await import("path");
+      const fs = await import("fs");
+
+      // Serve static files from client/src
+      app.use(
+        "/src",
+        express.static(
+          path.resolve(import.meta.dirname, "..", "client", "src"),
+        ),
+      );
+      app.use(
+        "/public",
+        express.static(
+          path.resolve(import.meta.dirname, "..", "client", "public"),
+        ),
+      );
+
+      app.get("*", (req, res) => {
+        try {
+          const clientTemplate = path.resolve(
+            import.meta.dirname,
+            "..",
+            "client",
+            "index.html",
+          );
+          const template = fs.readFileSync(clientTemplate, "utf-8");
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          console.error("Error serving HTML:", e);
+          res.send(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>BizModelAI</title>
+              </head>
+              <body>
+                <div id="root">
+                  <h1>BizModelAI</h1>
+                  <p>Loading application...</p>
+                </div>
+              </body>
+            </html>
+          `);
+        }
+      });
+    }
     console.log(
       "✅ Server with all routes and Vite development server started successfully!",
     );
