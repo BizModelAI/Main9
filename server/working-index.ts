@@ -111,7 +111,10 @@ app.use("/api/*", (err: any, req: any, res: any, next: any) => {
 async function setupRoutes() {
   try {
     console.log("Importing auth routes...");
+    console.log("About to import auth.js...");
     const { setupAuthRoutes } = await import("./auth.js");
+    console.log("Auth.js imported successfully");
+    console.log("About to call setupAuthRoutes...");
     setupAuthRoutes(app);
     console.log("Auth routes setup complete");
   } catch (error) {
@@ -123,7 +126,10 @@ async function setupRoutes() {
 async function setupApiRoutes() {
   try {
     console.log("Importing and registering routes...");
+    console.log("About to import routes.js...");
     const { registerRoutes } = await import("./routes.js");
+    console.log("Routes.js imported successfully");
+    console.log("About to call registerRoutes...");
     await registerRoutes(app);
     console.log("Routes registered successfully");
   } catch (error) {

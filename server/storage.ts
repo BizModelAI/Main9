@@ -1,3 +1,4 @@
+console.log("Starting to import storage.ts...");
 import {
   users,
   quizAttempts,
@@ -18,8 +19,11 @@ import {
   type PasswordResetToken,
   type InsertPasswordResetToken,
 } from "../shared/schema.js";
+console.log("Schema imported successfully");
 import { db } from "./db.js";
+console.log("Database imported successfully");
 import { eq, desc, count, sql, and } from "drizzle-orm";
+console.log("Drizzle ORM imported successfully");
 
 export interface IStorage {
   // User operations
@@ -823,4 +827,6 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = process.env.DATABASE_URL
+  ? new DatabaseStorage()
+  : new MemStorage();
