@@ -111,7 +111,10 @@ app.use("/api/*", (err: any, req: any, res: any, next: any) => {
 async function setupRoutes() {
   try {
     console.log("Importing auth routes...");
+    console.log("About to import auth.js...");
     const { setupAuthRoutes } = await import("./auth.js");
+    console.log("Auth.js imported successfully");
+    console.log("About to call setupAuthRoutes...");
     setupAuthRoutes(app);
     console.log("Auth routes setup complete");
   } catch (error) {
