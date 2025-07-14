@@ -7,17 +7,16 @@ export default defineConfig({
   plugins: [
     react({
       include: "**/*.{jsx,tsx}",
+      jsxImportSource: "@emotion/react",
+      babel: {
+        plugins: [],
+      },
     }),
-    // runtimeErrorOverlay(),
-    // ...(process.env.NODE_ENV !== "production" &&
-    // process.env.REPL_ID !== undefined
-    //   ? [
-    //       await import("@replit/vite-plugin-cartographer").then((m) =>
-    //         m.cartographer(),
-    //       ),
-    //     ]
-    //   : []),
   ],
+  esbuild: {
+    jsx: "automatic",
+    jsxImportSource: "react",
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -29,5 +28,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+  },
+  server: {
+    host: true,
+    port: 5173,
   },
 });
