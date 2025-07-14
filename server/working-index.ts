@@ -331,9 +331,8 @@ async function setupApp() {
     });
 
     // Fallback to serve the actual React app without Vite
-    const express = require("express");
-    const path = require("path");
-    const fs = require("fs");
+    const path = await import("path");
+    const fs = await import("fs");
 
     // Serve static files from client/src
     app.use(
