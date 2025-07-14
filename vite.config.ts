@@ -7,15 +7,10 @@ export default defineConfig({
   plugins: [
     react({
       include: "**/*.{jsx,tsx}",
-      jsxImportSource: "@emotion/react",
-      babel: {
-        plugins: [],
-      },
     }),
   ],
   esbuild: {
     jsx: "automatic",
-    jsxImportSource: "react",
   },
   resolve: {
     alias: {
