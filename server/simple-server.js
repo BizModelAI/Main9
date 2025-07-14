@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 console.log("Starting simple server...");
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 3001;
 
 // Basic middleware
 app.use(express.json());
