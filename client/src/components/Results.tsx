@@ -191,8 +191,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   } = usePaywall();
 
   // In pure pay-per-report model, check if this specific report is unlocked
-  // Basic access is always available, but full reports require payment
-  const canViewFullReport = user ? isReportUnlocked : true;
+  // Basic access shows the first result, but full reports require payment for both auth/non-auth users
+  const canViewFullReport = user ? isReportUnlocked : false;
 
   useEffect(() => {
     console.log("Results component received quizData:", quizData);
