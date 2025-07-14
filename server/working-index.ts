@@ -123,7 +123,10 @@ async function setupRoutes() {
 async function setupApiRoutes() {
   try {
     console.log("Importing and registering routes...");
+    console.log("About to import routes.js...");
     const { registerRoutes } = await import("./routes.js");
+    console.log("Routes.js imported successfully");
+    console.log("About to call registerRoutes...");
     await registerRoutes(app);
     console.log("Routes registered successfully");
   } catch (error) {
