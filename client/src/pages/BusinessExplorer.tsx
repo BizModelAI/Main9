@@ -174,12 +174,8 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
   // Calculate fit scores for business models if quiz data exists
   const businessModelsWithFitScores = useMemo(() => {
     if (!quizData || !hasUnlockedAnalysis) {
-      // Development mode fallback: Generate mock scores for demo when user is logged in
-      if (
-        import.meta.env.MODE === "development" &&
-        user &&
-        hasUnlockedAnalysis
-      ) {
+      // Development mode fallback disabled
+      if (false && user && hasUnlockedAnalysis) {
         return businessModels.map((model, index) => {
           const mockScore = 85 - index * 3; // Descending scores for demo
           const fitCategory = getFitCategory(mockScore);
