@@ -4,6 +4,10 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  mode: "production",
+  define: {
+    "process.env.NODE_ENV": '"production"',
+  },
   plugins: [
     react({
       // Disable development features in production
