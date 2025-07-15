@@ -111,7 +111,7 @@ export class EmailService {
   private async checkUnsubscribeStatus(email: string): Promise<boolean> {
     try {
       const { storage } = await import("../storage.js");
-      const user = await storage.getUserByUsername(email);
+      const user = await storage.getUserByEmail(email);
       return user?.isUnsubscribed || false;
     } catch (error) {
       console.error("Error checking unsubscribe status:", error);
