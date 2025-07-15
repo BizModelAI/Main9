@@ -1053,139 +1053,147 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Create payment for unlocking full report ($9.99 first, $4.99 subsequent for logged users)
-  app.post("/api/create-report-unlock-payment", async (req, res) => {
-    try {
-      const { userId, quizAttemptId } = req.body;
+  app.post(
+    "/api/create-report-unlock-payment",
+    async (req: Request, res: Response) => {
+      try {
+        const { userId, quizAttemptId } = req.body;
 
-      if (!userId || !quizAttemptId) {
-        return res
-          .status(400)
-          .json({ error: "Missing userId or quizAttemptId" });
-      }
+        if (!userId || !quizAttemptId) {
+          return res
+            .status(400)
+            .json({ error: "Missing userId or quizAttemptId" });
+        }
 
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
 
-      // Check if report is already unlocked
-      const payments = await storage.getPaymentsByUser(userId);
-      const existingPayment = payments.find(
-        (p) =>
-          p.quizAttemptId === quizAttemptId &&
-          p.type === "report_unlock" &&
-          p.status === "completed",
-      );
+        // Check if report is already unlocked
+        const payments = await storage.getPaymentsByUser(userId);
+        const existingPayment = payments.find(
+          (p) =>
+            p.quizAttemptId === quizAttemptId &&
+            p.type === "report_unlock" &&
+            p.status === "completed",
+        );
 
-      if (existingPayment) {
-        return res
-          .status(400)
-          .json({ error: "Report is already unlocked for this quiz attempt" });
-      }
+        if (existingPayment) {
+          return res
+            .status(400)
+            .json({
+              error: "Report is already unlocked for this quiz attempt",
+            });
+        }
 
-      // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
-      const completedPayments = payments.filter(
-        (p) => p.status === "completed",
-      );
-      const isFirstReport = completedPayments.length === 0;
-      const amount = isFirstReport ? 999 : 499; // $9.99 or $4.99 in cents
-      const amountDollar = isFirstReport ? "9.99" : "4.99";
+        // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
+        const completedPayments = payments.filter(
+          (p) => p.status === "completed",
+        );
+        const isFirstReport = completedPayments.length === 0;
+        const amount = isFirstReport ? 999 : 499; // $9.99 or $4.99 in cents
+        const amountDollar = isFirstReport ? "9.99" : "4.99";
 
-      // Create Stripe Payment Intent
-      if (!stripe) {
-        return res
-          .status(500)
-          .json({ error: "Payment processing not configured" });
-      }
+        // Create Stripe Payment Intent
+        if (!stripe) {
+          return res
+            .status(500)
+            .json({ error: "Payment processing not configured" });
+        }
 
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: "usd",
-        metadata: {
-          userId: userId.toString(),
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: "usd",
+          metadata: {
+            userId: userId.toString(),
+            type: "report_unlock",
+            quizAttemptId: quizAttemptId.toString(),
+            isFirstReport: isFirstReport.toString(),
+          },
+          description: `BizModelAI Report Unlock - ${isFirstReport ? "First report" : "Additional report"}`,
+        });
+
+        // Create payment record in our database
+        const payment = await storage.createPayment({
+          userId,
+          amount: amountDollar,
+          currency: "usd",
           type: "report_unlock",
-          quizAttemptId: quizAttemptId.toString(),
-          isFirstReport: isFirstReport.toString(),
-        },
-        description: `BizModelAI Report Unlock - ${isFirstReport ? "First report" : "Additional report"}`,
-      });
+          status: "pending",
+          quizAttemptId: quizAttemptId,
+          stripePaymentIntentId: paymentIntent.id,
+        });
 
-      // Create payment record in our database
-      const payment = await storage.createPayment({
-        userId,
-        amount: amountDollar,
-        currency: "usd",
-        type: "report_unlock",
-        status: "pending",
-        quizAttemptId: quizAttemptId,
-        stripePaymentIntentId: paymentIntent.id,
-      });
-
-      res.json({
-        success: true,
-        clientSecret: paymentIntent.client_secret,
-        paymentId: payment.id,
-        amount: amountDollar,
-        isFirstReport,
-      });
-    } catch (error) {
-      console.error("Error creating report unlock payment:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json({
+          success: true,
+          clientSecret: paymentIntent.client_secret,
+          paymentId: payment.id,
+          amount: amountDollar,
+          isFirstReport,
+        });
+      } catch (error) {
+        console.error("Error creating report unlock payment:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Create payment for anonymous users unlocking full report (always $9.99)
-  app.post("/api/create-anonymous-report-unlock-payment", async (req, res) => {
-    try {
-      const { sessionId, email } = req.body;
+  app.post(
+    "/api/create-anonymous-report-unlock-payment",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId, email } = req.body;
 
-      if (!sessionId) {
-        return res
-          .status(400)
-          .json({ error: "Missing sessionId for anonymous user" });
+        if (!sessionId) {
+          return res
+            .status(400)
+            .json({ error: "Missing sessionId for anonymous user" });
+        }
+
+        // Verify temporary user data exists
+        const tempData = await storage.getUnpaidUserEmail(sessionId);
+        if (!tempData) {
+          return res
+            .status(404)
+            .json({ error: "Temporary account data not found or expired" });
+        }
+
+        // Anonymous users always pay $9.99 (first-time pricing)
+        const amount = 999; // $9.99 in cents
+        const amountDollar = "9.99";
+
+        // Create Stripe Payment Intent
+        if (!stripe) {
+          return res
+            .status(500)
+            .json({ error: "Payment processing not configured" });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: "usd",
+          metadata: {
+            sessionId,
+            type: "anonymous_report_unlock",
+            email: email || tempData.email,
+          },
+          description: "BizModelAI Anonymous Report Unlock - First time $9.99",
+        });
+
+        res.json({
+          success: true,
+          clientSecret: paymentIntent.client_secret,
+          amount: amountDollar,
+          isFirstReport: true, // Always true for anonymous users
+        });
+      } catch (error) {
+        console.error("Error creating anonymous report unlock payment:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      // Verify temporary user data exists
-      const tempData = await storage.getUnpaidUserEmail(sessionId);
-      if (!tempData) {
-        return res
-          .status(404)
-          .json({ error: "Temporary account data not found or expired" });
-      }
-
-      // Anonymous users always pay $9.99 (first-time pricing)
-      const amount = 999; // $9.99 in cents
-      const amountDollar = "9.99";
-
-      // Create Stripe Payment Intent
-      if (!stripe) {
-        return res
-          .status(500)
-          .json({ error: "Payment processing not configured" });
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: "usd",
-        metadata: {
-          sessionId,
-          type: "anonymous_report_unlock",
-          email: email || tempData.email,
-        },
-        description: "BizModelAI Anonymous Report Unlock - First time $9.99",
-      });
-
-      res.json({
-        success: true,
-        clientSecret: paymentIntent.client_secret,
-        amount: amountDollar,
-        isFirstReport: true, // Always true for anonymous users
-      });
-    } catch (error) {
-      console.error("Error creating anonymous report unlock payment:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Quiz attempts are now free for everyone - no payment needed
 
@@ -1216,258 +1224,270 @@ export async function registerRoutes(app: Express): Promise<void> {
   );
 
   // PayPal payment creation endpoint
-  app.post("/api/create-paypal-payment", async (req, res) => {
-    try {
-      if (!ordersController) {
-        return res.status(500).json({ error: "PayPal not configured" });
-      }
-
-      const { userId, sessionId } = req.body;
-
-      // Handle temporary users (sessionId provided) vs permanent users (userId provided)
-      let userIdentifier;
-      let isTemporaryUser = false;
-
-      if (sessionId) {
-        // This is a temporary user
-        isTemporaryUser = true;
-        userIdentifier = sessionId;
-
-        // Verify temporary user data exists
-        const tempData = await storage.getUnpaidUserEmail(sessionId);
-        if (!tempData) {
-          return res
-            .status(404)
-            .json({ error: "Temporary account data not found or expired" });
-        }
-      } else if (userId) {
-        // This is a permanent user
-        const user = await storage.getUser(parseInt(userId));
-        if (!user) {
-          return res.status(404).json({ error: "User not found" });
+  app.post(
+    "/api/create-paypal-payment",
+    async (req: Request, res: Response) => {
+      try {
+        if (!ordersController) {
+          return res.status(500).json({ error: "PayPal not configured" });
         }
 
-        // Access pass concept removed - users pay per report instead
+        const { userId, sessionId } = req.body;
 
-        userIdentifier = userId.toString();
-      } else {
-        return res.status(400).json({ error: "Missing userId or sessionId" });
-      }
+        // Handle temporary users (sessionId provided) vs permanent users (userId provided)
+        let userIdentifier;
+        let isTemporaryUser = false;
 
-      // Determine payment amount and type
-      let amount, retakesGranted, paymentType, description;
+        if (sessionId) {
+          // This is a temporary user
+          isTemporaryUser = true;
+          userIdentifier = sessionId;
 
-      if (!isTemporaryUser && userId) {
-        const user = await storage.getUser(parseInt(userId));
-        if (false) {
-          // Access pass logic removed
-          // Old logic removed
-          amount = "4.99";
-          retakesGranted = "2";
-          paymentType = "retakes";
-          description = "BizModelAI Quiz Retakes - 2 additional attempts";
+          // Verify temporary user data exists
+          const tempData = await storage.getUnpaidUserEmail(sessionId);
+          if (!tempData) {
+            return res
+              .status(404)
+              .json({ error: "Temporary account data not found or expired" });
+          }
+        } else if (userId) {
+          // This is a permanent user
+          const user = await storage.getUser(parseInt(userId));
+          if (!user) {
+            return res.status(404).json({ error: "User not found" });
+          }
+
+          // Access pass concept removed - users pay per report instead
+
+          userIdentifier = userId.toString();
         } else {
-          // New user needs full access - $9.99
+          return res.status(400).json({ error: "Missing userId or sessionId" });
+        }
+
+        // Determine payment amount and type
+        let amount, retakesGranted, paymentType, description;
+
+        if (!isTemporaryUser && userId) {
+          const user = await storage.getUser(parseInt(userId));
+          if (false) {
+            // Access pass logic removed
+            // Old logic removed
+            amount = "4.99";
+            retakesGranted = "2";
+            paymentType = "retakes";
+            description = "BizModelAI Quiz Retakes - 2 additional attempts";
+          } else {
+            // New user needs full access - $9.99
+            amount = "9.99";
+            retakesGranted = "3";
+            paymentType = "access_pass";
+            description = "BizModelAI Access Pass - Unlock all features";
+          }
+        } else {
+          // Temporary user always gets full access - $9.99
           amount = "9.99";
           retakesGranted = "3";
           paymentType = "access_pass";
           description = "BizModelAI Access Pass - Unlock all features";
         }
-      } else {
-        // Temporary user always gets full access - $9.99
-        amount = "9.99";
-        retakesGranted = "3";
-        paymentType = "access_pass";
-        description = "BizModelAI Access Pass - Unlock all features";
-      }
 
-      // Create PayPal order
-      const request = {
-        body: {
-          intent: "CAPTURE" as any,
-          purchaseUnits: [
-            {
-              amount: {
-                currencyCode: "USD",
-                value: amount,
+        // Create PayPal order
+        const request = {
+          body: {
+            intent: "CAPTURE" as any,
+            purchaseUnits: [
+              {
+                amount: {
+                  currencyCode: "USD",
+                  value: amount,
+                },
+                description: description,
+                customId: JSON.stringify({
+                  userIdentifier,
+                  type: paymentType,
+                  retakesGranted,
+                  isTemporaryUser: isTemporaryUser.toString(),
+                  sessionId: sessionId || "",
+                }),
               },
-              description: description,
-              customId: JSON.stringify({
-                userIdentifier,
-                type: paymentType,
-                retakesGranted,
-                isTemporaryUser: isTemporaryUser.toString(),
-                sessionId: sessionId || "",
-              }),
+            ],
+            applicationContext: {
+              returnUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-success`,
+              cancelUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-cancelled`,
             },
-          ],
-          applicationContext: {
-            returnUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-success`,
-            cancelUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-cancelled`,
           },
-        },
-      };
+        };
 
-      const order = await ordersController.createOrder(request);
+        const order = await ordersController.createOrder(request);
 
-      if (!order.result?.id) {
-        throw new Error("Failed to create PayPal order");
-      }
+        if (!order.result?.id) {
+          throw new Error("Failed to create PayPal order");
+        }
 
-      // For temporary users, we don't create a payment record yet
-      // For permanent users, create payment record
-      let paymentId = null;
-      if (!isTemporaryUser) {
-        const payment = await storage.createPayment({
-          userId: parseInt(userId),
-          amount: amount,
-          currency: "usd",
-          type: paymentType,
-          status: "pending",
-          stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
+        // For temporary users, we don't create a payment record yet
+        // For permanent users, create payment record
+        let paymentId = null;
+        if (!isTemporaryUser) {
+          const payment = await storage.createPayment({
+            userId: parseInt(userId),
+            amount: amount,
+            currency: "usd",
+            type: paymentType,
+            status: "pending",
+            stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
+          });
+          paymentId = payment.id;
+        }
+
+        res.json({
+          success: true,
+          orderID: order.result.id,
+          paymentId,
         });
-        paymentId = payment.id;
+      } catch (error) {
+        console.error("Error creating PayPal payment:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      res.json({
-        success: true,
-        orderID: order.result.id,
-        paymentId,
-      });
-    } catch (error) {
-      console.error("Error creating PayPal payment:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // PayPal payment capture endpoint
-  app.post("/api/capture-paypal-payment", async (req, res) => {
-    try {
-      if (!ordersController) {
-        return res.status(500).json({ error: "PayPal not configured" });
-      }
-
-      const { orderID } = req.body;
-
-      if (!orderID) {
-        return res.status(400).json({ error: "Missing orderID" });
-      }
-
-      // Capture the PayPal order
-      const request = {
-        id: orderID,
-        body: {},
-      };
-
-      const capture = await ordersController.captureOrder(request);
-
-      if (capture.result?.status !== "COMPLETED") {
-        throw new Error("PayPal payment capture failed");
-      }
-
-      // Extract custom data from the purchase unit
-      const purchaseUnit = capture.result.purchaseUnits?.[0];
-      if (!purchaseUnit?.customId) {
-        throw new Error("Missing payment metadata");
-      }
-
-      const metadata = JSON.parse(purchaseUnit.customId);
-      const {
-        userIdentifier,
-        type: paymentType,
-        retakesGranted,
-        isTemporaryUser,
-        sessionId,
-      } = metadata;
-
-      // Process the payment similar to Stripe webhook
-      if (isTemporaryUser === "true") {
-        // Handle temporary user payment
-        if (!sessionId) {
-          throw new Error("Missing session ID for temporary user");
+  app.post(
+    "/api/capture-paypal-payment",
+    async (req: Request, res: Response) => {
+      try {
+        if (!ordersController) {
+          return res.status(500).json({ error: "PayPal not configured" });
         }
 
-        // Get the temporary user data
-        const tempData = await storage.getUnpaidUserEmail(sessionId);
-        if (!tempData) {
-          throw new Error("Temporary user data not found");
+        const { orderID } = req.body;
+
+        if (!orderID) {
+          return res.status(400).json({ error: "Missing orderID" });
         }
 
-        // Extract signup data from tempData.quizData (which contains signup info)
-        const signupData = tempData.quizData as any;
+        // Capture the PayPal order
+        const request = {
+          id: orderID,
+          body: {},
+        };
 
-        // Create the actual user account
-        const user = await storage.createUser({
-          username: tempData.email, // Use email as username
-          password: signupData.passwordHash || "temp_password",
-        });
+        const capture = await ordersController.captureOrder(request);
 
-        // Update the user with additional fields
-        await storage.updateUser(user.id, {
-          email: tempData.email,
-        });
+        if (capture.result?.status !== "COMPLETED") {
+          throw new Error("PayPal payment capture failed");
+        }
 
-        // Create payment record
-        const payment = await storage.createPayment({
-          userId: user.id,
-          amount: purchaseUnit.amount?.value || "9.99",
-          currency: "usd",
+        // Extract custom data from the purchase unit
+        const purchaseUnit = capture.result.purchaseUnits?.[0];
+        if (!purchaseUnit?.customId) {
+          throw new Error("Missing payment metadata");
+        }
+
+        const metadata = JSON.parse(purchaseUnit.customId);
+        const {
+          userIdentifier,
           type: paymentType,
-          stripePaymentIntentId: orderID, // Using this field for PayPal order ID
-        });
+          retakesGranted,
+          isTemporaryUser,
+          sessionId,
+        } = metadata;
 
-        // Complete the payment
-        await storage.completePayment(payment.id);
+        // Process the payment similar to Stripe webhook
+        if (isTemporaryUser === "true") {
+          // Handle temporary user payment
+          if (!sessionId) {
+            throw new Error("Missing session ID for temporary user");
+          }
 
-        // Temporary data cleanup happens automatically via expiration
+          // Get the temporary user data
+          const tempData = await storage.getUnpaidUserEmail(sessionId);
+          if (!tempData) {
+            throw new Error("Temporary user data not found");
+          }
 
-        console.log(
-          `PayPal payment completed: ${paymentType} for temporary user converted to user ${user.id}`,
-        );
-      } else {
-        // Handle permanent user payment
-        const userId = parseInt(userIdentifier);
+          // Extract signup data from tempData.quizData (which contains signup info)
+          const signupData = tempData.quizData as any;
 
-        // Find the payment record in our database
-        const payments = await storage.getPaymentsByUser(userId);
-        const payment = payments.find(
-          (p) => p.stripePaymentIntentId === orderID,
-        );
+          // Create the actual user account
+          const user = await storage.createUser({
+            username: tempData.email, // Use email as username
+            password: signupData.passwordHash || "temp_password",
+          });
 
-        if (!payment) {
-          console.error("Payment record not found for PayPal order:", orderID);
-          throw new Error("Payment record not found");
+          // Update the user with additional fields
+          await storage.updateUser(user.id, {
+            email: tempData.email,
+          });
+
+          // Create payment record
+          const payment = await storage.createPayment({
+            userId: user.id,
+            amount: purchaseUnit.amount?.value || "9.99",
+            currency: "usd",
+            type: paymentType,
+            stripePaymentIntentId: orderID, // Using this field for PayPal order ID
+          });
+
+          // Complete the payment
+          await storage.completePayment(payment.id);
+
+          // Temporary data cleanup happens automatically via expiration
+
+          console.log(
+            `PayPal payment completed: ${paymentType} for temporary user converted to user ${user.id}`,
+          );
+        } else {
+          // Handle permanent user payment
+          const userId = parseInt(userIdentifier);
+
+          // Find the payment record in our database
+          const payments = await storage.getPaymentsByUser(userId);
+          const payment = payments.find(
+            (p) => p.stripePaymentIntentId === orderID,
+          );
+
+          if (!payment) {
+            console.error(
+              "Payment record not found for PayPal order:",
+              orderID,
+            );
+            throw new Error("Payment record not found");
+          }
+
+          // Complete the payment in our system
+          await storage.completePayment(payment.id);
+
+          console.log(
+            `PayPal payment completed: ${paymentType} for user ${userId}`,
+          );
         }
 
-        // Complete the payment in our system
-        await storage.completePayment(payment.id);
-
-        console.log(
-          `PayPal payment completed: ${paymentType} for user ${userId}`,
-        );
+        res.json({
+          success: true,
+          captureID: capture.result.id,
+        });
+      } catch (error) {
+        console.error("Error capturing PayPal payment:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
+    },
+  );
 
-      res.json({
-        success: true,
-        captureID: capture.result.id,
-      });
-    } catch (error) {
-      console.error("Error capturing PayPal payment:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  app.get(
+    "/api/payment-history/:userId",
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const payments = await storage.getPaymentsByUser(userId);
 
-  app.get("/api/payment-history/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const payments = await storage.getPaymentsByUser(userId);
-
-      res.json(payments);
-    } catch (error) {
-      console.error("Error getting payment history:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json(payments);
+      } catch (error) {
+        console.error("Error getting payment history:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Stripe webhook endpoint
   app.post("/api/stripe/webhook", async (req, res) => {
