@@ -441,6 +441,7 @@ const AIReportLoadingWrapper: React.FC<{
           `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
           {
             method: "POST",
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
