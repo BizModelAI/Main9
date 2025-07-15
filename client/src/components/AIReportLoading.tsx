@@ -846,9 +846,9 @@ Return JSON format:
       // Continue with fallback
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // On mobile, make next step visible even on error
+      // On mobile, switch to show next step even on error
       if (isMobile && stepIndex < steps.length - 1) {
-        setVisibleMobileSteps((prev) => new Set([...prev, stepIndex + 1]));
+        setVisibleMobileSteps(new Set([stepIndex + 1]));
       }
 
       setSteps((prev) =>
