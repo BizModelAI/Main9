@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
 
       const requestBody: any = {
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
         messages,
         max_tokens: maxTokens,
         temperature: temperature,
@@ -310,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           },
           body: JSON.stringify({
-            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
             messages: [
               {
                 role: "system",
@@ -1942,7 +1942,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
               Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
-              model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+              model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
               messages: [
                 {
                   role: "system",
@@ -2063,7 +2063,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
               Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
-              model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+              model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
               messages: [
                 {
                   role: "system",
