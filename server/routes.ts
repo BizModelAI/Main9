@@ -1542,7 +1542,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             // Handle temporary user - convert to permanent account
             try {
               // Get temporary account data
-              const tempData = await storage.getUnpaidUserEmail(sessionId);
+              const tempData = await storage.getTemporaryUser(sessionId);
               if (!tempData) {
                 console.error(
                   "Temporary account data not found for session:",
