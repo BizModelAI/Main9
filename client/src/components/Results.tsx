@@ -204,15 +204,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       console.log("✅ Quiz data safely stored in localStorage");
     }
 
-    // Force clear ALL AI caches to ensure fresh and accurate results
-    console.log("🧹 Force clearing all AI caches for fresh quiz results...");
+    // Force clear AI caches for fresh results (but not active AI generation data)
+    console.log("🧹 Clearing AI caches for fresh quiz results...");
 
     // Clear AI cache manager caches
     aiCacheManager.clearAllCache();
 
     // Clear specific localStorage items that might cause inconsistencies
+    // NOTE: Don't clear quiz-completion-ai-insights as AIReportLoading may be writing to it
     const specificKeys = [
-      "quiz-completion-ai-insights",
       "ai-generation-in-progress",
       "ai-generation-timestamp",
       "ai-cache-reset-timestamp",
