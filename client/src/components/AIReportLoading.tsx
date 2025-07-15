@@ -1113,7 +1113,7 @@ Return JSON format:
                   step.status === "active"
                     ? "ring-2 ring-blue-500 bg-blue-50"
                     : step.status === "completed"
-                      ? "ring-2 ring-blue-500 bg-blue-50"
+                      ? "ring-2 ring-green-500 bg-green-50"
                       : "ring-1 ring-gray-200"
                 }`}
                 initial={{
