@@ -36,8 +36,8 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
   const [error, setError] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [isRetakePayment, setIsRetakePayment] = useState(false);
-  const [amount, setAmount] = useState(9.99);
-  const [isFirstReport, setIsFirstReport] = useState(true);
+  const [amount, setAmount] = useState(user ? 4.99 : 9.99);
+  const [isFirstReport, setIsFirstReport] = useState(!user);
 
   // Account form data
   const [formData, setFormData] = useState({
