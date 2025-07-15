@@ -68,6 +68,8 @@ export const PDFReportPage: React.FC = () => {
     <PDFReportFull
       quizData={reportData.quizData}
       userEmail={reportData.userEmail}
+      aiAnalysis={reportData.aiAnalysis}
+      topBusinessPath={reportData.topBusinessPath}
     />
   );
 };
