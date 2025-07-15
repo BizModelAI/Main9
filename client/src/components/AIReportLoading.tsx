@@ -834,11 +834,12 @@ Return JSON format:
     // Mark step as active
     setCurrentStep(stepIndex);
 
-    // On mobile, show only the current active step
+    // On mobile, immediately show the current step
     if (isMobile) {
       setVisibleMobileSteps(new Set([stepIndex]));
     }
 
+    // Update step status to active
     setSteps((prev) =>
       prev.map((step, index) => ({
         ...step,
@@ -884,7 +885,7 @@ Return JSON format:
       // Mark step as completed
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // Update step status to completed first
+      // Update step status to completed
       setSteps((prev) =>
         prev.map((step, index) => ({
           ...step,
@@ -892,25 +893,26 @@ Return JSON format:
         })),
       );
 
-      // On mobile, switch to show next step AFTER a brief delay to show completion
+      // Wait a moment to show completion, then move to next step on mobile
       if (isMobile && stepIndex < steps.length - 1) {
-        setTimeout(() => {
-          const nextStepIndex = stepIndex + 1;
-          setVisibleMobileSteps(new Set([nextStepIndex]));
-        }, 600); // Delay to show completed state
+        // Small delay to show the completed state
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        const nextStepIndex = stepIndex + 1;
+        setVisibleMobileSteps(new Set([nextStepIndex]));
       }
 
       return result;
     } catch (error) {
       console.error(`Error in step ${stepIndex}:`, error);
+
       // Clear the interval and set final progress
       clearInterval(progressInterval);
       setProgress(Math.round(endProgress));
 
-      // Continue with fallback
+      // Continue with fallback - mark as completed despite error
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // Update step status even on error
+      // Update step status to completed even on error
       setSteps((prev) =>
         prev.map((step, index) => ({
           ...step,
@@ -918,13 +920,13 @@ Return JSON format:
         })),
       );
 
-      // On mobile, switch to show next step even on error (with delay)
+      // On mobile, still advance to next step even on error
       if (isMobile && stepIndex < steps.length - 1) {
-        setTimeout(() => {
-          const nextStepIndex = stepIndex + 1;
-          setVisibleMobileSteps(new Set([nextStepIndex]));
-        }, 600); // Delay to show completed state
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        const nextStepIndex = stepIndex + 1;
+        setVisibleMobileSteps(new Set([nextStepIndex]));
       }
+
       return {};
     }
   };
