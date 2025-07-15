@@ -427,16 +427,16 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
           setAmount(parseFloat(data.amount) || 4.99);
           setIsFirstReport(data.isFirstReport || false);
         } else {
-          // Fallback to default pricing
+          // Fallback to default pricing for logged users
           setAmount(4.99);
           setIsFirstReport(false);
         }
       }
     } catch (error) {
       console.error("Error fetching report pricing:", error);
-      // Fallback pricing
-      setAmount(9.99);
-      setIsFirstReport(true);
+      // Fallback pricing for logged users should be $4.99 (returning user price)
+      setAmount(4.99);
+      setIsFirstReport(false);
     }
   };
 
