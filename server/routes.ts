@@ -2292,20 +2292,20 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
 
       // Store the email and send results
       // Check if there's existing signup data to preserve
-      const existingData = await storage.getUnpaidUserEmail(sessionId);
+      const existingData = await storage.getTemporaryUser(sessionId);
       let dataToStore;
 
       if (
         existingData &&
-        existingData.quizData &&
-        typeof existingData.quizData === "object"
+        existingData.tempQuizData &&
+        typeof existingData.tempQuizData === "object"
       ) {
         // Preserve existing signup data (email, password, name) and update quiz data
-        const existingQuizData = existingData.quizData as any;
+        const existingQuizData = existingData.tempQuizData as any;
         dataToStore = {
           email: existingQuizData.email || email,
-          password: existingQuizData.password,
-          name: existingQuizData.name,
+          password: existingQuizData.password || existingData.password,
+          name: existingQuizData.name || existingData.name,
           quizData,
         };
       } else {
@@ -2316,7 +2316,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         };
       }
 
-      await storage.storeUnpaidUserEmail(sessionId, email, dataToStore);
+      await storage.storeTemporaryUser(sessionId, email, dataToStore);
       const success = await emailService.sendQuizResults(email, quizData);
 
       if (success) {
