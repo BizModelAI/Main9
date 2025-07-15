@@ -128,7 +128,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Get current user session
-  app.get("/api/auth/me", async (req, res) => {
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
 
