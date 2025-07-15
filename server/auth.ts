@@ -556,28 +556,31 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Verify reset token
-  app.get("/api/auth/verify-reset-token/:token", async (req, res) => {
-    try {
-      const { token } = req.params;
+  app.get(
+    "/api/auth/verify-reset-token/:token",
+    async (req: Request, res: Response) => {
+      try {
+        const { token } = req.params;
 
-      if (!token) {
-        return res.status(400).json({ error: "Reset token is required" });
+        if (!token) {
+          return res.status(400).json({ error: "Reset token is required" });
+        }
+
+        const resetData = await storage.getPasswordResetToken(token);
+
+        if (!resetData || resetData.expiresAt < new Date()) {
+          return res
+            .status(400)
+            .json({ error: "Invalid or expired reset token" });
+        }
+
+        res.json({ valid: true });
+      } catch (error) {
+        console.error("Error in /api/auth/verify-reset-token:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      const resetData = await storage.getPasswordResetToken(token);
-
-      if (!resetData || resetData.expiresAt < new Date()) {
-        return res
-          .status(400)
-          .json({ error: "Invalid or expired reset token" });
-      }
-
-      res.json({ valid: true });
-    } catch (error) {
-      console.error("Error in /api/auth/verify-reset-token:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Unsubscribe from emails
   app.post("/api/auth/unsubscribe", async (req: Request, res: Response) => {
