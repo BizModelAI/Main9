@@ -634,6 +634,40 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
 
   // Everyone can take unlimited quizzes in the new pay-per-report system
 
+  // Clear previous quiz cache when starting a new quiz
+  useEffect(() => {
+    console.log("🧹 Quiz component mounted - clearing previous quiz cache");
+
+    // Clear quiz data from previous sessions
+    localStorage.removeItem("quizData");
+    localStorage.removeItem("hasCompletedQuiz");
+    localStorage.removeItem("currentQuizAttemptId");
+    localStorage.removeItem("loadedReportData");
+    localStorage.removeItem("quiz-completion-ai-insights");
+    localStorage.removeItem("ai-generation-in-progress");
+    localStorage.removeItem("ai-generation-timestamp");
+    localStorage.removeItem("congratulationsShown");
+
+    // Clear any AI cache keys from previous sessions
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith("ai-analysis-") ||
+          key.startsWith("skills-analysis-") ||
+          key.startsWith("ai-cache-"))
+      ) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+    console.log(
+      `✅ Cleared ${keysToRemove.length + 8} cache entries for new quiz`,
+    );
+  }, []); // Run only once when component mounts
+
   // Debug logging for exit modal state
   useEffect(() => {
     console.log("Exit modal state changed:", showExitModal);
