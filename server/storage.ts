@@ -361,6 +361,96 @@ export class MemStorage implements IStorage {
     }
   }
 
+  // New consolidated temporary user methods
+  async storeTemporaryUser(
+    sessionId: string,
+    email: string,
+    data: any,
+  ): Promise<User> {
+    const id = this.currentId++;
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    const user: User = {
+      id,
+      email,
+      password: data.password || "",
+      name: data.name || null,
+      isUnsubscribed: false,
+      sessionId,
+      isPaid: false,
+      isTemporary: true,
+      tempQuizData: data.quizData || data,
+      expiresAt,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.users.set(id, user);
+    return user;
+  }
+
+  async getTemporaryUser(sessionId: string): Promise<User | undefined> {
+    const user = Array.from(this.users.values()).find(
+      (u) => u.sessionId === sessionId && u.isTemporary,
+    );
+
+    if (!user) return undefined;
+
+    // Check if expired
+    if (user.expiresAt && user.expiresAt < new Date()) {
+      this.users.delete(user.id);
+      return undefined;
+    }
+
+    return user;
+  }
+
+  async getTemporaryUserByEmail(email: string): Promise<User | undefined> {
+    const user = Array.from(this.users.values()).find(
+      (u) => u.email === email && u.isTemporary,
+    );
+
+    if (!user) return undefined;
+
+    // Check if expired
+    if (user.expiresAt && user.expiresAt < new Date()) {
+      this.users.delete(user.id);
+      return undefined;
+    }
+
+    return user;
+  }
+
+  async cleanupExpiredTemporaryUsers(): Promise<void> {
+    const now = new Date();
+    for (const [id, user] of Array.from(this.users.entries())) {
+      if (user.isTemporary && user.expiresAt && user.expiresAt < now) {
+        this.users.delete(id);
+      }
+    }
+  }
+
+  async convertTemporaryUserToPaid(
+    sessionId: string,
+  ): Promise<User | undefined> {
+    const user = await this.getTemporaryUser(sessionId);
+    if (!user) return undefined;
+
+    // Convert to paid user
+    const updatedUser: User = {
+      ...user,
+      isPaid: true,
+      isTemporary: false,
+      sessionId: null, // Clear session ID for paid users
+      tempQuizData: null,
+      expiresAt: null,
+      updatedAt: new Date(),
+    };
+
+    this.users.set(user.id, updatedUser);
+    return updatedUser;
+  }
+
   async isPaidUser(userId: number): Promise<boolean> {
     // In pay-per-report model, we check if user has any completed payments
     const payments = await this.getPaymentsByUser(userId);
