@@ -40,6 +40,13 @@ export interface IStorage {
   getQuizAttemptsCount(userId: number): Promise<number>;
   getQuizAttempts(userId: number): Promise<QuizAttempt[]>;
   canUserRetakeQuiz(userId: number): Promise<boolean>;
+
+  // AI content operations
+  saveAIContentToQuizAttempt(
+    quizAttemptId: number,
+    aiContent: any,
+  ): Promise<void>;
+  getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null>;
   decrementQuizRetakes(userId: number): Promise<void>;
 
   // Payment operations
@@ -182,6 +189,7 @@ export class MemStorage implements IStorage {
       ...attempt,
       id,
       completedAt: new Date(),
+      aiContent: attempt.aiContent || null,
     };
     this.quizAttempts.set(id, quizAttempt);
     return quizAttempt;
@@ -210,6 +218,21 @@ export class MemStorage implements IStorage {
 
     // In pure pay-per-report model, everyone can take unlimited quizzes
     return true;
+  }
+
+  async saveAIContentToQuizAttempt(
+    quizAttemptId: number,
+    aiContent: any,
+  ): Promise<void> {
+    const attempt = this.quizAttempts.get(quizAttemptId);
+    if (attempt) {
+      attempt.aiContent = aiContent;
+    }
+  }
+
+  async getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null> {
+    const attempt = this.quizAttempts.get(quizAttemptId);
+    return attempt?.aiContent || null;
   }
 
   async decrementQuizRetakes(userId: number): Promise<void> {
@@ -538,6 +561,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
     // In the pure pay-per-report system: everyone can take unlimited quizzes
     return user ? true : false;
+  }
+
+  async saveAIContentToQuizAttempt(
+    quizAttemptId: number,
+    aiContent: any,
+  ): Promise<void> {
+    await this.ensureDb()
+      .update(quizAttempts)
+      .set({ aiContent })
+      .where(eq(quizAttempts.id, quizAttemptId));
+  }
+
+  async getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null> {
+    const [attempt] = await this.ensureDb()
+      .select({ aiContent: quizAttempts.aiContent })
+      .from(quizAttempts)
+      .where(eq(quizAttempts.id, quizAttemptId));
+    return attempt?.aiContent || null;
   }
 
   async decrementQuizRetakes(userId: number): Promise<void> {

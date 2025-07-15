@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
 import * as schema from "../shared/schema.js";
 
 if (!process.env.DATABASE_URL) {
@@ -63,5 +64,55 @@ if (pool) {
 }
 
 export const db = pool ? drizzle({ client: pool, schema }) : null;
+
+// Auto-apply migration for ai_content column
+async function ensureAIContentColumn() {
+  if (!db) return;
+
+  try {
+    console.log("🔍 Checking for ai_content column migration...");
+
+    // Check if column exists
+    const checkResult = await db.execute(sql`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'quiz_attempts'
+      AND table_schema = 'public'
+      AND column_name = 'ai_content'
+    `);
+
+    if (checkResult.rows.length === 0) {
+      console.log("➕ Applying ai_content column migration...");
+      await db.execute(
+        sql`ALTER TABLE "quiz_attempts" ADD COLUMN "ai_content" jsonb`,
+      );
+      console.log("✅ AI content migration applied successfully!");
+    } else {
+      console.log("✅ AI content column already exists");
+    }
+  } catch (error) {
+    console.error(
+      "⚠️ AI content migration check failed:",
+      (error as Error).message,
+    );
+    if ((error as Error).message.includes("already exists")) {
+      console.log("💡 Column already exists - migration not needed");
+    }
+  }
+}
+
+// Apply migration after database connection is established
+if (pool) {
+  setImmediate(() => {
+    // Wait a bit for connection to be ready, then apply migration
+    setTimeout(() => {
+      ensureAIContentColumn().catch((err) => {
+        console.error("Migration application failed:", err.message);
+      });
+    }, 2000);
+
+    // Verification can be run manually if needed
+  });
+}
 
 console.log("Database module loaded successfully");

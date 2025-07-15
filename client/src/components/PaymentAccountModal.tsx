@@ -33,11 +33,14 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { signup, login, user, deleteAccount } = useAuth();
+  const { setHasUnlockedAnalysis, setHasCompletedQuiz } = usePaywall();
+
   const [error, setError] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [isRetakePayment, setIsRetakePayment] = useState(false);
-  const [amount, setAmount] = useState(9.99);
-  const [isFirstReport, setIsFirstReport] = useState(true);
+  const [amount, setAmount] = useState(user ? 4.99 : 9.99);
+  const [isFirstReport, setIsFirstReport] = useState(!user);
 
   // Account form data
   const [formData, setFormData] = useState({
@@ -47,9 +50,6 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
     password: "",
     confirmPassword: "",
   });
-
-  const { signup, login, user, deleteAccount } = useAuth();
-  const { setHasUnlockedAnalysis, setHasCompletedQuiz } = usePaywall();
 
   // Handle cleanup when user closes modal on payment step
   const handleClose = async () => {
@@ -279,7 +279,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
       });
 
       if (!response.ok) {
-        let errorMessage = "Login failed";
+        let errorMessage = "Incorrect username or password";
         try {
           const data = await response.json();
           errorMessage = data.error || errorMessage;
@@ -338,7 +338,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
       await fetchReportPricing(); // Get the correct pricing for this user
       setStep("payment");
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Incorrect username or password");
     } finally {
       setIsProcessing(false);
     }
@@ -410,33 +410,80 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         setIsFirstReport(true);
       } else {
         // Logged users get dynamic pricing from the API
-        const response = await fetch("/api/create-report-unlock-payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            userId: user.id,
-            quizAttemptId: localStorage.getItem("currentQuizAttemptId") || 0,
-          }),
-        });
+        const storedQuizAttemptId = localStorage.getItem(
+          "currentQuizAttemptId",
+        );
 
-        if (response.ok) {
-          const data = await response.json();
-          setAmount(parseFloat(data.amount) || 4.99);
-          setIsFirstReport(data.isFirstReport || false);
+        if (storedQuizAttemptId) {
+          // User has a valid quiz attempt, create payment intent
+          const response = await fetch("/api/create-report-unlock-payment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              userId: user.id,
+              quizAttemptId: parseInt(storedQuizAttemptId),
+            }),
+          });
+
+          if (response.ok) {
+            try {
+              const data = await response.json();
+              setAmount(parseFloat(data.amount) || 4.99);
+              setIsFirstReport(data.isFirstReport || false);
+            } catch (parseError) {
+              console.error("Failed to parse JSON response:", parseError);
+              // Fallback to pricing endpoint
+              await fetchUserPricing();
+            }
+          } else {
+            // Fallback to pricing endpoint
+            await fetchUserPricing();
+          }
         } else {
-          // Fallback to default pricing
-          setAmount(4.99);
-          setIsFirstReport(false);
+          // No quiz attempt ID, just get pricing for display
+          await fetchUserPricing();
         }
       }
     } catch (error) {
       console.error("Error fetching report pricing:", error);
-      // Fallback pricing
-      setAmount(9.99);
-      setIsFirstReport(true);
+      // Try fallback pricing endpoint
+      await fetchUserPricing();
+    }
+  };
+
+  const fetchUserPricing = async () => {
+    try {
+      const response = await fetch(`/api/user-pricing/${user?.id}`, {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        try {
+          const data = await response.json();
+          setAmount(parseFloat(data.amount) || 4.99);
+          setIsFirstReport(data.isFirstReport || false);
+        } catch (parseError) {
+          console.error(
+            "Failed to parse JSON response from user-pricing:",
+            parseError,
+          );
+          // Final fallback for logged users
+          setAmount(4.99);
+          setIsFirstReport(false);
+        }
+      } else {
+        // Final fallback for logged users
+        setAmount(4.99);
+        setIsFirstReport(false);
+      }
+    } catch (error) {
+      console.error("Error fetching user pricing:", error);
+      // Fallback pricing for logged users should be $4.99 (returning user price)
+      setAmount(4.99);
+      setIsFirstReport(false);
     }
   };
 

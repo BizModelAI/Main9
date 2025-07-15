@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { QuizData } from "../../shared/types";
+import { QuizData } from "../types";
+import { motion } from "framer-motion";
 import {
   CheckCircle,
   Clock,
@@ -7,11 +8,13 @@ import {
   BarChart3,
   Target,
   Lightbulb,
+  FileText,
+  Zap,
 } from "lucide-react";
 
 interface FullReportLoadingProps {
   quizData: QuizData;
-  userEmail?: string;
+  userEmail?: string | null;
   onComplete: (data: any) => void;
   onExit?: () => void;
 }
@@ -25,6 +28,7 @@ export default function FullReportLoading({
   const [currentStep, setCurrentStep] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [fullReportData, setFullReportData] = useState<any>(null);
+  const [progress, setProgress] = useState(0);
 
   const steps = [
     {
@@ -53,6 +57,17 @@ export default function FullReportLoading({
   useEffect(() => {
     let timeouts: NodeJS.Timeout[] = [];
     let totalTime = 0;
+    let progressInterval: NodeJS.Timeout;
+
+    // Start smooth progress animation
+    const startTime = Date.now();
+    const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
+
+    progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const newProgress = Math.min((elapsed / totalDuration) * 100, 100);
+      setProgress(newProgress);
+    }, 50);
 
     // Start the step progression
     steps.forEach((step, index) => {
@@ -72,11 +87,13 @@ export default function FullReportLoading({
     // Complete the loading after all steps
     const completeTimeout = setTimeout(() => {
       setIsComplete(true);
+      setProgress(100);
     }, totalTime);
     timeouts.push(completeTimeout);
 
     return () => {
       timeouts.forEach(clearTimeout);
+      clearInterval(progressInterval);
     };
   }, []);
 
@@ -149,117 +166,261 @@ export default function FullReportLoading({
     }
   }, [isComplete, fullReportData, onComplete]);
 
-  const getStepStatus = (stepIndex: number) => {
-    if (stepIndex < currentStep) return "completed";
-    if (stepIndex === currentStep) return "active";
-    return "pending";
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lightbulb className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Subtle background animation */}
+      <div className="absolute inset-0">
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-64 h-64 bg-gradient-to-r from-blue-100/20 to-purple-100/20 rounded-full blur-3xl"
+            initial={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight,
+            }}
+            animate={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight,
+            }}
+            transition={{
+              duration: 20 + Math.random() * 10,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 w-full max-w-lg">
+        {/* Main content container */}
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Header icon with subtle animation */}
+          <motion.div
+            className="mb-8"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="relative">
+              <motion.div
+                className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-lg"
+                animate={{
+                  boxShadow: [
+                    "0 10px 25px -5px rgba(59, 130, 246, 0.3)",
+                    "0 15px 35px -5px rgba(59, 130, 246, 0.4)",
+                    "0 10px 25px -5px rgba(59, 130, 246, 0.3)",
+                  ],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <FileText className="w-12 h-12 text-white" />
+              </motion.div>
+
+              {/* Floating accent dots */}
+              <motion.div
+                className="absolute -top-2 -right-2 w-4 h-4 bg-green-400 rounded-full"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.7, 1, 0.7],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              <motion.div
+                className="absolute -bottom-1 -left-3 w-3 h-3 bg-purple-400 rounded-full"
+                animate={{
+                  scale: [1, 1.3, 1],
+                  opacity: [0.6, 1, 0.6],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.5,
+                }}
+              />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Generating Your Full Report
+          </motion.div>
+
+          {/* Title and description */}
+          <motion.div
+            className="mb-12"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Preparing Your Full Report
             </h1>
-            <p className="text-gray-600">
-              Creating your comprehensive business analysis with AI-powered
-              insights
+            <p className="text-lg text-gray-600 leading-relaxed max-w-md mx-auto">
+              Our AI is crafting detailed insights and personalized
+              recommendations just for you
             </p>
-          </div>
+          </motion.div>
 
-          {/* Progress Steps */}
-          <div className="space-y-4 mb-8">
-            {steps.map((step, index) => {
-              const status = getStepStatus(index);
-              const StepIcon = step.icon;
-
-              return (
-                <div key={step.id} className="flex items-center space-x-3">
-                  <div
-                    className={`
-                    w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
-                    ${
-                      status === "completed"
-                        ? "bg-green-100 text-green-600"
-                        : status === "active"
-                          ? "bg-blue-100 text-blue-600 animate-pulse"
-                          : "bg-gray-100 text-gray-400"
-                    }
-                  `}
+          {/* Current step indicator */}
+          <motion.div
+            className="mb-10"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/40">
+              {!isComplete ? (
+                <motion.div
+                  key={currentStep}
+                  className="flex items-center justify-center space-x-4"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <motion.div
+                    className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center"
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
                   >
-                    {status === "completed" ? (
-                      <CheckCircle className="w-6 h-6" />
-                    ) : (
-                      <StepIcon className="w-6 h-6" />
-                    )}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p
-                      className={`font-medium ${
-                        status === "active"
-                          ? "text-blue-600"
-                          : status === "completed"
-                            ? "text-green-600"
-                            : "text-gray-400"
-                      }`}
-                    >
-                      {step.title}
+                    {React.createElement(steps[currentStep]?.icon || Clock, {
+                      className: "w-6 h-6 text-white",
+                    })}
+                  </motion.div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {steps[currentStep]?.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      {steps[currentStep]?.description}
                     </p>
-                    <p className="text-sm text-gray-500">{step.description}</p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="flex items-center justify-center space-x-4 text-green-600"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-semibold">Report Complete!</h3>
+                    <p className="text-green-700 text-sm">
+                      Redirecting to your personalized insights...
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
 
-          {/* Completion State */}
-          {isComplete && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center justify-center space-x-2 text-green-600">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">
-                  Report Generated Successfully!
+          {/* Progress bar */}
+          <motion.div
+            className="mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <div className="bg-white/50 rounded-full h-3 overflow-hidden backdrop-blur-sm border border-white/40">
+              <motion.div
+                className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full relative"
+                initial={{ width: "0%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                {/* Shimmer effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  initial={{ x: "-100%" }}
+                  animate={{ x: "200%" }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              </motion.div>
+            </div>
+            <div className="flex justify-between items-center mt-3 text-sm text-gray-600">
+              <span>Processing...</span>
+              <span className="font-medium">{Math.round(progress)}%</span>
+            </div>
+          </motion.div>
+
+          {/* Step indicators */}
+          <motion.div
+            className="flex justify-center space-x-4 mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          >
+            {steps.map((step, index) => (
+              <div
+                key={step.id}
+                className="flex flex-col items-center space-y-2"
+              >
+                <motion.div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-500 ${
+                    index < currentStep
+                      ? "bg-green-100 text-green-600"
+                      : index === currentStep
+                        ? "bg-blue-100 text-blue-600"
+                        : "bg-gray-100 text-gray-400"
+                  }`}
+                  animate={
+                    index === currentStep
+                      ? { scale: [1, 1.1, 1] }
+                      : { scale: 1 }
+                  }
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  {index < currentStep ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </motion.div>
+                <span className="text-xs text-gray-500 max-w-20 text-center leading-tight">
+                  {step.title.split(" ").slice(0, 2).join(" ")}
                 </span>
               </div>
-              <p className="text-sm text-green-700 mt-1">
-                Redirecting to your full report...
-              </p>
-            </div>
-          )}
+            ))}
+          </motion.div>
 
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-1000"
-              style={{
-                width: isComplete
-                  ? "100%"
-                  : `${((currentStep + 1) / steps.length) * 100}%`,
-              }}
-            />
-          </div>
+          {/* Footer message */}
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <p className="text-sm text-gray-500 mb-4">
+              This personalized analysis is being generated specifically for
+              your entrepreneurial profile
+            </p>
 
-          {/* Footer */}
-          <div className="text-xs text-gray-500">
-            This may take a few moments while we analyze your responses
-          </div>
-
-          {/* Exit Button */}
-          {onExit && (
-            <button
-              onClick={onExit}
-              className="mt-4 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
+            {/* Cancel button */}
+            {onExit && !isComplete && (
+              <button
+                onClick={onExit}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors underline"
+              >
+                Cancel and go back
+              </button>
+            )}
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

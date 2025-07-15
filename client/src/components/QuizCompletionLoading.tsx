@@ -214,8 +214,13 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
           }
         };
 
-        // Wait for step to complete
+        // Wait for step to complete with visual emphasis on mobile
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
+
+        // Add a brief pause between steps on mobile for better visibility
+        if (stepIndex < steps.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
 
         // Mark step as completed
         setSteps((prev) =>
@@ -457,12 +462,14 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
               <motion.div
                 key={currentStepIndex}
                 className="bg-gradient-to-br from-white to-purple-50 rounded-3xl shadow-xl p-6 border-2 border-purple-200"
-                initial={{ opacity: 0, scale: 0.8, x: 100 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.8, x: -100 }}
+                initial={{ opacity: 0, scale: 0.8, x: 100, rotateY: 90 }}
+                animate={{ opacity: 1, scale: 1, x: 0, rotateY: 0 }}
+                exit={{ opacity: 0, scale: 0.8, x: -100, rotateY: -90 }}
                 transition={{
-                  duration: 0.5,
+                  duration: 0.6,
                   ease: "easeInOut",
+                  type: "spring",
+                  stiffness: 100,
                 }}
               >
                 <div className="text-center">
@@ -524,14 +531,21 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
                     ))}
                   </motion.div>
 
-                  {/* Mobile Step Counter */}
+                  {/* Mobile Step Counter with Enhanced Visibility */}
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.4, duration: 0.4 }}
                   >
-                    <p className="text-lg font-semibold text-purple-600">
-                      Step {currentStepIndex + 1} of {steps.length}
+                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-full mx-auto w-fit shadow-lg">
+                      <p className="text-lg font-bold">
+                        Step {currentStepIndex + 1} of {steps.length}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      {currentStepIndex < steps.length - 1
+                        ? "Next: " + steps[currentStepIndex + 1]?.title
+                        : "Almost done!"}
                     </p>
                   </motion.div>
                 </div>

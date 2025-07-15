@@ -30,6 +30,7 @@ const Dashboard: React.FC = () => {
   const [hasEverSelectedModel, setHasEverSelectedModel] = useState(false);
   const [topBusinessModels, setTopBusinessModels] = useState<any[]>([]);
   const [isLoadingScores, setIsLoadingScores] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0); // For triggering re-renders
 
   // Load real business model scores from user's quiz data
   useEffect(() => {
@@ -118,7 +119,7 @@ const Dashboard: React.FC = () => {
                   timeToProfit: "2-6 months",
                   potentialIncome: "$1K-50K/month",
                   difficulty: "Medium",
-                  icon: "����",
+                  icon: "🛍️",
                 },
                 "virtual-assistant": {
                   id: "virtual-assistant",
@@ -231,7 +232,7 @@ const Dashboard: React.FC = () => {
     };
 
     loadBusinessModelScores();
-  }, [user, getLatestQuizData, authLoading]);
+  }, [user, getLatestQuizData, authLoading, refreshKey]);
 
   // Check if user has ever selected a business model on component mount
   React.useEffect(() => {
@@ -410,6 +411,20 @@ const Dashboard: React.FC = () => {
     }, 0);
   };
 
+  const handleQuizSelected = (quizData: QuizData, aiContent?: any) => {
+    console.log("Quiz selected in Dashboard:", { quizData, aiContent });
+    // Trigger a re-render of components that depend on localStorage data
+    setRefreshKey((prev) => prev + 1);
+    // Re-calculate business models with new quiz data
+    setIsLoadingScores(true);
+
+    // The business model calculation will be triggered by the useEffect
+    // that watches for authLoading, user, and getLatestQuizData changes
+    setTimeout(() => {
+      setIsLoadingScores(false);
+    }, 500);
+  };
+
   const quickActions = [
     {
       title: "Retake Quiz",
@@ -440,26 +455,143 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const recentActivity = [
-    {
-      action: "Completed Business Path Quiz",
-      time: "2 hours ago",
-      icon: BookOpen,
-      color: "blue",
-    },
-    {
-      action: "Viewed Content Creation results",
-      time: "2 hours ago",
-      icon: Target,
-      color: "green",
-    },
-    {
-      action: "Joined Business Path community",
-      time: "1 day ago",
-      icon: Users,
-      color: "purple",
-    },
-  ];
+  // Dynamic Recent Activity based on real user data
+  const [recentActivity, setRecentActivity] = useState<
+    Array<{
+      action: string;
+      time: string;
+      icon: any;
+      color: string;
+    }>
+  >([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
+  // Generate recent activity from user data
+  useEffect(() => {
+    const generateRecentActivity = async () => {
+      if (!user || authLoading) {
+        setActivityLoading(false);
+        return;
+      }
+
+      setActivityLoading(true);
+      const activities = [];
+
+      try {
+        // Get quiz attempts to track quiz activity
+        const quizAttemptsResponse = await fetch(
+          `/api/quiz-attempts/${user.id}`,
+        );
+        if (quizAttemptsResponse.ok) {
+          const attempts = await quizAttemptsResponse.json();
+
+          // Add quiz completion activities
+          attempts.slice(0, 2).forEach((attempt: any, index: number) => {
+            const completedAt = new Date(attempt.completedAt);
+            const timeAgo = getTimeAgo(completedAt);
+
+            activities.push({
+              action:
+                index === 0
+                  ? "Completed Business Path Quiz"
+                  : "Retook Business Path Quiz",
+              time: timeAgo,
+              icon: BookOpen,
+              color: "blue",
+            });
+          });
+
+          // Add business model analysis activity if user has quiz data
+          if (attempts.length > 0) {
+            const latestAttempt = attempts[0];
+            const analysisTime = getTimeAgo(
+              new Date(latestAttempt.completedAt),
+            );
+            activities.push({
+              action: "Generated business model analysis",
+              time: analysisTime,
+              icon: BarChart3,
+              color: "purple",
+            });
+          }
+        }
+
+        // Add business model selection activity
+        if (selectedBusinessModel) {
+          activities.push({
+            action: `Exploring ${selectedBusinessModel.name}`,
+            time: "Current session",
+            icon: Target,
+            color: "green",
+          });
+        }
+
+        // Add dashboard access activity
+        activities.push({
+          action: "Accessed Dashboard",
+          time: "Just now",
+          icon: Calendar,
+          color: "blue",
+        });
+
+        // Sort by most recent and limit to 3
+        const sortedActivities = activities
+          .sort((a, b) => {
+            // Prioritize "just now" and recent activities
+            if (a.time === "Just now") return -1;
+            if (b.time === "Just now") return 1;
+            if (a.time === "Current session") return -1;
+            if (b.time === "Current session") return 1;
+            return 0;
+          })
+          .slice(0, 3);
+
+        setRecentActivity(sortedActivities);
+      } catch (error) {
+        console.error("Error generating recent activity:", error);
+        // Fallback to basic activity
+        setRecentActivity([
+          {
+            action: "Accessed Dashboard",
+            time: "Just now",
+            icon: Calendar,
+            color: "blue",
+          },
+          {
+            action: "Account authenticated",
+            time: "Today",
+            icon: Users,
+            color: "green",
+          },
+        ]);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+
+    generateRecentActivity();
+  }, [user, authLoading, selectedBusinessModel, refreshKey]);
+
+  // Helper function to calculate time ago
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60),
+    );
+
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24)
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7)
+      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+
+    return date.toLocaleDateString();
+  };
 
   const learningModules = [
     {
@@ -504,7 +636,7 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 max-w-7xl mx-auto px-4 sm:px-8">
             {isLoadingScores
               ? // Loading state
                 Array.from({ length: 9 }).map((_, index) => (
@@ -526,7 +658,7 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3]"
+                      className="relative bg-white rounded-3xl p-6 md:p-8 lg:p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[380px] lg:aspect-auto flex flex-col"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
                       <div className="absolute -top-3 left-6">
@@ -537,37 +669,44 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-3">
-                        <div className="text-3xl mr-3">{model.icon}</div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-2 leading-tight">
+                      <div className="flex items-start mb-3 sm:mb-4 md:mb-4 lg:mb-3">
+                        <div className="text-3xl sm:text-4xl md:text-4xl lg:text-3xl mr-3 sm:mr-4 md:mr-4 lg:mr-3 flex-shrink-0">
+                          {model.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg sm:text-xl md:text-xl lg:text-lg font-bold text-gray-900 mb-2 sm:mb-3 md:mb-3 lg:mb-2 leading-tight">
                             {model.name}
                           </h3>
-                          <p className="text-gray-600 text-sm mb-3 leading-tight">
+                          <p className="text-gray-600 text-sm sm:text-base md:text-base lg:text-sm mb-3 sm:mb-4 md:mb-4 lg:mb-3 leading-tight sm:leading-relaxed md:leading-relaxed lg:leading-normal">
                             {model.description}
                           </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="text-center">
-                          <div className="text-xs text-gray-500">
+                      <div className="grid grid-cols-2 gap-4 mb-6 sm:mb-6 md:mb-6 lg:gap-3 lg:mb-6">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
+                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
                             Time to Profit
                           </div>
-                          <div className="font-semibold text-gray-900 text-sm">
+                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
                             {model.timeToProfit}
                           </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-xs text-gray-500">Income</div>
-                          <div className="font-semibold text-gray-900 text-sm">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
+                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
+                            Income
+                          </div>
+                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
                             {model.potentialIncome}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center">
-                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm">
+                      {/* Spacer to push button to bottom */}
+                      <div className="flex-grow"></div>
+
+                      <div className="flex items-center mt-auto">
+                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 sm:py-4 md:py-4 lg:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm sm:text-base md:text-base lg:text-sm sm:shadow-lg md:shadow-lg hover:shadow-xl">
                           Select This Model
                         </button>
                       </div>
@@ -870,23 +1009,48 @@ const Dashboard: React.FC = () => {
                 Recent Activity
               </h2>
               <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div
-                      className={`w-8 h-8 bg-${activity.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}
-                    >
-                      <activity.icon
-                        className={`h-4 w-4 text-${activity.color}-600`}
-                      />
+                {activityLoading ? (
+                  // Loading state
+                  <>
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="flex items-start space-x-3 animate-pulse"
+                      >
+                        <div className="w-8 h-8 bg-gray-200 rounded-xl flex-shrink-0"></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : recentActivity.length > 0 ? (
+                  // Show actual activities
+                  recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div
+                        className={`w-8 h-8 bg-${activity.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}
+                      >
+                        <activity.icon
+                          className={`h-4 w-4 text-${activity.color}-600`}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {activity.action}
+                        </p>
+                        <p className="text-xs text-gray-500">{activity.time}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {activity.action}
-                      </p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                    </div>
+                  ))
+                ) : (
+                  // Empty state
+                  <div className="text-center py-4">
+                    <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No recent activity</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </motion.div>
@@ -900,7 +1064,11 @@ const Dashboard: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="mt-12 mb-8"
           >
-            <QuizAttemptHistory userId={parseInt(String(user.id))} />
+            <QuizAttemptHistory
+              key={refreshKey}
+              userId={parseInt(String(user.id))}
+              onQuizSelected={handleQuizSelected}
+            />
           </motion.div>
         )}
       </div>

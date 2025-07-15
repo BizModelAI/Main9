@@ -1,4 +1,8 @@
-import type { Express } from "express";
+import express from "express";
+
+type Express = express.Express;
+type Request = express.Request;
+type Response = express.Response;
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { getUserIdFromRequest, getSessionKey } from "./auth.js";
@@ -107,24 +111,46 @@ export async function registerRoutes(app: Express): Promise<void> {
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
   // CORS preflight handler for OpenAI chat endpoint
-  app.options("/api/openai-chat", (req, res) => {
+  app.options("/api/openai-chat", (req: Request, res: Response) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
     res.sendStatus(200);
   });
 
+  // Debug endpoint to check OpenAI configuration
+  app.get("/api/openai-status", (req: Request, res: Response) => {
+    const hasApiKey = !!process.env.OPENAI_API_KEY;
+    const keyLength = hasApiKey ? process.env.OPENAI_API_KEY!.length : 0;
+
+    res.json({
+      configured: hasApiKey,
+      keyLength: keyLength,
+      keyPrefix: hasApiKey
+        ? process.env.OPENAI_API_KEY!.substring(0, 7) + "..."
+        : "none",
+    });
+  });
+
   // General OpenAI chat endpoint
-  app.post("/api/openai-chat", async (req, res) => {
+  app.post("/api/openai-chat", async (req: Request, res: Response) => {
     // Add CORS headers
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
 
     try {
+      console.log("🔍 OpenAI API request received:", {
+        hasBody: !!req.body,
+        promptLength: req.body?.prompt?.length || 0,
+        maxTokens: req.body?.maxTokens,
+        responseFormat: req.body?.responseFormat,
+      });
+
       // Rate limiting for concurrent users
       const clientIP = req.ip || req.connection.remoteAddress || "unknown";
       if (!openaiRateLimiter.canMakeRequest(clientIP)) {
+        console.log("�� Rate limit exceeded for IP:", clientIP);
         return res.status(429).json({
           error: "Too many requests. Please wait a moment before trying again.",
         });
@@ -132,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Check if OpenAI API key is configured
       if (!process.env.OPENAI_API_KEY) {
-        console.error("OpenAI API key not configured");
+        console.error("❌ OpenAI API key not configured");
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
@@ -165,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
 
       const requestBody: any = {
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
         messages,
         max_tokens: maxTokens,
         temperature: temperature,
@@ -199,11 +225,21 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       if (!openaiResponse.ok) {
         const errorText = await openaiResponse.text();
-        console.error(`OpenAI API error: ${openaiResponse.status}`, errorText);
-        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+        console.error(
+          `❌ OpenAI API error: ${openaiResponse.status}`,
+          errorText,
+        );
+        throw new Error(
+          `OpenAI API error: ${openaiResponse.status} - ${errorText}`,
+        );
       }
 
       const data = await openaiResponse.json();
+      console.log(
+        "✅ OpenAI API response received, content length:",
+        data.choices?.[0]?.message?.content?.length || 0,
+      );
+
       const content = data.choices[0].message.content;
 
       res.json({ content });
@@ -230,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Skills analysis endpoint using OpenAI
-  app.post("/api/analyze-skills", async (req, res) => {
+  app.post("/api/analyze-skills", async (req: Request, res: Response) => {
     try {
       const { quizData, requiredSkills, businessModel, userProfile } = req.body;
 
@@ -278,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           },
           body: JSON.stringify({
-            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
             messages: [
               {
                 role: "system",
@@ -343,87 +379,99 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // AI-powered business fit scoring endpoint
-  app.post("/api/ai-business-fit-analysis", async (req, res) => {
-    console.log("📥 AI business fit analysis request received");
+  app.post(
+    "/api/ai-business-fit-analysis",
+    async (req: Request, res: Response) => {
+      console.log("📥 AI business fit analysis request received");
 
-    try {
-      // Rate limiting for concurrent quiz takers
-      const clientIP = req.ip || req.connection.remoteAddress || "unknown";
-      if (!openaiRateLimiter.canMakeRequest(clientIP)) {
-        console.log("❌ Rate limit exceeded for IP:", clientIP);
-        return res.status(429).json({
-          error: "Too many requests. Please wait a moment before trying again.",
+      try {
+        // Rate limiting for concurrent quiz takers
+        const clientIP = req.ip || req.connection.remoteAddress || "unknown";
+        if (!openaiRateLimiter.canMakeRequest(clientIP)) {
+          console.log("❌ Rate limit exceeded for IP:", clientIP);
+          return res.status(429).json({
+            error:
+              "Too many requests. Please wait a moment before trying again.",
+          });
+        }
+
+        const { quizData } = req.body;
+
+        if (!quizData) {
+          console.log("❌ No quiz data provided");
+          return res.status(400).json({ error: "Quiz data is required" });
+        }
+
+        // Add timeout to prevent hanging requests
+        const analysisPromise = aiScoringService.analyzeBusinessFit(quizData);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Analysis timed out after 35 seconds")),
+            35000,
+          ),
+        );
+
+        const analysis = await Promise.race([analysisPromise, timeoutPromise]);
+        console.log("✅ AI business fit analysis completed successfully");
+        res.json(analysis);
+      } catch (error) {
+        console.error("❌ Error in AI business fit analysis:", {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : "No stack trace",
+        });
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        res.status(500).json({
+          error: "Failed to analyze business fit",
+          details: errorMessage,
         });
       }
-
-      const { quizData } = req.body;
-
-      if (!quizData) {
-        console.log("❌ No quiz data provided");
-        return res.status(400).json({ error: "Quiz data is required" });
-      }
-
-      // Add timeout to prevent hanging requests
-      const analysisPromise = aiScoringService.analyzeBusinessFit(quizData);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Analysis timed out after 35 seconds")),
-          35000,
-        ),
-      );
-
-      const analysis = await Promise.race([analysisPromise, timeoutPromise]);
-      console.log("✅ AI business fit analysis completed successfully");
-      res.json(analysis);
-    } catch (error) {
-      console.error("❌ Error in AI business fit analysis:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : "No stack trace",
-      });
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to analyze business fit",
-        details: errorMessage,
-      });
-    }
-  });
+    },
+  );
 
   // AI-powered personality analysis endpoint
-  app.post("/api/ai-personality-analysis", async (req, res) => {
-    try {
-      const { quizData } = req.body;
+  app.post(
+    "/api/ai-personality-analysis",
+    async (req: Request, res: Response) => {
+      try {
+        const { quizData } = req.body;
 
-      if (!quizData) {
-        return res.status(400).json({ error: "Quiz data is required" });
+        if (!quizData) {
+          return res.status(400).json({ error: "Quiz data is required" });
+        }
+
+        const analysis =
+          await personalityAnalysisService.analyzePersonality(quizData);
+        res.json(analysis);
+      } catch (error) {
+        console.error("Error in AI personality analysis:", error);
+        res.status(500).json({ error: "Failed to analyze personality" });
       }
-
-      const analysis =
-        await personalityAnalysisService.analyzePersonality(quizData);
-      res.json(analysis);
-    } catch (error) {
-      console.error("Error in AI personality analysis:", error);
-      res.status(500).json({ error: "Failed to analyze personality" });
-    }
-  });
+    },
+  );
 
   // Income projections endpoint using hardcoded data
-  app.post("/api/generate-income-projections", async (req, res) => {
-    try {
-      const { businessId } = req.body;
+  app.post(
+    "/api/generate-income-projections",
+    async (req: Request, res: Response) => {
+      try {
+        const { businessId } = req.body;
 
-      if (!businessId) {
-        return res.status(400).json({ error: "Business ID is required" });
+        if (!businessId) {
+          return res.status(400).json({ error: "Business ID is required" });
+        }
+
+        // Use hardcoded projections based on business model
+        const projections = getFallbackProjections(businessId);
+        res.json(projections);
+      } catch (error) {
+        console.error("Error generating income projections:", error);
+        res
+          .status(500)
+          .json({ error: "Failed to generate income projections" });
       }
-
-      // Use hardcoded projections based on business model
-      const projections = getFallbackProjections(businessId);
-      res.json(projections);
-    } catch (error) {
-      console.error("Error generating income projections:", error);
-      res.status(500).json({ error: "Failed to generate income projections" });
-    }
-  });
+    },
+  );
 
   function getFallbackProjections(businessId: string) {
     const baseData: any = {
@@ -551,44 +599,47 @@ export async function registerRoutes(app: Express): Promise<void> {
   }
 
   // Quiz retake system endpoints
-  app.get("/api/quiz-retake-status/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      let user = await storage.getUser(userId);
+  app.get(
+    "/api/quiz-retake-status/:userId",
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        let user = await storage.getUser(userId);
 
-      // Create user if doesn't exist (for testing)
-      if (!user) {
-        user = await storage.createUser({
-          username: `user${userId}`,
-          password: "test123",
+        // Create user if doesn't exist (for testing)
+        if (!user) {
+          user = await storage.createUser({
+            username: `user${userId}`,
+            password: "test123",
+          });
+        }
+
+        const attemptsCount = await storage.getQuizAttemptsCount(userId);
+
+        // Pure pay-per-report system logic:
+        // - Everyone can take unlimited quiz attempts for free
+        // - They pay per report unlock
+
+        const isFirstQuiz = attemptsCount === 0;
+
+        res.json({
+          canRetake: true, // Everyone can always retake
+          attemptsCount,
+          hasAccessPass: false, // No longer used
+          quizRetakesRemaining: 999, // Unlimited for everyone
+          totalQuizRetakesUsed: 0, // Not used in new system, always 0
+          isFirstQuiz,
+          isFreeQuizUsed: attemptsCount > 0,
+          isGuestUser: false, // No longer relevant since everyone can take quizzes
         });
+      } catch (error) {
+        console.error("Error getting quiz retake status:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
+    },
+  );
 
-      const attemptsCount = await storage.getQuizAttemptsCount(userId);
-
-      // Pure pay-per-report system logic:
-      // - Everyone can take unlimited quiz attempts for free
-      // - They pay per report unlock
-
-      const isFirstQuiz = attemptsCount === 0;
-
-      res.json({
-        canRetake: true, // Everyone can always retake
-        attemptsCount,
-        hasAccessPass: false, // No longer used
-        quizRetakesRemaining: 999, // Unlimited for everyone
-        totalQuizRetakesUsed: 0, // Not used in new system, always 0
-        isFirstQuiz,
-        isFreeQuizUsed: attemptsCount > 0,
-        isGuestUser: false, // No longer relevant since everyone can take quizzes
-      });
-    } catch (error) {
-      console.error("Error getting quiz retake status:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.post("/api/quiz-attempt", async (req, res) => {
+  app.post("/api/quiz-attempt", async (req: Request, res: Response) => {
     try {
       const { userId, quizData } = req.body;
 
@@ -636,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Get quiz attempts history for a user
-  app.get("/api/quiz-attempts/:userId", async (req, res) => {
+  app.get("/api/quiz-attempts/:userId", async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       const currentUserId = getUserIdFromRequest(req);
@@ -681,8 +732,83 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Save AI content for a specific quiz attempt
+  app.post(
+    "/api/quiz-attempts/:quizAttemptId/ai-content",
+    async (req: Request, res: Response) => {
+      try {
+        const quizAttemptId = parseInt(req.params.quizAttemptId);
+        const { aiContent } = req.body;
+        const currentUserId = getUserIdFromRequest(req);
+
+        if (!currentUserId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        if (!aiContent) {
+          return res.status(400).json({ error: "AI content is required" });
+        }
+
+        // Verify the quiz attempt belongs to the current user
+        const attempts = await storage.getQuizAttempts(currentUserId);
+        const attempt = attempts.find((a) => a.id === quizAttemptId);
+
+        if (!attempt) {
+          return res
+            .status(404)
+            .json({ error: "Quiz attempt not found or unauthorized" });
+        }
+
+        await storage.saveAIContentToQuizAttempt(quizAttemptId, aiContent);
+
+        console.log(`AI content saved for quiz attempt ${quizAttemptId}`);
+        res.json({ success: true, message: "AI content saved successfully" });
+      } catch (error) {
+        console.error("Error saving AI content:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
+
+  // Get AI content for a specific quiz attempt
+  app.get(
+    "/api/quiz-attempts/:quizAttemptId/ai-content",
+    async (req: Request, res: Response) => {
+      try {
+        const quizAttemptId = parseInt(req.params.quizAttemptId);
+        const currentUserId = getUserIdFromRequest(req);
+
+        if (!currentUserId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        // Verify the quiz attempt belongs to the current user
+        const attempts = await storage.getQuizAttempts(currentUserId);
+        const attempt = attempts.find((a) => a.id === quizAttemptId);
+
+        if (!attempt) {
+          return res
+            .status(404)
+            .json({ error: "Quiz attempt not found or unauthorized" });
+        }
+
+        const aiContent =
+          await storage.getAIContentForQuizAttempt(quizAttemptId);
+
+        console.log(
+          `AI content retrieved for quiz attempt ${quizAttemptId}:`,
+          !!aiContent,
+        );
+        res.json({ aiContent });
+      } catch (error) {
+        console.error("Error getting AI content:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
+
   // Get latest quiz data for authenticated user (for business model pages)
-  app.get("/api/auth/latest-quiz-data", async (req, res) => {
+  app.get("/api/auth/latest-quiz-data", async (req: Request, res: Response) => {
     console.log("LATEST QUIZ DATA: Endpoint called!");
     console.log("API: GET /api/auth/latest-quiz-data", {
       sessionId: req.sessionID,
@@ -763,54 +889,57 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Get latest PAID quiz data for authenticated user (for navigation guard)
-  app.get("/api/auth/latest-paid-quiz-data", async (req, res) => {
-    console.log("API: GET /api/auth/latest-paid-quiz-data", {
-      sessionId: req.sessionID,
-      userId: req.session?.userId,
-      hasCookie: !!req.headers.cookie,
-    });
-
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      console.log(`Latest paid quiz data: Fetching for user ${userId}`);
-
-      // Get user info
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      const attempts = await storage.getQuizAttempts(userId);
-      console.log(`Latest paid quiz data: Found ${attempts.length} attempts`);
-
-      if (attempts.length === 0) {
-        console.log("Latest paid quiz data: No attempts found");
-        return res.json(null);
-      }
-
-      // In pure pay-per-report model: all logged-in users have access to their latest quiz data
-      // They just need to pay per report unlock if they want full reports
-      const latestAttempt = attempts[0]; // attempts are sorted by most recent
-      console.log(
-        `Latest paid quiz data: Returning latest attempt ${latestAttempt.id}`,
-      );
-      return res.json({
-        quizData: latestAttempt.quizData,
-        quizAttemptId: latestAttempt.id,
-        isUnlocked: true,
+  app.get(
+    "/api/auth/latest-paid-quiz-data",
+    async (req: Request, res: Response) => {
+      console.log("API: GET /api/auth/latest-paid-quiz-data", {
+        sessionId: req.sessionID,
+        userId: req.session?.userId,
+        hasCookie: !!req.headers.cookie,
       });
-    } catch (error) {
-      console.error("Error getting latest paid quiz data:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+
+      try {
+        const userId = getUserIdFromRequest(req);
+        if (!userId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        console.log(`Latest paid quiz data: Fetching for user ${userId}`);
+
+        // Get user info
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        const attempts = await storage.getQuizAttempts(userId);
+        console.log(`Latest paid quiz data: Found ${attempts.length} attempts`);
+
+        if (attempts.length === 0) {
+          console.log("Latest paid quiz data: No attempts found");
+          return res.json(null);
+        }
+
+        // In pure pay-per-report model: all logged-in users have access to their latest quiz data
+        // They just need to pay per report unlock if they want full reports
+        const latestAttempt = attempts[0]; // attempts are sorted by most recent
+        console.log(
+          `Latest paid quiz data: Returning latest attempt ${latestAttempt.id}`,
+        );
+        return res.json({
+          quizData: latestAttempt.quizData,
+          quizAttemptId: latestAttempt.id,
+          isUnlocked: true,
+        });
+      } catch (error) {
+        console.error("Error getting latest paid quiz data:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Save quiz data for authenticated user (pay-per-quiz model)
-  app.post("/api/auth/save-quiz-data", async (req, res) => {
+  app.post("/api/auth/save-quiz-data", async (req: Request, res: Response) => {
     console.log("API: POST /api/auth/save-quiz-data", {
       sessionId: req.sessionID,
       userId: req.session?.userId,
@@ -894,147 +1023,186 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Access pass concept removed - use report unlock payments instead
 
-  // Create payment for unlocking full report ($9.99 first, $4.99 subsequent for logged users)
-  app.post("/api/create-report-unlock-payment", async (req, res) => {
+  // Get pricing for user without creating payment intent
+  app.get("/api/user-pricing/:userId", async (req: Request, res: Response) => {
     try {
-      const { userId, quizAttemptId } = req.body;
+      const { userId } = req.params;
 
-      if (!userId || !quizAttemptId) {
-        return res
-          .status(400)
-          .json({ error: "Missing userId or quizAttemptId" });
+      if (!userId) {
+        return res.status(400).json({ error: "Missing userId" });
       }
 
-      const user = await storage.getUser(userId);
+      const user = await storage.getUser(parseInt(userId));
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Check if report is already unlocked
-      const payments = await storage.getPaymentsByUser(userId);
-      const existingPayment = payments.find(
-        (p) =>
-          p.quizAttemptId === quizAttemptId &&
-          p.type === "report_unlock" &&
-          p.status === "completed",
-      );
-
-      if (existingPayment) {
-        return res
-          .status(400)
-          .json({ error: "Report is already unlocked for this quiz attempt" });
-      }
-
       // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
+      const payments = await storage.getPaymentsByUser(parseInt(userId));
       const completedPayments = payments.filter(
         (p) => p.status === "completed",
       );
       const isFirstReport = completedPayments.length === 0;
-      const amount = isFirstReport ? 999 : 499; // $9.99 or $4.99 in cents
       const amountDollar = isFirstReport ? "9.99" : "4.99";
-
-      // Create Stripe Payment Intent
-      if (!stripe) {
-        return res
-          .status(500)
-          .json({ error: "Payment processing not configured" });
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: "usd",
-        metadata: {
-          userId: userId.toString(),
-          type: "report_unlock",
-          quizAttemptId: quizAttemptId.toString(),
-          isFirstReport: isFirstReport.toString(),
-        },
-        description: `BizModelAI Report Unlock - ${isFirstReport ? "First report" : "Additional report"}`,
-      });
-
-      // Create payment record in our database
-      const payment = await storage.createPayment({
-        userId,
-        amount: amountDollar,
-        currency: "usd",
-        type: "report_unlock",
-        status: "pending",
-        quizAttemptId: quizAttemptId,
-        stripePaymentIntentId: paymentIntent.id,
-      });
 
       res.json({
         success: true,
-        clientSecret: paymentIntent.client_secret,
-        paymentId: payment.id,
         amount: amountDollar,
         isFirstReport,
       });
     } catch (error) {
-      console.error("Error creating report unlock payment:", error);
+      console.error("Error getting user pricing:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // Create payment for unlocking full report ($9.99 first, $4.99 subsequent for logged users)
+  app.post(
+    "/api/create-report-unlock-payment",
+    async (req: Request, res: Response) => {
+      try {
+        const { userId, quizAttemptId } = req.body;
+
+        if (!userId || !quizAttemptId) {
+          return res
+            .status(400)
+            .json({ error: "Missing userId or quizAttemptId" });
+        }
+
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        // Check if report is already unlocked
+        const payments = await storage.getPaymentsByUser(userId);
+        const existingPayment = payments.find(
+          (p) =>
+            p.quizAttemptId === quizAttemptId &&
+            p.type === "report_unlock" &&
+            p.status === "completed",
+        );
+
+        if (existingPayment) {
+          return res.status(400).json({
+            error: "Report is already unlocked for this quiz attempt",
+          });
+        }
+
+        // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
+        const completedPayments = payments.filter(
+          (p) => p.status === "completed",
+        );
+        const isFirstReport = completedPayments.length === 0;
+        const amount = isFirstReport ? 999 : 499; // $9.99 or $4.99 in cents
+        const amountDollar = isFirstReport ? "9.99" : "4.99";
+
+        // Create Stripe Payment Intent
+        if (!stripe) {
+          return res
+            .status(500)
+            .json({ error: "Payment processing not configured" });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: "usd",
+          metadata: {
+            userId: userId.toString(),
+            type: "report_unlock",
+            quizAttemptId: quizAttemptId.toString(),
+            isFirstReport: isFirstReport.toString(),
+          },
+          description: `BizModelAI Report Unlock - ${isFirstReport ? "First report" : "Additional report"}`,
+        });
+
+        // Create payment record in our database
+        const payment = await storage.createPayment({
+          userId,
+          amount: amountDollar,
+          currency: "usd",
+          type: "report_unlock",
+          status: "pending",
+          quizAttemptId: quizAttemptId,
+          stripePaymentIntentId: paymentIntent.id,
+        });
+
+        res.json({
+          success: true,
+          clientSecret: paymentIntent.client_secret,
+          paymentId: payment.id,
+          amount: amountDollar,
+          isFirstReport,
+        });
+      } catch (error) {
+        console.error("Error creating report unlock payment:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Create payment for anonymous users unlocking full report (always $9.99)
-  app.post("/api/create-anonymous-report-unlock-payment", async (req, res) => {
-    try {
-      const { sessionId, email } = req.body;
+  app.post(
+    "/api/create-anonymous-report-unlock-payment",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId, email } = req.body;
 
-      if (!sessionId) {
-        return res
-          .status(400)
-          .json({ error: "Missing sessionId for anonymous user" });
+        if (!sessionId) {
+          return res
+            .status(400)
+            .json({ error: "Missing sessionId for anonymous user" });
+        }
+
+        // Verify temporary user data exists
+        const tempData = await storage.getUnpaidUserEmail(sessionId);
+        if (!tempData) {
+          return res
+            .status(404)
+            .json({ error: "Temporary account data not found or expired" });
+        }
+
+        // Anonymous users always pay $9.99 (first-time pricing)
+        const amount = 999; // $9.99 in cents
+        const amountDollar = "9.99";
+
+        // Create Stripe Payment Intent
+        if (!stripe) {
+          return res
+            .status(500)
+            .json({ error: "Payment processing not configured" });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: "usd",
+          metadata: {
+            sessionId,
+            type: "anonymous_report_unlock",
+            email: email || tempData.email,
+          },
+          description: "BizModelAI Anonymous Report Unlock - First time $9.99",
+        });
+
+        res.json({
+          success: true,
+          clientSecret: paymentIntent.client_secret,
+          amount: amountDollar,
+          isFirstReport: true, // Always true for anonymous users
+        });
+      } catch (error) {
+        console.error("Error creating anonymous report unlock payment:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      // Verify temporary user data exists
-      const tempData = await storage.getUnpaidUserEmail(sessionId);
-      if (!tempData) {
-        return res
-          .status(404)
-          .json({ error: "Temporary account data not found or expired" });
-      }
-
-      // Anonymous users always pay $9.99 (first-time pricing)
-      const amount = 999; // $9.99 in cents
-      const amountDollar = "9.99";
-
-      // Create Stripe Payment Intent
-      if (!stripe) {
-        return res
-          .status(500)
-          .json({ error: "Payment processing not configured" });
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: "usd",
-        metadata: {
-          sessionId,
-          type: "anonymous_report_unlock",
-          email: email || tempData.email,
-        },
-        description: "BizModelAI Anonymous Report Unlock - First time $9.99",
-      });
-
-      res.json({
-        success: true,
-        clientSecret: paymentIntent.client_secret,
-        amount: amountDollar,
-        isFirstReport: true, // Always true for anonymous users
-      });
-    } catch (error) {
-      console.error("Error creating anonymous report unlock payment:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Quiz attempts are now free for everyone - no payment needed
 
   // Check if report is unlocked for a specific quiz attempt
   app.get(
     "/api/report-unlock-status/:userId/:quizAttemptId",
-    async (req, res) => {
+    async (req: Request, res: Response) => {
       try {
         const { userId, quizAttemptId } = req.params;
 
@@ -1058,261 +1226,273 @@ export async function registerRoutes(app: Express): Promise<void> {
   );
 
   // PayPal payment creation endpoint
-  app.post("/api/create-paypal-payment", async (req, res) => {
-    try {
-      if (!ordersController) {
-        return res.status(500).json({ error: "PayPal not configured" });
-      }
-
-      const { userId, sessionId } = req.body;
-
-      // Handle temporary users (sessionId provided) vs permanent users (userId provided)
-      let userIdentifier;
-      let isTemporaryUser = false;
-
-      if (sessionId) {
-        // This is a temporary user
-        isTemporaryUser = true;
-        userIdentifier = sessionId;
-
-        // Verify temporary user data exists
-        const tempData = await storage.getUnpaidUserEmail(sessionId);
-        if (!tempData) {
-          return res
-            .status(404)
-            .json({ error: "Temporary account data not found or expired" });
-        }
-      } else if (userId) {
-        // This is a permanent user
-        const user = await storage.getUser(parseInt(userId));
-        if (!user) {
-          return res.status(404).json({ error: "User not found" });
+  app.post(
+    "/api/create-paypal-payment",
+    async (req: Request, res: Response) => {
+      try {
+        if (!ordersController) {
+          return res.status(500).json({ error: "PayPal not configured" });
         }
 
-        // Access pass concept removed - users pay per report instead
+        const { userId, sessionId } = req.body;
 
-        userIdentifier = userId.toString();
-      } else {
-        return res.status(400).json({ error: "Missing userId or sessionId" });
-      }
+        // Handle temporary users (sessionId provided) vs permanent users (userId provided)
+        let userIdentifier;
+        let isTemporaryUser = false;
 
-      // Determine payment amount and type
-      let amount, retakesGranted, paymentType, description;
+        if (sessionId) {
+          // This is a temporary user
+          isTemporaryUser = true;
+          userIdentifier = sessionId;
 
-      if (!isTemporaryUser && userId) {
-        const user = await storage.getUser(parseInt(userId));
-        if (false) {
-          // Access pass logic removed
-          // Old logic removed
-          amount = "4.99";
-          retakesGranted = "2";
-          paymentType = "retakes";
-          description = "BizModelAI Quiz Retakes - 2 additional attempts";
+          // Verify temporary user data exists
+          const tempData = await storage.getUnpaidUserEmail(sessionId);
+          if (!tempData) {
+            return res
+              .status(404)
+              .json({ error: "Temporary account data not found or expired" });
+          }
+        } else if (userId) {
+          // This is a permanent user
+          const user = await storage.getUser(parseInt(userId));
+          if (!user) {
+            return res.status(404).json({ error: "User not found" });
+          }
+
+          // Access pass concept removed - users pay per report instead
+
+          userIdentifier = userId.toString();
         } else {
-          // New user needs full access - $9.99
+          return res.status(400).json({ error: "Missing userId or sessionId" });
+        }
+
+        // Determine payment amount and type
+        let amount, retakesGranted, paymentType, description;
+
+        if (!isTemporaryUser && userId) {
+          const user = await storage.getUser(parseInt(userId));
+          if (false) {
+            // Access pass logic removed
+            // Old logic removed
+            amount = "4.99";
+            retakesGranted = "2";
+            paymentType = "retakes";
+            description = "BizModelAI Quiz Retakes - 2 additional attempts";
+          } else {
+            // New user needs full access - $9.99
+            amount = "9.99";
+            retakesGranted = "3";
+            paymentType = "access_pass";
+            description = "BizModelAI Access Pass - Unlock all features";
+          }
+        } else {
+          // Temporary user always gets full access - $9.99
           amount = "9.99";
           retakesGranted = "3";
           paymentType = "access_pass";
           description = "BizModelAI Access Pass - Unlock all features";
         }
-      } else {
-        // Temporary user always gets full access - $9.99
-        amount = "9.99";
-        retakesGranted = "3";
-        paymentType = "access_pass";
-        description = "BizModelAI Access Pass - Unlock all features";
-      }
 
-      // Create PayPal order
-      const request = {
-        body: {
-          intent: "CAPTURE" as any,
-          purchaseUnits: [
-            {
-              amount: {
-                currencyCode: "USD",
-                value: amount,
+        // Create PayPal order
+        const request = {
+          body: {
+            intent: "CAPTURE" as any,
+            purchaseUnits: [
+              {
+                amount: {
+                  currencyCode: "USD",
+                  value: amount,
+                },
+                description: description,
+                customId: JSON.stringify({
+                  userIdentifier,
+                  type: paymentType,
+                  retakesGranted,
+                  isTemporaryUser: isTemporaryUser.toString(),
+                  sessionId: sessionId || "",
+                }),
               },
-              description: description,
-              customId: JSON.stringify({
-                userIdentifier,
-                type: paymentType,
-                retakesGranted,
-                isTemporaryUser: isTemporaryUser.toString(),
-                sessionId: sessionId || "",
-              }),
+            ],
+            applicationContext: {
+              returnUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-success`,
+              cancelUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-cancelled`,
             },
-          ],
-          applicationContext: {
-            returnUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-success`,
-            cancelUrl: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-cancelled`,
           },
-        },
-      };
+        };
 
-      const order = await ordersController.createOrder(request);
+        const order = await ordersController.createOrder(request);
 
-      if (!order.result?.id) {
-        throw new Error("Failed to create PayPal order");
-      }
+        if (!order.result?.id) {
+          throw new Error("Failed to create PayPal order");
+        }
 
-      // For temporary users, we don't create a payment record yet
-      // For permanent users, create payment record
-      let paymentId = null;
-      if (!isTemporaryUser) {
-        const payment = await storage.createPayment({
-          userId: parseInt(userId),
-          amount: amount,
-          currency: "usd",
-          type: paymentType,
-          status: "pending",
-          stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
+        // For temporary users, we don't create a payment record yet
+        // For permanent users, create payment record
+        let paymentId = null;
+        if (!isTemporaryUser) {
+          const payment = await storage.createPayment({
+            userId: parseInt(userId),
+            amount: amount,
+            currency: "usd",
+            type: paymentType,
+            status: "pending",
+            stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
+          });
+          paymentId = payment.id;
+        }
+
+        res.json({
+          success: true,
+          orderID: order.result.id,
+          paymentId,
         });
-        paymentId = payment.id;
+      } catch (error) {
+        console.error("Error creating PayPal payment:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      res.json({
-        success: true,
-        orderID: order.result.id,
-        paymentId,
-      });
-    } catch (error) {
-      console.error("Error creating PayPal payment:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // PayPal payment capture endpoint
-  app.post("/api/capture-paypal-payment", async (req, res) => {
-    try {
-      if (!ordersController) {
-        return res.status(500).json({ error: "PayPal not configured" });
-      }
-
-      const { orderID } = req.body;
-
-      if (!orderID) {
-        return res.status(400).json({ error: "Missing orderID" });
-      }
-
-      // Capture the PayPal order
-      const request = {
-        id: orderID,
-        body: {},
-      };
-
-      const capture = await ordersController.captureOrder(request);
-
-      if (capture.result?.status !== "COMPLETED") {
-        throw new Error("PayPal payment capture failed");
-      }
-
-      // Extract custom data from the purchase unit
-      const purchaseUnit = capture.result.purchaseUnits?.[0];
-      if (!purchaseUnit?.customId) {
-        throw new Error("Missing payment metadata");
-      }
-
-      const metadata = JSON.parse(purchaseUnit.customId);
-      const {
-        userIdentifier,
-        type: paymentType,
-        retakesGranted,
-        isTemporaryUser,
-        sessionId,
-      } = metadata;
-
-      // Process the payment similar to Stripe webhook
-      if (isTemporaryUser === "true") {
-        // Handle temporary user payment
-        if (!sessionId) {
-          throw new Error("Missing session ID for temporary user");
+  app.post(
+    "/api/capture-paypal-payment",
+    async (req: Request, res: Response) => {
+      try {
+        if (!ordersController) {
+          return res.status(500).json({ error: "PayPal not configured" });
         }
 
-        // Get the temporary user data
-        const tempData = await storage.getUnpaidUserEmail(sessionId);
-        if (!tempData) {
-          throw new Error("Temporary user data not found");
+        const { orderID } = req.body;
+
+        if (!orderID) {
+          return res.status(400).json({ error: "Missing orderID" });
         }
 
-        // Extract signup data from tempData.quizData (which contains signup info)
-        const signupData = tempData.quizData as any;
+        // Capture the PayPal order
+        const request = {
+          id: orderID,
+          body: {},
+        };
 
-        // Create the actual user account
-        const user = await storage.createUser({
-          username: tempData.email, // Use email as username
-          password: signupData.passwordHash || "temp_password",
-        });
+        const capture = await ordersController.captureOrder(request);
 
-        // Update the user with additional fields
-        await storage.updateUser(user.id, {
-          email: tempData.email,
-        });
+        if (capture.result?.status !== "COMPLETED") {
+          throw new Error("PayPal payment capture failed");
+        }
 
-        // Create payment record
-        const payment = await storage.createPayment({
-          userId: user.id,
-          amount: purchaseUnit.amount?.value || "9.99",
-          currency: "usd",
+        // Extract custom data from the purchase unit
+        const purchaseUnit = capture.result.purchaseUnits?.[0];
+        if (!purchaseUnit?.customId) {
+          throw new Error("Missing payment metadata");
+        }
+
+        const metadata = JSON.parse(purchaseUnit.customId);
+        const {
+          userIdentifier,
           type: paymentType,
-          stripePaymentIntentId: orderID, // Using this field for PayPal order ID
-        });
+          retakesGranted,
+          isTemporaryUser,
+          sessionId,
+        } = metadata;
 
-        // Complete the payment
-        await storage.completePayment(payment.id);
+        // Process the payment similar to Stripe webhook
+        if (isTemporaryUser === "true") {
+          // Handle temporary user payment
+          if (!sessionId) {
+            throw new Error("Missing session ID for temporary user");
+          }
 
-        // Temporary data cleanup happens automatically via expiration
+          // Get the temporary user data
+          const tempData = await storage.getUnpaidUserEmail(sessionId);
+          if (!tempData) {
+            throw new Error("Temporary user data not found");
+          }
 
-        console.log(
-          `PayPal payment completed: ${paymentType} for temporary user converted to user ${user.id}`,
-        );
-      } else {
-        // Handle permanent user payment
-        const userId = parseInt(userIdentifier);
+          // Extract signup data from tempData.quizData (which contains signup info)
+          const signupData = tempData.quizData as any;
 
-        // Find the payment record in our database
-        const payments = await storage.getPaymentsByUser(userId);
-        const payment = payments.find(
-          (p) => p.stripePaymentIntentId === orderID,
-        );
+          // Create the actual user account
+          const user = await storage.createUser({
+            username: tempData.email, // Use email as username
+            password: signupData.passwordHash || "temp_password",
+          });
 
-        if (!payment) {
-          console.error("Payment record not found for PayPal order:", orderID);
-          throw new Error("Payment record not found");
+          // Update the user with additional fields
+          await storage.updateUser(user.id, {
+            email: tempData.email,
+          });
+
+          // Create payment record
+          const payment = await storage.createPayment({
+            userId: user.id,
+            amount: purchaseUnit.amount?.value || "9.99",
+            currency: "usd",
+            type: paymentType,
+            stripePaymentIntentId: orderID, // Using this field for PayPal order ID
+          });
+
+          // Complete the payment
+          await storage.completePayment(payment.id);
+
+          // Temporary data cleanup happens automatically via expiration
+
+          console.log(
+            `PayPal payment completed: ${paymentType} for temporary user converted to user ${user.id}`,
+          );
+        } else {
+          // Handle permanent user payment
+          const userId = parseInt(userIdentifier);
+
+          // Find the payment record in our database
+          const payments = await storage.getPaymentsByUser(userId);
+          const payment = payments.find(
+            (p) => p.stripePaymentIntentId === orderID,
+          );
+
+          if (!payment) {
+            console.error(
+              "Payment record not found for PayPal order:",
+              orderID,
+            );
+            throw new Error("Payment record not found");
+          }
+
+          // Complete the payment in our system
+          await storage.completePayment(payment.id);
+
+          console.log(
+            `PayPal payment completed: ${paymentType} for user ${userId}`,
+          );
         }
 
-        // Complete the payment in our system
-        await storage.completePayment(payment.id);
-
-        console.log(
-          `PayPal payment completed: ${paymentType} for user ${userId}`,
-        );
+        res.json({
+          success: true,
+          captureID: capture.result.id,
+        });
+      } catch (error) {
+        console.error("Error capturing PayPal payment:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
+    },
+  );
 
-      res.json({
-        success: true,
-        captureID: capture.result.id,
-      });
-    } catch (error) {
-      console.error("Error capturing PayPal payment:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  app.get(
+    "/api/payment-history/:userId",
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const payments = await storage.getPaymentsByUser(userId);
 
-  app.get("/api/payment-history/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const payments = await storage.getPaymentsByUser(userId);
-
-      res.json(payments);
-    } catch (error) {
-      console.error("Error getting payment history:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json(payments);
+      } catch (error) {
+        console.error("Error getting payment history:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Stripe webhook endpoint
-  app.post("/api/stripe/webhook", async (req, res) => {
+  app.post("/api/stripe/webhook", async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -1492,21 +1672,24 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Business resources endpoint
-  app.get("/api/business-resources/:businessModel", async (req, res) => {
-    try {
-      const businessModel = req.params.businessModel;
-      const resources = await generateBusinessResources(businessModel);
+  app.get(
+    "/api/business-resources/:businessModel",
+    async (req: Request, res: Response) => {
+      try {
+        const businessModel = req.params.businessModel;
+        const resources = await generateBusinessResources(businessModel);
 
-      res.json(resources);
-    } catch (error) {
-      console.error("Error generating business resources:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json(resources);
+      } catch (error) {
+        console.error("Error generating business resources:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Admin refund endpoints
   // Get all payments with optional pagination (admin only)
-  app.get("/api/admin/payments", async (req, res) => {
+  app.get("/api/admin/payments", async (req: Request, res: Response) => {
     try {
       // TODO: Add admin authentication check here
       // For now, we'll add a simple API key check
@@ -1538,7 +1721,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Process a refund (admin only)
-  app.post("/api/admin/refund", async (req, res) => {
+  app.post("/api/admin/refund", async (req: Request, res: Response) => {
     try {
       // TODO: Add admin authentication check here
       const adminKey = req.headers["x-admin-key"];
@@ -1662,7 +1845,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Get all refunds (admin only)
-  app.get("/api/admin/refunds", async (req, res) => {
+  app.get("/api/admin/refunds", async (req: Request, res: Response) => {
     try {
       const adminKey = req.headers["x-admin-key"];
       if (adminKey !== process.env.ADMIN_API_KEY) {
@@ -1678,12 +1861,14 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // PDF generation endpoint
-  app.post("/api/generate-pdf", async (req, res) => {
+  app.post("/api/generate-pdf", async (req: Request, res: Response) => {
     try {
-      const { quizData, userEmail } = req.body;
+      const { quizData, userEmail, aiAnalysis, topBusinessPath } = req.body;
 
       console.log("PDF generation request received", {
         hasQuizData: !!quizData,
+        hasAIAnalysis: !!aiAnalysis,
+        hasTopBusinessPath: !!topBusinessPath,
         userEmail,
       });
 
@@ -1697,10 +1882,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         : "https://bizmodelai.com";
       console.log("Base URL:", baseUrl);
 
-      // Generate PDF
+      // Generate PDF with AI data included
       const pdfBuffer = await pdfService.generatePDF({
         quizData,
         userEmail,
+        aiAnalysis,
+        topBusinessPath,
         baseUrl,
       });
 
@@ -1744,7 +1931,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Email endpoints
-  app.post("/api/send-quiz-results", async (req, res) => {
+  app.post("/api/send-quiz-results", async (req: Request, res: Response) => {
     try {
       const { email, quizData } = req.body;
 
@@ -1765,7 +1952,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post("/api/send-welcome-email", async (req, res) => {
+  app.post("/api/send-welcome-email", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
@@ -1786,7 +1973,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post("/api/send-full-report", async (req, res) => {
+  app.post("/api/send-full-report", async (req: Request, res: Response) => {
     try {
       const { email, quizData } = req.body;
 
@@ -1808,23 +1995,25 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Generate detailed "Why This Fits You" descriptions for top 3 business matches
-  app.post("/api/generate-business-fit-descriptions", async (req, res) => {
-    try {
-      const { quizData, businessMatches } = req.body;
+  app.post(
+    "/api/generate-business-fit-descriptions",
+    async (req: Request, res: Response) => {
+      try {
+        const { quizData, businessMatches } = req.body;
 
-      if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
-        return res
-          .status(400)
-          .json({ error: "Missing or invalid quiz data or business matches" });
-      }
+        if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
+          return res.status(400).json({
+            error: "Missing or invalid quiz data or business matches",
+          });
+        }
 
-      const descriptions = [];
+        const descriptions = [];
 
-      for (let i = 0; i < businessMatches.length; i++) {
-        const match = businessMatches[i];
-        const rank = i + 1;
+        for (let i = 0; i < businessMatches.length; i++) {
+          const match = businessMatches[i];
+          const rank = i + 1;
 
-        const prompt = `Based on this user's quiz responses, generate a detailed "Why This Fits You" description for their ${rank === 1 ? "top" : rank === 2 ? "second" : "third"} business match.
+          const prompt = `Based on this user's quiz responses, generate a detailed "Why This Fits You" description for their ${rank === 1 ? "top" : rank === 2 ? "second" : "third"} business match.
 
 User Quiz Data:
 - Main Motivation: ${quizData.mainMotivation}
@@ -1868,84 +2057,87 @@ Reference specific quiz data points and explain the connections. Make it persona
 
 CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in the user profile. If the user selected a range, always refer to the full range, never specific numbers within it.`;
 
-        const openaiResponse = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          const openaiResponse = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models fit individual users based on their quiz responses.",
+                  },
+                  {
+                    role: "user",
+                    content: prompt,
+                  },
+                ],
+                temperature: 0.7,
+                max_tokens: 500,
+              }),
             },
-            body: JSON.stringify({
-              model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models fit individual users based on their quiz responses.",
-                },
-                {
-                  role: "user",
-                  content: prompt,
-                },
-              ],
-              temperature: 0.7,
-              max_tokens: 500,
-            }),
-          },
-        );
+          );
 
-        if (!openaiResponse.ok) {
-          throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          if (!openaiResponse.ok) {
+            throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          }
+
+          const data = await openaiResponse.json();
+          const content = data.choices[0].message.content;
+
+          descriptions.push({
+            businessId: match.id,
+            description:
+              content ||
+              `This business model aligns well with your ${quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${quizData.weeklyTimeCommitment} hours/week availability. Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a suitable match for your entrepreneurial journey.`,
+          });
         }
 
-        const data = await openaiResponse.json();
-        const content = data.choices[0].message.content;
+        res.json({ descriptions });
+      } catch (error) {
+        console.error("Error generating business fit descriptions:", error);
 
-        descriptions.push({
-          businessId: match.id,
-          description:
-            content ||
-            `This business model aligns well with your ${quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${quizData.weeklyTimeCommitment} hours/week availability. Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a suitable match for your entrepreneurial journey.`,
-        });
-      }
-
-      res.json({ descriptions });
-    } catch (error) {
-      console.error("Error generating business fit descriptions:", error);
-
-      // Return fallback descriptions
-      const fallbackDescriptions = req.body.businessMatches.map(
-        (match: any, index: number) => ({
-          businessId: match.id,
-          description: `This business model aligns well with your ${req.body.quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${req.body.quizData.weeklyTimeCommitment} hours/week availability. Your ${req.body.quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${req.body.quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a ${index === 0 ? "perfect" : index === 1 ? "excellent" : "good"} match for your entrepreneurial journey.
+        // Return fallback descriptions
+        const fallbackDescriptions = req.body.businessMatches.map(
+          (match: any, index: number) => ({
+            businessId: match.id,
+            description: `This business model aligns well with your ${req.body.quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${req.body.quizData.weeklyTimeCommitment} hours/week availability. Your ${req.body.quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${req.body.quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a ${index === 0 ? "perfect" : index === 1 ? "excellent" : "good"} match for your entrepreneurial journey.
 
 ${index === 0 ? "As your top match, this path offers the best alignment with your goals and preferences." : index === 1 ? "This represents a strong secondary option that complements your primary strengths." : "This provides a solid alternative path that matches your core capabilities."} Your ${req.body.quizData.learningPreference?.replace("-", " ")} learning style and ${req.body.quizData.workStructurePreference?.replace("-", " ")} work preference make this business model particularly suitable for your success.`,
-        }),
-      );
+          }),
+        );
 
-      res.json({ descriptions: fallbackDescriptions });
-    }
-  });
+        res.json({ descriptions: fallbackDescriptions });
+      }
+    },
+  );
 
   // Generate detailed "Why This Doesn't Fit Your Current Profile" descriptions for bottom 3 business matches
-  app.post("/api/generate-business-avoid-descriptions", async (req, res) => {
-    try {
-      const { quizData, businessMatches } = req.body;
+  app.post(
+    "/api/generate-business-avoid-descriptions",
+    async (req: Request, res: Response) => {
+      try {
+        const { quizData, businessMatches } = req.body;
 
-      if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
-        return res
-          .status(400)
-          .json({ error: "Missing or invalid quiz data or business matches" });
-      }
+        if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
+          return res.status(400).json({
+            error: "Missing or invalid quiz data or business matches",
+          });
+        }
 
-      const descriptions = [];
+        const descriptions = [];
 
-      for (let i = 0; i < businessMatches.length; i++) {
-        const match = businessMatches[i];
-        const rank = i + 1;
+        for (let i = 0; i < businessMatches.length; i++) {
+          const match = businessMatches[i];
+          const rank = i + 1;
 
-        const prompt = `Based on this user's quiz responses, generate a detailed "Why This Doesn't Fit Your Current Profile" description for their ${rank === 1 ? "lowest scoring" : rank === 2 ? "second lowest scoring" : "third lowest scoring"} business match.
+          const prompt = `Based on this user's quiz responses, generate a detailed "Why This Doesn't Fit Your Current Profile" description for their ${rank === 1 ? "lowest scoring" : rank === 2 ? "second lowest scoring" : "third lowest scoring"} business match.
 
 User Quiz Data:
 - Main Motivation: ${quizData.mainMotivation}
@@ -1989,66 +2181,67 @@ Reference specific quiz data points and explain the misalignments. Be honest but
 
 CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in the user profile. If the user selected a range, always refer to the full range, never specific numbers within it.`;
 
-        const openaiResponse = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          const openaiResponse = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models don't fit individual users based on their quiz responses. Be honest but constructive, helping users understand misalignments.",
+                  },
+                  {
+                    role: "user",
+                    content: prompt,
+                  },
+                ],
+                temperature: 0.7,
+                max_tokens: 500,
+              }),
             },
-            body: JSON.stringify({
-              model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models don't fit individual users based on their quiz responses. Be honest but constructive, helping users understand misalignments.",
-                },
-                {
-                  role: "user",
-                  content: prompt,
-                },
-              ],
-              temperature: 0.7,
-              max_tokens: 500,
-            }),
-          },
-        );
+          );
 
-        if (!openaiResponse.ok) {
-          throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          if (!openaiResponse.ok) {
+            throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          }
+
+          const data = await openaiResponse.json();
+          const content = data.choices[0].message.content;
+
+          descriptions.push({
+            businessId: match.id,
+            description:
+              content ||
+              `This business model doesn't align well with your current profile. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable. Your ${quizData.techSkillsRating}/5 technical skills and ${quizData.selfMotivationLevel}/5 self-motivation level indicate potential challenges with this path. Consider focusing on business models that better match your strengths and current situation.`,
+          });
         }
 
-        const data = await openaiResponse.json();
-        const content = data.choices[0].message.content;
+        res.json({ descriptions });
+      } catch (error) {
+        console.error("Error generating business avoid descriptions:", error);
 
-        descriptions.push({
-          businessId: match.id,
-          description:
-            content ||
-            `This business model doesn't align well with your current profile. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable. Your ${quizData.techSkillsRating}/5 technical skills and ${quizData.selfMotivationLevel}/5 self-motivation level indicate potential challenges with this path. Consider focusing on business models that better match your strengths and current situation.`,
-        });
+        // Return fallback descriptions
+        const fallbackDescriptions = req.body.businessMatches.map(
+          (match: any, index: number) => ({
+            businessId: match.id,
+            description: `This business model scored ${match.fitScore}% for your profile, indicating significant misalignment with your current goals, skills, and preferences. Based on your quiz responses, you would likely face substantial challenges in this field that could impact your success. Consider focusing on higher-scoring business models that better match your natural strengths and current situation.`,
+          }),
+        );
+
+        res.json({ descriptions: fallbackDescriptions });
       }
-
-      res.json({ descriptions });
-    } catch (error) {
-      console.error("Error generating business avoid descriptions:", error);
-
-      // Return fallback descriptions
-      const fallbackDescriptions = req.body.businessMatches.map(
-        (match: any, index: number) => ({
-          businessId: match.id,
-          description: `This business model scored ${match.fitScore}% for your profile, indicating significant misalignment with your current goals, skills, and preferences. Based on your quiz responses, you would likely face substantial challenges in this field that could impact your success. Consider focusing on higher-scoring business models that better match your natural strengths and current situation.`,
-        }),
-      );
-
-      res.json({ descriptions: fallbackDescriptions });
-    }
-  });
+    },
+  );
 
   // Enhanced email functionality for unpaid users
-  app.post("/api/email-results", async (req, res) => {
+  app.post("/api/email-results", async (req: Request, res: Response) => {
     try {
       const { sessionId, email, quizData, isPaidUser } = req.body;
 
@@ -2138,24 +2331,27 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Get stored email for unpaid users
-  app.get("/api/get-stored-email/:sessionId", async (req, res) => {
-    try {
-      const { sessionId } = req.params;
-      const storedEmail = await storage.getUnpaidUserEmail(sessionId);
+  app.get(
+    "/api/get-stored-email/:sessionId",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        const storedEmail = await storage.getUnpaidUserEmail(sessionId);
 
-      if (storedEmail) {
-        res.json({ email: storedEmail.email });
-      } else {
-        res.json({ email: null });
+        if (storedEmail) {
+          res.json({ email: storedEmail.email });
+        } else {
+          res.json({ email: null });
+        }
+      } catch (error) {
+        console.error("Error getting stored email:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-    } catch (error) {
-      console.error("Error getting stored email:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Get all collected emails endpoint for marketing/advertising
-  app.get("/api/admin/all-emails", async (req, res) => {
+  app.get("/api/admin/all-emails", async (req: Request, res: Response) => {
     try {
       console.log("Fetching all collected emails...");
 
@@ -2217,7 +2413,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Export email list as CSV for marketing tools
-  app.get("/api/admin/emails-csv", async (req, res) => {
+  app.get("/api/admin/emails-csv", async (req: Request, res: Response) => {
     try {
       // Get emails from paid users
       if (!db) {
@@ -2274,7 +2470,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Test email endpoint for debugging
-  app.post("/api/test-email", async (req, res) => {
+  app.post("/api/test-email", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
@@ -2311,50 +2507,56 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Data cleanup endpoint (for manual triggering or cron jobs)
-  app.post("/api/admin/cleanup-expired-data", async (req, res) => {
-    try {
-      await storage.cleanupExpiredData();
-      res.json({ success: true, message: "Expired data cleanup completed" });
-    } catch (error) {
-      console.error("Error during data cleanup:", error);
-      res.status(500).json({ error: "Data cleanup failed" });
-    }
-  });
+  app.post(
+    "/api/admin/cleanup-expired-data",
+    async (req: Request, res: Response) => {
+      try {
+        await storage.cleanupExpiredData();
+        res.json({ success: true, message: "Expired data cleanup completed" });
+      } catch (error) {
+        console.error("Error during data cleanup:", error);
+        res.status(500).json({ error: "Data cleanup failed" });
+      }
+    },
+  );
 
   // Get user data retention status
-  app.get("/api/auth/data-retention-status", async (req, res) => {
-    try {
-      const userId = getUserIdFromRequest(req);
+  app.get(
+    "/api/auth/data-retention-status",
+    async (req: Request, res: Response) => {
+      try {
+        const userId = getUserIdFromRequest(req);
 
-      if (!userId) {
-        console.log("Data retention status: Not authenticated", {
-          sessionUserId: req.session?.userId,
-          cacheUserId: userId,
-          sessionKey: getSessionKey(req),
+        if (!userId) {
+          console.log("Data retention status: Not authenticated", {
+            sessionUserId: req.session?.userId,
+            cacheUserId: userId,
+            sessionKey: getSessionKey(req),
+          });
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        const isPaid = await storage.isPaidUser(userId);
+        const user = await storage.getUser(userId);
+
+        res.json({
+          isPaidUser: isPaid,
+          dataRetentionPolicy: isPaid
+            ? "permanent"
+            : "24_hours_from_quiz_completion",
+          hasAccessPass: false, // Access pass concept removed
+          accountCreatedAt: user?.createdAt,
+          dataWillBeDeletedIfUnpaid: !isPaid,
         });
-        return res.status(401).json({ error: "Not authenticated" });
+      } catch (error) {
+        console.error("Error getting data retention status:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      const isPaid = await storage.isPaidUser(userId);
-      const user = await storage.getUser(userId);
-
-      res.json({
-        isPaidUser: isPaid,
-        dataRetentionPolicy: isPaid
-          ? "permanent"
-          : "24_hours_from_quiz_completion",
-        hasAccessPass: false, // Access pass concept removed
-        accountCreatedAt: user?.createdAt,
-        dataWillBeDeletedIfUnpaid: !isPaid,
-      });
-    } catch (error) {
-      console.error("Error getting data retention status:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Test endpoint for debugging retake issue
-  app.post("/api/test-retake-flow", async (req, res) => {
+  app.post("/api/test-retake-flow", async (req: Request, res: Response) => {
     try {
       console.log("=== Testing retake flow ===");
 

@@ -77,13 +77,13 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
         );
         setHasCompletedQuiz(true);
 
-        // In development mode, also unlock analysis for testing
-        if (import.meta.env.MODE === "development") {
-          console.log(
-            "PaywallContext: Development mode - also unlocking analysis",
-          );
-          setHasUnlockedAnalysis(true);
-        }
+        // Development mode bypass disabled to ensure paywall always works
+        // if (import.meta.env.MODE === "development") {
+        //   console.log(
+        //     "PaywallContext: Development mode - also unlocking analysis",
+        //   );
+        //   setHasUnlockedAnalysis(true);
+        // }
 
         // Update localStorage for consistency
         localStorage.setItem("hasCompletedQuiz", "true");
@@ -98,19 +98,20 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
           );
           setHasCompletedQuiz(true);
 
-          // In development mode, also unlock analysis
-          if (import.meta.env.MODE === "development") {
-            console.log(
-              "PaywallContext: Development mode - also unlocking analysis after error",
-            );
-            setHasUnlockedAnalysis(true);
-          }
+          // Development mode bypass disabled to ensure paywall always works
+          // if (import.meta.env.MODE === "development") {
+          //   console.log(
+          //     "PaywallContext: Development mode - also unlocking analysis after error",
+          //   );
+          //   setHasUnlockedAnalysis(true);
+          // }
 
           // Update localStorage for consistency
           localStorage.setItem("hasCompletedQuiz", "true");
-          if (import.meta.env.MODE === "development") {
-            localStorage.setItem("hasUnlockedAnalysis", "true");
-          }
+          // Development mode bypass disabled
+          // if (import.meta.env.MODE === "development") {
+          //   localStorage.setItem("hasUnlockedAnalysis", "true");
+          // }
         }
       }
     };

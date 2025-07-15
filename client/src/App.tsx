@@ -9,6 +9,10 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PaywallProvider } from "./contexts/PaywallContext";
+
+// Import debug utilities (available as window.debugOpenAI and window.debugAIContent)
+import "./utils/debugOpenAI";
+import "./utils/debugAIContent";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -420,8 +424,9 @@ const AIReportLoadingWrapper: React.FC<{
   setShowCongratulations: (show: boolean) => void;
 }> = ({ quizData, setShowCongratulations }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const handleAILoadingComplete = (data: any) => {
+  const handleAILoadingComplete = async (data: any) => {
     console.log(
       "AI loading complete after quiz, checking congratulations tracking",
     );
@@ -429,18 +434,56 @@ const AIReportLoadingWrapper: React.FC<{
     // Store loaded report data in localStorage
     localStorage.setItem("loadedReportData", JSON.stringify(data));
 
+    // Save AI content to database if we have a quiz attempt ID and user is authenticated
+    const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+    if (currentQuizAttemptId && data && user) {
+      try {
+        const response = await fetch(
+          `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ aiContent: data }),
+          },
+        );
+
+        if (response.ok) {
+          console.log(
+            `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
+          );
+        } else {
+          console.error(
+            "Failed to save AI content to database:",
+            response.status,
+          );
+        }
+      } catch (error) {
+        console.error("Error saving AI content to database:", error);
+      }
+    } else if (currentQuizAttemptId && data && !user) {
+      console.log(
+        "Skipping AI content save to database - user not authenticated",
+      );
+    }
+
     // Check if congratulations was already shown
     const congratulationsShown = localStorage.getItem("congratulationsShown");
     if (!congratulationsShown || congratulationsShown === "false") {
       console.log("Showing congratulations for the first time");
       setShowCongratulations(true);
       localStorage.setItem("congratulationsShown", "true");
+      // Navigate to results page where congratulations popup will be handled
+      navigate("/results");
     } else {
-      console.log("Congratulations already shown, skipping");
+      console.log(
+        "Congratulations already shown, navigating directly to results",
+      );
+      // Navigate directly to results page
+      navigate("/results");
     }
-
-    // Navigate back to quiz route where congratulations popup will be handled
-    navigate("/quiz");
   };
 
   if (!quizData) {

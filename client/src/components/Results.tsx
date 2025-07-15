@@ -191,11 +191,18 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   } = usePaywall();
 
   // In pure pay-per-report model, check if this specific report is unlocked
-  // Basic access is always available, but full reports require payment
-  const canViewFullReport = user ? isReportUnlocked : true;
+  // Basic access shows the first result, but full reports require payment for both auth/non-auth users
+  const canViewFullReport = user ? isReportUnlocked : false;
 
   useEffect(() => {
     console.log("Results component received quizData:", quizData);
+
+    // Ensure quiz data is preserved in localStorage to prevent navigation issues
+    if (quizData) {
+      localStorage.setItem("quizData", JSON.stringify(quizData));
+      localStorage.setItem("hasCompletedQuiz", "true");
+      console.log("✅ Quiz data safely stored in localStorage");
+    }
 
     // Force clear ALL AI caches to ensure fresh and accurate results
     console.log("🧹 Force clearing all AI caches for fresh quiz results...");
@@ -347,8 +354,54 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // This function is no longer used - AI content comes from loading page
   const generateAIContent = async (paths: BusinessPath[]) => {
     console.log(
-      "��️ generateAIContent called but should not be used - AI content comes from loading page",
+      "⚠️ generateAIContent called but should not be used - AI content comes from loading page",
     );
+  };
+
+  // Function to load cached preview data (NO API calls on Results page!)
+  const loadCachedPreviewData = async () => {
+    try {
+      console.log("✅ Loading cached preview data from quiz loading phase...");
+      setIsGeneratingAI(true);
+
+      // Get cached preview data from localStorage (set during quiz loading)
+      const cachedData = localStorage.getItem("quiz-completion-ai-insights");
+      if (cachedData) {
+        const aiData = JSON.parse(cachedData);
+        if (aiData.insights && aiData.complete) {
+          console.log("✅ Using cached preview insights from quiz loading");
+          setAiInsights(aiData.insights);
+
+          // Generate fallback analysis for top path preview
+          const topPath = personalizedPaths[0];
+          if (topPath) {
+            const fallbackAnalysis = generateFallbackAnalysis();
+            setAiAnalysis(fallbackAnalysis);
+          }
+
+          setIsGeneratingAI(false);
+          return;
+        }
+      }
+
+      // Fallback if no cached data available
+      console.log("⚠️ No cached preview data found, using fallback content");
+      const topPath = personalizedPaths[0];
+      const fallbackInsights = generateFallbackInsights(topPath);
+      const fallbackAnalysis = generateFallbackAnalysis();
+      setAiInsights(fallbackInsights);
+      setAiAnalysis(fallbackAnalysis);
+      setIsGeneratingAI(false);
+    } catch (error) {
+      console.error("Error loading cached preview data:", error);
+
+      // Use fallback content if loading cached data fails
+      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
+      const fallbackAnalysis = generateFallbackAnalysis();
+      setAiInsights(fallbackInsights);
+      setAiAnalysis(fallbackAnalysis);
+      setIsGeneratingAI(false);
+    }
   };
 
   // Generate full AI content only when user accesses specific pages (on-demand)
@@ -371,114 +424,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Use cached AI data from loading page or set fallback content
   useEffect(() => {
     if (personalizedPaths.length > 0) {
-      // Check for cached AI data from the loading page first
-      const cachedAIData = localStorage.getItem("quiz-completion-ai-insights");
-
-      console.log("���� DEBUGGING AI INSIGHTS LOADING:");
-      console.log("Cached AI data found:", !!cachedAIData);
-
-      if (cachedAIData) {
-        try {
-          const parsedData = JSON.parse(cachedAIData);
-          console.log("Parsed cached data:", parsedData);
-
-          const { insights, analysis, complete, error, timestamp } = parsedData;
-          const isRecent = Date.now() - timestamp < 5 * 60 * 1000; // 5 minutes
-
-          console.log("Data validity check:", {
-            isRecent,
-            hasInsights: !!insights,
-            isComplete: complete,
-            hasError: error,
-            timeAgo:
-              Math.round((Date.now() - timestamp) / 1000) + " seconds ago",
-          });
-
-          if (isRecent && insights && complete && !error) {
-            // Verify cached insights match current top business model
-            const currentTopModel = personalizedPaths[0]?.name;
-            const insightsMentionsModel =
-              insights.personalizedSummary?.includes(currentTopModel || "");
-
-            console.log("🔍 Business model consistency check:");
-            console.log("Current top model:", currentTopModel);
-            console.log("Insights mention model:", insightsMentionsModel);
-            console.log(
-              "Insights preview:",
-              insights.personalizedSummary?.substring(0, 150) + "...",
-            );
-
-            if (insightsMentionsModel) {
-              console.log(
-                "✅ Using cached AI insights from loading page - matches current model",
-              );
-              setAiInsights(insights);
-            } else {
-              console.log(
-                "❌ Cached insights don't match current top model, using fallback",
-              );
-              const fallbackInsights = generateFallbackInsights(
-                personalizedPaths[0],
-              );
-              setAiInsights(fallbackInsights);
-            }
-
-            // If analysis is also cached, use it
-            if (analysis) {
-              setAiAnalysis(analysis);
-              // Cache this for the FullReport to use
-              aiCacheManager.cacheAIContent(
-                quizData,
-                insights,
-                analysis,
-                personalizedPaths[0],
-              );
-            } else {
-              console.log(
-                "📝 No analysis cached, using fallback analysis only",
-              );
-              const fallbackAnalysis = generateFallbackAnalysis();
-              setAiAnalysis(fallbackAnalysis);
-              // Cache the fallback analysis
-              aiCacheManager.cacheAIContent(
-                quizData,
-                insights,
-                fallbackAnalysis,
-                personalizedPaths[0],
-              );
-            }
-
-            setIsGeneratingAI(false);
-            return;
-          } else {
-            console.log(
-              "❌ Cached data invalid - falling back to generic content",
-            );
-          }
-        } catch (error) {
-          console.error("Error parsing cached AI data:", error);
-        }
-      } else {
-        console.log("❌ No cached AI data found in localStorage");
-      }
-
-      // Fallback if no valid cached data - ensure consistency with actual business models
-      const topBusinessModel = personalizedPaths[0];
-      console.log(
-        `🚀 Setting fallback AI content for ${topBusinessModel?.name || "unknown business model"} (no valid AI data from loading page)`,
-      );
-      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
-      const fallbackAnalysis = generateFallbackAnalysis();
-      setAiInsights(fallbackInsights);
-      setAiAnalysis(fallbackAnalysis);
-      // Cache the fallback content for the FullReport to use
-      aiCacheManager.cacheAIContent(
-        quizData,
-        fallbackInsights,
-        fallbackAnalysis,
-        personalizedPaths[0],
-      );
-      setIsGeneratingAI(false);
+      // Load cached preview data (NO API calls!)
+      loadCachedPreviewData();
     }
   }, [personalizedPaths]);
 
@@ -499,6 +446,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         body: JSON.stringify({
           quizData: quizData,
           userEmail: userEmail,
+          aiAnalysis: { ...aiAnalysis, ...aiInsights },
+          topBusinessPath: personalizedPaths[0],
         }),
       });
 
@@ -765,10 +714,45 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     setShowUnlockModal(true);
   };
 
-  const handleAILoadingComplete = (data: any) => {
+  const handleAILoadingComplete = async (data: any) => {
     setLoadedReportData(data);
     setShowAILoading(false);
     setShowFullReport(true);
+
+    // Save AI content to database if we have a quiz attempt ID and user is authenticated
+    const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+    if (currentQuizAttemptId && data && user) {
+      try {
+        const response = await fetch(
+          `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ aiContent: data }),
+          },
+        );
+
+        if (response.ok) {
+          console.log(
+            `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
+          );
+        } else {
+          console.error(
+            "Failed to save AI content to database:",
+            response.status,
+          );
+        }
+      } catch (error) {
+        console.error("Error saving AI content to database:", error);
+      }
+    } else if (currentQuizAttemptId && data && !user) {
+      console.log(
+        "Skipping AI content save to database - user not authenticated",
+      );
+    }
   };
 
   // Payment handler for all users - PaymentAccountModal will auto-skip to payment for logged-in users
@@ -967,10 +951,47 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       <FullReportLoading
         quizData={quizData}
         userEmail={userEmail}
-        onComplete={(data) => {
+        onComplete={async (data) => {
           setLoadedReportData(data);
           setShowFullReportLoading(false);
           setShowFullReport(true);
+
+          // Save AI content to database if we have a quiz attempt ID and user is authenticated
+          const currentQuizAttemptId = localStorage.getItem(
+            "currentQuizAttemptId",
+          );
+          if (currentQuizAttemptId && data && user) {
+            try {
+              const response = await fetch(
+                `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
+                {
+                  method: "POST",
+                  credentials: "include",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ aiContent: data }),
+                },
+              );
+
+              if (response.ok) {
+                console.log(
+                  `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
+                );
+              } else {
+                console.error(
+                  "Failed to save AI content to database:",
+                  response.status,
+                );
+              }
+            } catch (error) {
+              console.error("Error saving AI content to database:", error);
+            }
+          } else if (currentQuizAttemptId && data && !user) {
+            console.log(
+              "Skipping AI content save to database - user not authenticated",
+            );
+          }
         }}
         onExit={() => setShowFullReportLoading(false)}
       />
@@ -1415,7 +1436,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">���</div>
+                                    <div className="text-3xl mt-1">🚀</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Step-by-Step Launch Guidance

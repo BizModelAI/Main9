@@ -8,6 +8,8 @@ export const PDFReportPage: React.FC = () => {
   const [reportData, setReportData] = useState<{
     quizData: QuizData;
     userEmail?: string;
+    aiAnalysis?: any;
+    topBusinessPath?: any;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +68,8 @@ export const PDFReportPage: React.FC = () => {
     <PDFReportFull
       quizData={reportData.quizData}
       userEmail={reportData.userEmail}
+      aiAnalysis={reportData.aiAnalysis}
+      topBusinessPath={reportData.topBusinessPath}
     />
   );
 };

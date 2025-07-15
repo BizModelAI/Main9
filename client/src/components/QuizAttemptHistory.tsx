@@ -21,7 +21,7 @@ interface QuizAttempt {
 
 interface QuizAttemptHistoryProps {
   userId: number;
-  onQuizSelected?: (quizData: QuizData) => void;
+  onQuizSelected?: (quizData: QuizData, aiContent?: any) => void;
 }
 
 export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
@@ -49,6 +49,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
   const [selectedAttemptId, setSelectedAttemptId] = React.useState<
     number | null
   >(null);
+  const [showAllAttempts, setShowAllAttempts] = React.useState(false);
 
   // Check if current localStorage quiz data matches any attempt
   React.useEffect(() => {
@@ -113,18 +114,68 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
     );
   }
 
-  const handleSelectQuiz = (attempt: QuizAttempt) => {
-    // Store the selected quiz data in localStorage
-    localStorage.setItem("quizData", JSON.stringify(attempt.quizData));
-    setSelectedAttemptId(attempt.id);
+  const handleSelectQuiz = async (attempt: QuizAttempt) => {
+    try {
+      // Store the selected quiz data in localStorage
+      localStorage.setItem("quizData", JSON.stringify(attempt.quizData));
+      localStorage.setItem("currentQuizAttemptId", attempt.id.toString());
+      setSelectedAttemptId(attempt.id);
 
-    // Call the callback if provided
-    if (onQuizSelected) {
-      onQuizSelected(attempt.quizData);
+      // Fetch AI content for this attempt
+      console.log(`🔍 Fetching AI content for quiz attempt ${attempt.id}...`);
+      const response = await fetch(
+        `/api/quiz-attempts/${attempt.id}/ai-content`,
+        {
+          credentials: "include",
+        },
+      );
+      let aiContent = null;
+
+      if (response.ok) {
+        const data = await response.json();
+        aiContent = data.aiContent;
+        console.log(
+          `✅ AI content fetched for attempt ${attempt.id}:`,
+          aiContent ? "Found" : "None",
+        );
+
+        // Store AI content in localStorage if it exists
+        if (aiContent) {
+          localStorage.setItem("loadedReportData", JSON.stringify(aiContent));
+          console.log(
+            `💾 AI content stored in localStorage for attempt ${attempt.id}`,
+          );
+        } else {
+          localStorage.removeItem("loadedReportData");
+          console.log(`🗑️ No AI content to store for attempt ${attempt.id}`);
+        }
+      } else {
+        console.log(
+          `⚠️ AI content fetch failed for attempt ${attempt.id}:`,
+          response.status,
+          response.statusText,
+        );
+        if (response.status === 500) {
+          console.log(
+            "💡 This might be due to missing ai_content column in database",
+          );
+        }
+        localStorage.removeItem("loadedReportData");
+      }
+
+      // Call the callback if provided
+      if (onQuizSelected) {
+        onQuizSelected(attempt.quizData, aiContent);
+      }
+
+      // Instead of page reload, trigger a React state update
+      // This will be handled by the parent component
+      console.log("Quiz attempt switched successfully without page reload");
+    } catch (error) {
+      console.error("Error switching quiz attempt:", error);
+      // Fallback to page reload if API fails
+      window.location.reload();
     }
-
-    // Refresh the page to update all components that rely on localStorage
-    window.location.reload();
   };
 
   // Since users can't create accounts without taking the quiz,
@@ -169,91 +220,100 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         </span>
       </div>
 
-      <div className="space-y-4 max-h-96 overflow-y-auto">
-        {attempts.map((attempt: QuizAttempt, index: number) => {
-          const isSelected = selectedAttemptId === attempt.id;
-          return (
-            <div
-              key={attempt.id}
-              className={`flex items-center space-x-4 p-4 rounded-xl transition-all cursor-pointer ${
-                isSelected
-                  ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700"
-                  : "bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent"
-              }`}
-              onClick={() => handleSelectQuiz(attempt)}
-            >
-              {/* Attempt Number Icon */}
-              <div className="flex-shrink-0">
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold relative ${
-                    index === 0
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600"
-                      : "bg-gray-500"
-                  }`}
-                >
-                  {attempts.length - index}
-                  {isSelected && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <CheckCircle2 className="w-3 h-3 text-white" />
+      <div
+        className={`space-y-4 ${showAllAttempts ? "" : "max-h-96"} overflow-y-auto`}
+      >
+        {(showAllAttempts ? attempts : attempts.slice(0, 3)).map(
+          (attempt: QuizAttempt, index: number) => {
+            const isSelected = selectedAttemptId === attempt.id;
+            return (
+              <div
+                key={attempt.id}
+                className={`flex items-center space-x-4 p-4 rounded-xl transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700"
+                    : "bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent"
+                }`}
+                onClick={() => handleSelectQuiz(attempt)}
+              >
+                {/* Attempt Number Icon */}
+                <div className="flex-shrink-0">
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold relative ${
+                      index === 0
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600"
+                        : "bg-gray-500"
+                    }`}
+                  >
+                    {attempts.length - index}
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Attempt Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {getTopBusinessPath(attempt.quizData)}
+                    </p>
+                    {index === 0 && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Latest
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>
+                        {format(new Date(attempt.completedAt), "MMM d, yyyy")}
+                      </span>
                     </div>
+                    <div className="flex items-center space-x-1">
+                      <TrendingUp className="w-3 h-3" />
+                      <span>{getIncomeGoal(attempt.quizData)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Select Button */}
+                <div className="flex-shrink-0">
+                  {isSelected ? (
+                    <div className="p-2 text-blue-600 dark:text-blue-400">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                  ) : (
+                    <button className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                      <Eye className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </div>
-
-              {/* Attempt Details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {getTopBusinessPath(attempt.quizData)}
-                  </p>
-                  {index === 0 && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      Latest
-                    </span>
-                  )}
-                  {isSelected && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      Active
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-3 h-3" />
-                    <span>
-                      {format(new Date(attempt.completedAt), "MMM d, yyyy")}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>{getIncomeGoal(attempt.quizData)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Select Button */}
-              <div className="flex-shrink-0">
-                {isSelected ? (
-                  <div className="p-2 text-blue-600 dark:text-blue-400">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                ) : (
-                  <button className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    <Eye className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          },
+        )}
       </div>
 
       {attempts.length > 3 && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button className="w-full flex items-center justify-center space-x-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-            <span>View All Attempts</span>
-            <ChevronRight className="w-4 h-4" />
+          <button
+            onClick={() => setShowAllAttempts(!showAllAttempts)}
+            className="w-full flex items-center justify-center space-x-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+          >
+            <span>{showAllAttempts ? "Show Less" : "View All Attempts"}</span>
+            <ChevronRight
+              className={`w-4 h-4 transition-transform ${showAllAttempts ? "rotate-90" : ""}`}
+            />
           </button>
         </div>
       )}

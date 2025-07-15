@@ -1,5 +1,9 @@
 import "dotenv/config";
-import express, { type Request, Response, NextFunction } from "express";
+import express from "express";
+
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { createServer } from "http";
@@ -21,7 +25,7 @@ app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
 // Session configuration that ensures cookies work in all environments
 app.use(
-  session({
+  (session as any)({
     secret:
       process.env.SESSION_SECRET ||
       "development-secret-key-change-in-production",
@@ -138,7 +142,7 @@ async function setupApiRoutes() {
 }
 
 // Basic health check endpoint
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (req: Request, res: Response) => {
   res.json({
     status: "Server is running!",
     environment: "local-development",
@@ -148,7 +152,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Comprehensive health check endpoint
-app.get("/api/health/detailed", async (req, res) => {
+app.get("/api/health/detailed", async (req: Request, res: Response) => {
   const health = {
     status: "healthy",
     timestamp: new Date().toISOString(),
@@ -217,7 +221,7 @@ app.get("/api/health/detailed", async (req, res) => {
 });
 
 // Database test endpoint for debugging signup issues
-app.get("/api/test/database", async (req, res) => {
+app.get("/api/test/database", async (req: Request, res: Response) => {
   res.header("Content-Type", "application/json");
 
   const results = {
@@ -268,7 +272,7 @@ app.get("/api/test/database", async (req, res) => {
   }
 });
 
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 // Global error handler for unhandled errors
 process.on("unhandledRejection", (reason, promise) => {
@@ -312,8 +316,153 @@ async function setupApp() {
     });
 
     // Setup Vite development server AFTER API routes
-    const { setupVite } = await import("./vite.js");
-    await setupVite(app, server);
+    try {
+      const { setupVite } = await import("./vite.js");
+      await setupVite(app, server);
+    } catch (viteError) {
+      console.warn(
+        "⚠️ Vite not available, using fallback static serving:",
+        (viteError as Error).message,
+      );
+      // Fallback to static serving without Vite
+      const path = await import("path");
+      const fs = await import("fs");
+
+      console.log("Setting up fallback static serving...");
+
+      // Serve client static files
+      app.use(
+        "/src",
+        express.static(
+          path.resolve(import.meta.dirname, "..", "client", "src"),
+        ),
+      );
+      app.use(
+        "/public",
+        express.static(
+          path.resolve(import.meta.dirname, "..", "client", "public"),
+        ),
+      );
+      app.use(
+        "/client",
+        express.static(path.resolve(import.meta.dirname, "..", "client")),
+      );
+
+      // Try to serve built files if they exist
+      const distPath = path.resolve(
+        import.meta.dirname,
+        "..",
+        "dist",
+        "public",
+      );
+      if (fs.existsSync(distPath)) {
+        console.log("Serving built files from:", distPath);
+        app.use(express.static(distPath));
+      }
+
+      app.get("*", (req: Request, res: Response) => {
+        try {
+          const clientTemplate = path.resolve(
+            import.meta.dirname,
+            "..",
+            "client",
+            "index.html",
+          );
+          let template = fs.readFileSync(clientTemplate, "utf-8");
+
+          // In fallback mode, serve a simple error page explaining the issue
+          template = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>BizModelAI</title>
+                <style>
+                  body {
+                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    margin: 0;
+                    padding: 40px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  }
+                  .container {
+                    text-align: center;
+                    max-width: 600px;
+                    padding: 40px;
+                    background: rgba(255,255,255,0.1);
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                  }
+                  .logo {
+                    font-size: 3em;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    background: linear-gradient(45deg, #FFD700, #FFA500);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                  }
+                  .message {
+                    font-size: 1.2em;
+                    margin-bottom: 30px;
+                    line-height: 1.6;
+                  }
+                  .button {
+                    display: inline-block;
+                    padding: 15px 30px;
+                    background: linear-gradient(45deg, #FFD700, #FFA500);
+                    color: #333;
+                    text-decoration: none;
+                    border-radius: 25px;
+                    font-weight: bold;
+                    transition: transform 0.2s;
+                  }
+                  .button:hover {
+                    transform: scale(1.05);
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="logo">BizModelAI</div>
+                  <div class="message">
+                    The application is starting up in development mode.<br>
+                    Some features may be temporarily unavailable while the build system initializes.
+                  </div>
+                  <a href="javascript:window.location.reload()" class="button">Refresh Page</a>
+                </div>
+                <script>
+                  // Auto-refresh every 10 seconds to check if the app is ready
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 10000);
+                </script>
+              </body>
+            </html>
+          `;
+
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          console.error("Error serving HTML:", e);
+          res.send(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>BizModelAI</title>
+              </head>
+              <body>
+                <div id="root">
+                  <h1>BizModelAI</h1>
+                  <p>Server Error - Please try again</p>
+                </div>
+              </body>
+            </html>
+          `);
+        }
+      });
+    }
     console.log(
       "✅ Server with all routes and Vite development server started successfully!",
     );
@@ -331,7 +480,7 @@ async function setupApp() {
     });
 
     // Fallback to basic HTML for non-API routes
-    app.get("*", (req, res) => {
+    app.get("*", (req: Request, res: Response) => {
       res.send(`
         <!DOCTYPE html>
         <html>
@@ -374,11 +523,11 @@ Promise.race([
 
     // Try basic fallback server
     console.log("Starting fallback server...");
-    app.get("/api/health", (req, res) => {
+    app.get("/api/health", (req: Request, res: Response) => {
       res.json({ status: "Server is running (fallback mode)!" });
     });
 
-    app.get("*", (req, res) => {
+    app.get("*", (req: Request, res: Response) => {
       res.send(`
         <!DOCTYPE html>
         <html>

@@ -5,6 +5,8 @@ import * as fs from "fs";
 export interface PDFGenerationOptions {
   quizData: QuizData;
   userEmail?: string;
+  aiAnalysis?: any;
+  topBusinessPath?: any;
   baseUrl: string;
 }
 
@@ -52,7 +54,8 @@ export class PDFService {
   }
 
   async generatePDF(options: PDFGenerationOptions): Promise<Buffer> {
-    const { quizData, userEmail, baseUrl } = options;
+    const { quizData, userEmail, aiAnalysis, topBusinessPath, baseUrl } =
+      options;
 
     try {
       // Try to use Puppeteer for real PDF generation
@@ -65,10 +68,12 @@ export class PDFService {
 
       const page = await this.browser.newPage();
 
-      // Create the PDF report URL with encoded data
+      // Create the PDF report URL with encoded data including AI analysis
       const reportData = {
         quizData,
         userEmail,
+        aiAnalysis,
+        topBusinessPath,
       };
       const encodedData = encodeURIComponent(JSON.stringify(reportData));
       const pdfUrl = `${baseUrl}/pdf-report?data=${encodedData}`;
@@ -109,7 +114,7 @@ export class PDFService {
   }
 
   private generateHTMLFallback(options: PDFGenerationOptions): Buffer {
-    const { quizData, userEmail } = options;
+    const { quizData, userEmail, aiAnalysis, topBusinessPath } = options;
 
     // Enhanced HTML template that closely matches the PDFReport component
     const htmlContent = `

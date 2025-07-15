@@ -1,12 +1,7 @@
 # Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Production builds
-dist/
-build/
+.yarn/
+.pnp.*
 
 # Environment variables
 .env
@@ -15,25 +10,28 @@ build/
 .env.test.local
 .env.production.local
 
-# IDE and editor files
+# Build outputs
+dist/
+build/
+.next/
+
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# OS generated files
+# OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
 # Logs
 logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
 # Runtime data
 pids
@@ -70,40 +68,25 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# next.js build output
-.next
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
 
-# nuxt.js build output
-.nuxt
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
-# rollup.js default build output
-dist/
-
-# Uncomment the public line in if your project uses Gatsby
-# https://nextjs.org/docs/advanced-features/static-html-export
-# public
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
+# Temporary files
 tmp/
 temp/
 
-# Editor directories and files
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Database
+*.sqlite
+*.sqlite3
+*.db
 
-# Replit specific
-.replit
-replit.nix
-.breakpoints
-.upm/
-.cache/
-.local/
-.config/
+# Local development
+.env.development
+.env.production

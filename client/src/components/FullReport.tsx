@@ -1010,6 +1010,8 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         body: JSON.stringify({
           quizData,
           userEmail,
+          aiAnalysis: aiInsights,
+          topBusinessPath: personalizedPaths[0],
         }),
       });
 

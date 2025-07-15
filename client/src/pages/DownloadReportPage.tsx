@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Download, ArrowLeft, AlertCircle } from 'lucide-react';
-import BusinessReportContent from '../components/BusinessReportContent';
-import { QuizData, AIAnalysis, BusinessPath } from '../types';
-import { AIService } from '../utils/aiService';
-import { aiCacheManager } from '../utils/aiCacheManager';
-import { businessPaths } from '../data/businessPaths';
-import { generatePersonalizedPaths } from '../utils/quizLogic';
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Download, ArrowLeft, AlertCircle } from "lucide-react";
+import BusinessReportContent from "../components/BusinessReportContent";
+import { QuizData, AIAnalysis, BusinessPath } from "../types";
+import { AIService } from "../utils/aiService";
+import { aiCacheManager } from "../utils/aiCacheManager";
+import { businessPaths } from "../data/businessPaths";
+import { generatePersonalizedPaths } from "../utils/quizLogic";
 
 const DownloadReportPage: React.FC = () => {
   const location = useLocation();
@@ -25,13 +25,16 @@ const DownloadReportPage: React.FC = () => {
       try {
         if (location.state && location.state.quizData) {
           // Use data passed from Results page
-          const { quizData, aiAnalysis, topBusinessPath } = location.state as any;
+          const { quizData, aiAnalysis, topBusinessPath } =
+            location.state as any;
           setReportData({ quizData, aiAnalysis, topBusinessPath });
           setLoading(false);
         } else {
           // Fallback: Generate mock data for demonstration
-          console.warn("Report data not found in location state. Generating mock data for demonstration.");
-          
+          console.warn(
+            "Report data not found in location state. Generating mock data for demonstration.",
+          );
+
           const mockQuizData: QuizData = {
             mainMotivation: "financial-freedom",
             firstIncomeTimeline: "3-6-months",
@@ -86,25 +89,37 @@ const DownloadReportPage: React.FC = () => {
 
           // Check cache first, then generate AI analysis
           const cachedContent = aiCacheManager.getCachedAIContent(mockQuizData);
-          
+
           let combinedAnalysis;
           if (cachedContent.insights && cachedContent.analysis) {
             combinedAnalysis = {
               ...cachedContent.analysis,
-              ...cachedContent.insights
+              ...cachedContent.insights,
             };
           } else {
             const aiService = AIService.getInstance();
-            const mockPersonalizedInsights = await aiService.generatePersonalizedInsights(mockQuizData, [mockTopBusinessPath]);
-            const mockDetailedAnalysis = await aiService.generateDetailedAnalysis(mockQuizData, mockTopBusinessPath);
+            const mockPersonalizedInsights =
+              await aiService.generatePersonalizedInsights(mockQuizData, [
+                mockTopBusinessPath,
+              ]);
+            const mockDetailedAnalysis =
+              await aiService.generateDetailedAnalysis(
+                mockQuizData,
+                mockTopBusinessPath,
+              );
 
             combinedAnalysis = {
               ...mockDetailedAnalysis,
-              ...mockPersonalizedInsights
+              ...mockPersonalizedInsights,
             };
 
             // Cache the generated content
-            aiCacheManager.cacheAIContent(mockQuizData, mockPersonalizedInsights, mockDetailedAnalysis, mockTopBusinessPath);
+            aiCacheManager.cacheAIContent(
+              mockQuizData,
+              mockPersonalizedInsights,
+              mockDetailedAnalysis,
+              mockTopBusinessPath,
+            );
           }
 
           setReportData({
@@ -116,7 +131,9 @@ const DownloadReportPage: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to load report data:", err);
-        setError("Failed to load report data. Please try taking the quiz again.");
+        setError(
+          "Failed to load report data. Please try taking the quiz again.",
+        );
         setLoading(false);
       }
     };
@@ -124,9 +141,57 @@ const DownloadReportPage: React.FC = () => {
     fetchData();
   }, [location.state]);
 
-  const handleDownloadPdf = () => {
-    // Placeholder for PDF download functionality
-    alert('PDF Download functionality would be implemented here using html2canvas and jspdf libraries!');
+  const handleDownloadPdf = async () => {
+    if (!reportData) return;
+
+    try {
+      const response = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quizData: reportData.quizData,
+          userEmail: location.state?.quizData
+            ? (location.state as any).userEmail || "user@example.com"
+            : "user@example.com",
+          aiAnalysis: reportData.aiAnalysis,
+          topBusinessPath: reportData.topBusinessPath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate PDF");
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+
+      // Get filename from response headers or create default
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = "business-report.pdf";
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) {
+          filename = match[1];
+        }
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Failed to download PDF. Please try again.");
+    }
   };
 
   const handleGoBack = () => {
@@ -138,8 +203,12 @@ const DownloadReportPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-gray-700 font-medium">Generating your personalized report...</p>
-          <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+          <p className="text-lg text-gray-700 font-medium">
+            Generating your personalized report...
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            This may take a few moments
+          </p>
         </div>
       </div>
     );
@@ -157,11 +226,13 @@ const DownloadReportPage: React.FC = () => {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="h-8 w-8 text-red-600" />
           </div>
-          <h1 className="text-3xl font-bold text-red-800 mb-4">Error Loading Report</h1>
+          <h1 className="text-3xl font-bold text-red-800 mb-4">
+            Error Loading Report
+          </h1>
           <p className="text-lg text-red-700 mb-8">{error}</p>
           <div className="space-y-4">
             <button
-              onClick={() => navigate('/quiz')}
+              onClick={() => navigate("/quiz")}
               className="w-full bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
             >
               Take the Quiz
@@ -187,13 +258,16 @@ const DownloadReportPage: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="max-w-md"
         >
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Report Not Found</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Report Not Found
+          </h1>
           <p className="text-lg text-gray-700 mb-8">
-            It looks like there's no report data available. Please ensure you've completed the quiz and generated your results.
+            It looks like there's no report data available. Please ensure you've
+            completed the quiz and generated your results.
           </p>
           <div className="space-y-4">
             <button
-              onClick={() => navigate('/quiz')}
+              onClick={() => navigate("/quiz")}
               className="w-full bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
             >
               Take the Quiz
@@ -222,7 +296,7 @@ const DownloadReportPage: React.FC = () => {
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back to Results
           </button>
-          
+
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-500">Your Business Report</span>
             <button

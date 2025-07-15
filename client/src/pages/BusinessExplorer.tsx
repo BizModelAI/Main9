@@ -174,12 +174,8 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
   // Calculate fit scores for business models if quiz data exists
   const businessModelsWithFitScores = useMemo(() => {
     if (!quizData || !hasUnlockedAnalysis) {
-      // Development mode fallback: Generate mock scores for demo when user is logged in
-      if (
-        import.meta.env.MODE === "development" &&
-        user &&
-        hasUnlockedAnalysis
-      ) {
+      // Development mode fallback disabled
+      if (false && user && hasUnlockedAnalysis) {
         return businessModels.map((model, index) => {
           const mockScore = 85 - index * 3; // Descending scores for demo
           const fitCategory = getFitCategory(mockScore);
@@ -291,18 +287,23 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
       // Navigate to quiz
       navigate("/quiz");
     } else if (paywallType === "learn-more") {
-      // Only allow dev bypass in development mode
-      if (import.meta.env.MODE === "development") {
-        // DEV: Simulate payment and unlock access
-        setHasUnlockedAnalysis(true);
-        localStorage.setItem("hasAnyPayment", "true");
-        setShowPaywallModal(false);
-        navigate(`/business/${selectedBusinessId}`);
-      } else {
-        // In production, redirect to proper payment flow
-        setShowPaywallModal(false);
-        setShowPaymentModal(true);
-      }
+      // Development bypass disabled to ensure paywall always works
+      // Always redirect to proper payment flow
+      setShowPaywallModal(false);
+      setShowPaymentModal(true);
+
+      // Development bypass disabled:
+      // if (import.meta.env.MODE === "development") {
+      //   // DEV: Simulate payment and unlock access
+      //   setHasUnlockedAnalysis(true);
+      //   localStorage.setItem("hasAnyPayment", "true");
+      //   setShowPaywallModal(false);
+      //   navigate(`/business/${selectedBusinessId}`);
+      // } else {
+      //   // In production, redirect to proper payment flow
+      //   setShowPaywallModal(false);
+      //   setShowPaymentModal(true);
+      // }
     }
   };
 

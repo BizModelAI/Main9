@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       if (!response.ok) {
-        let errorMessage = "Login failed";
+        let errorMessage = "Incorrect username or password";
         try {
           const data = await response.json();
           errorMessage = data.error || errorMessage;

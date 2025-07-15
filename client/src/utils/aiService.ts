@@ -52,7 +52,7 @@ export class AIService {
       }
 
       console.log(
-        `�� Generating fresh model insights for ${modelName} (${fitType})`,
+        `🔄 Generating fresh model insights for ${modelName} (${fitType})`,
       );
 
       const userProfile = this.createUserProfile(quizData);
@@ -892,12 +892,6 @@ CRITICAL: Use ONLY the actual data provided in the user profile. Do NOT make up 
 
   private getCachedInsights(cacheKey: string): any | null {
     try {
-      // TEMPORARILY DISABLE CACHING FOR DEBUGGING
-      console.log(
-        "🚫 Caching temporarily disabled for debugging AI personalization",
-      );
-      return null;
-
       const cached =
         typeof window !== "undefined" ? localStorage.getItem(cacheKey) : null;
       if (cached) {
@@ -940,7 +934,7 @@ CRITICAL: Use ONLY the actual data provided in the user profile. Do NOT make up 
   ): Promise<{
     personalizedRecommendations: string[];
     potentialChallenges: string[];
-    keyInsights: string[];
+    keyInsights: string[]; // ✅ REUSED from preview, not generated fresh
     bestFitCharacteristics: string[];
     top3Fits: { model: string; reason: string }[];
     bottom3Avoid: {
@@ -962,7 +956,6 @@ Return JSON:
 {
   "personalizedRecommendations": ["6 specific suggestions"],
   "potentialChallenges": ["4 challenges with mitigation"],
-  "keyInsights": ["4 observations from profile"],
   "bestFitCharacteristics": ["6 fit characteristics"],
   "top3Fits": [{"model": "${topPaths[0]?.name}", "reason": "short explanation"}],
   "bottom3Avoid": [{"model": "model name", "reason": "why avoid", "futureConsideration": "when viable"}]
@@ -1011,11 +1004,7 @@ Use only provided data. No invented details.`;
           4,
           "Initial learning curve may require patience and persistence.",
         ),
-        keyInsights: this.validateArray(
-          parsed.keyInsights,
-          4,
-          "Your profile shows strong entrepreneurial potential.",
-        ),
+        keyInsights: keySuccessIndicators, // ✅ REUSE from cached preview instead of generating fresh
         bestFitCharacteristics: this.validateArray(
           parsed.bestFitCharacteristics,
           6,
@@ -1168,11 +1157,12 @@ Use only provided data. No invented details.`;
         potentialChallenges: previewData.successPredictors,
         successStrategies: this.getFallbackStrategies(),
         personalizedActionPlan: this.getFallbackActionPlan(),
-        motivationalMessage: this.getFallbackMotivationalMessage(),
+        motivationalMessage:
+          "Your entrepreneurial journey starts with understanding your unique strengths and applying them strategically.",
       };
     } catch (error) {
       console.error("❌ Error generating preview insights:", error);
-      return this.getFallbackInsights();
+      return this.generateFallbackInsights(quizData, topPaths);
     }
   }
 
@@ -1209,12 +1199,12 @@ Use only provided data. No invented details.`;
         previewData.keyInsights,
       );
 
-      // Convert to old format for backward compatibility
+      // Convert to old format for backward compatibility - REUSE CACHED PREVIEW CONTENT
       return {
-        personalizedSummary: previewData.previewInsights, // Reuse from preview
-        customRecommendations: fullReportInsights.personalizedRecommendations,
-        potentialChallenges: fullReportInsights.potentialChallenges,
-        successStrategies: previewData.keyInsights, // Reuse from preview (renamed)
+        personalizedSummary: previewData.previewInsights, // ✅ REUSED from preview
+        customRecommendations: previewData.keyInsights, // ✅ REUSED from preview (NOT fullReportInsights.keyInsights)
+        potentialChallenges: fullReportInsights.potentialChallenges, // ✅ Fresh content
+        successStrategies: previewData.successPredictors, // ✅ REUSED from preview
         personalizedActionPlan: this.getFallbackActionPlan(), // Hardcoded now
         motivationalMessage:
           "Your unique combination of skills and drive positions you perfectly for entrepreneurial success. Trust in your abilities and take that first step.",
@@ -1268,7 +1258,10 @@ Use only provided data. No invented details.`;
       quizData.meaningfulContributionImportance >= 4
     )
       motivations.push("impact");
-    if (quizData.successIncomeGoal && parseInt(quizData.successIncomeGoal) >= 5)
+    if (
+      quizData.successIncomeGoal &&
+      parseInt(String(quizData.successIncomeGoal)) >= 5
+    )
       motivations.push("financial");
     if (motivations.length === 0) motivations.push("growth");
 

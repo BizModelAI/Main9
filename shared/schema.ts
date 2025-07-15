@@ -30,6 +30,7 @@ export const quizAttempts = pgTable("quiz_attempts", {
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   quizData: jsonb("quiz_data").notNull(),
+  aiContent: jsonb("ai_content"), // Store generated AI insights, recommendations, etc.
   completedAt: timestamp("completed_at").defaultNow().notNull(),
 });
 

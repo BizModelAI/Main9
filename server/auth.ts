@@ -1,7 +1,11 @@
-import type { Express } from "express";
+import express from "express";
 import { storage } from "./storage.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+
+type Express = express.Express;
+type Request = express.Request;
+type Response = express.Response;
 
 // Temporary session cache as fallback for cookie issues
 const tempSessionCache = new Map<
@@ -60,17 +64,13 @@ export function setUserIdInRequest(req: any, userId: number): void {
   });
 }
 
-declare module "express-session" {
-  interface SessionData {
-    userId?: number;
-  }
-}
+// Session types are now declared in server/types.d.ts
 
 export function setupAuthRoutes(app: Express) {
   // Cookie test endpoint - sets a test value and returns session info
-  app.get("/api/auth/cookie-test", async (req, res) => {
+  app.get("/api/auth/cookie-test", async (req: Request, res: Response) => {
     const testValue = `test-${Date.now()}`;
-    (req.session as any).testValue = testValue;
+    req.session.testValue = testValue;
 
     res.json({
       sessionId: req.sessionID,
@@ -83,11 +83,11 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Debug endpoint to check session state
-  app.get("/api/auth/session-debug", async (req, res) => {
+  app.get("/api/auth/session-debug", async (req: Request, res: Response) => {
     res.json({
       sessionId: req.sessionID,
       userId: req.session?.userId,
-      testValue: (req.session as any)?.testValue || "none",
+      testValue: req.session?.testValue || "none",
       sessionExists: !!req.session,
       cookieHeader: req.headers.cookie?.substring(0, 100) + "..." || "none",
       userAgent: req.headers["user-agent"]?.substring(0, 50) + "..." || "none",
@@ -95,10 +95,10 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Test endpoint to set and check session
-  app.post("/api/auth/session-test", async (req, res) => {
+  app.post("/api/auth/session-test", async (req: Request, res: Response) => {
     try {
       const testValue = `test-${Date.now()}`;
-      (req.session as any).testValue = testValue;
+      req.session.testValue = testValue;
 
       console.log("Session test: Setting test value", {
         sessionId: req.sessionID,
@@ -118,17 +118,17 @@ export function setupAuthRoutes(app: Express) {
     }
   });
 
-  app.get("/api/auth/session-test", async (req, res) => {
+  app.get("/api/auth/session-test", async (req: Request, res: Response) => {
     res.json({
       sessionId: req.sessionID,
-      testValue: (req.session as any)?.testValue || null,
+      testValue: req.session?.testValue || null,
       sessionExists: !!req.session,
       cookieHeader: req.headers.cookie?.substring(0, 100) + "..." || "none",
     });
   });
 
   // Get current user session
-  app.get("/api/auth/me", async (req, res) => {
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
 
@@ -180,7 +180,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Login
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
 
@@ -216,7 +216,7 @@ export function setupAuthRoutes(app: Express) {
       });
 
       // Force session save before sending response
-      req.session.save((err) => {
+      req.session.save((err: any) => {
         if (err) {
           console.error("Login: Failed to save session:", err);
           return res.status(500).json({ error: "Session save failed" });
@@ -247,7 +247,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Signup - Store temporary account data until payment
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
     // Ensure we always return JSON
     res.header("Content-Type", "application/json");
 
@@ -400,9 +400,9 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Logout
-  app.post("/api/auth/logout", async (req, res) => {
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
     try {
-      req.session.destroy((err) => {
+      req.session.destroy((err: any) => {
         if (err) {
           console.error("Error destroying session:", err);
           return res.status(500).json({ error: "Could not log out" });
@@ -417,7 +417,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Update profile
-  app.put("/api/auth/profile", async (req, res) => {
+  app.put("/api/auth/profile", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
 
@@ -458,7 +458,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Delete account
-  app.delete("/api/auth/account", async (req, res) => {
+  app.delete("/api/auth/account", async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ error: "Not authenticated" });
@@ -470,7 +470,7 @@ export function setupAuthRoutes(app: Express) {
       await storage.deleteUser(userId);
 
       // Destroy session
-      req.session.destroy((err) => {
+      req.session.destroy((err: any) => {
         if (err) {
           console.error("Error destroying session:", err);
           return res
@@ -487,7 +487,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Forgot password
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
@@ -556,31 +556,34 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Verify reset token
-  app.get("/api/auth/verify-reset-token/:token", async (req, res) => {
-    try {
-      const { token } = req.params;
+  app.get(
+    "/api/auth/verify-reset-token/:token",
+    async (req: Request, res: Response) => {
+      try {
+        const { token } = req.params;
 
-      if (!token) {
-        return res.status(400).json({ error: "Reset token is required" });
+        if (!token) {
+          return res.status(400).json({ error: "Reset token is required" });
+        }
+
+        const resetData = await storage.getPasswordResetToken(token);
+
+        if (!resetData || resetData.expiresAt < new Date()) {
+          return res
+            .status(400)
+            .json({ error: "Invalid or expired reset token" });
+        }
+
+        res.json({ valid: true });
+      } catch (error) {
+        console.error("Error in /api/auth/verify-reset-token:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      const resetData = await storage.getPasswordResetToken(token);
-
-      if (!resetData || resetData.expiresAt < new Date()) {
-        return res
-          .status(400)
-          .json({ error: "Invalid or expired reset token" });
-      }
-
-      res.json({ valid: true });
-    } catch (error) {
-      console.error("Error in /api/auth/verify-reset-token:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Unsubscribe from emails
-  app.post("/api/auth/unsubscribe", async (req, res) => {
+  app.post("/api/auth/unsubscribe", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
@@ -608,7 +611,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Reset password
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
     try {
       const { token, password } = req.body;
 

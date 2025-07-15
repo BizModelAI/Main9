@@ -1,5 +1,9 @@
 import "dotenv/config";
-import express, { type Request, Response, NextFunction } from "express";
+import express from "express";
+
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { createServer } from "http";
@@ -14,7 +18,7 @@ const app = express();
 
 // Session configuration with persistent storage
 app.use(
-  session({
+  (session as any)({
     secret:
       process.env.SESSION_SECRET || "your-secret-key-change-in-production",
     resave: false,
@@ -30,20 +34,28 @@ app.use(
   }),
 );
 
-// Raw body parsing for Stripe webhooks
+// JSON parsing for all routes except Stripe webhooks
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path === "/api/stripe/webhook") {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
+
+// Raw body parsing specifically for Stripe webhooks
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
 
-// JSON parsing for other routes
-app.use(express.json());
+// URL encoded parsing for form data
 app.use(express.urlencoded({ extended: false }));
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
+  res.json = function (bodyJson: any, ...args: any[]) {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };

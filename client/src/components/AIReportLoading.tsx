@@ -66,10 +66,8 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
   const [progress, setProgress] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [loadingResults, setLoadingResults] = useState<any>({});
-  const [visibleMobileSteps, setVisibleMobileSteps] = useState<Set<number>>(
-    new Set([0]),
-  ); // Start with first step visible
   const isMobile = useIsMobile();
+  const [currentMobileStep, setCurrentMobileStep] = useState(0);
 
   const loadingSteps: LoadingStep[] = [
     {
@@ -125,14 +123,80 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
 
   const [steps, setSteps] = useState<LoadingStep[]>(loadingSteps);
 
-  // Clear any potentially stuck state on component mount
+  // Clear any potentially stuck state on component mount and handle mobile detection
   useEffect(() => {
     console.log(
       "🚀 AIReportLoading component mounted, clearing any stuck state",
     );
+    console.log("📱 Mobile detection:", isMobile);
     localStorage.removeItem("ai-generation-in-progress");
     localStorage.removeItem("ai-generation-timestamp");
-  }, []);
+
+    // Mobile vs desktop detection
+    if (isMobile) {
+      console.log("📱 Mobile detected - auto-cycling cards");
+    } else {
+      console.log("💻 Desktop detected - showing all cards");
+    }
+  }, [isMobile]);
+
+  // Auto-cycle through mobile steps every 4 seconds, only once
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const interval = setInterval(() => {
+      setCurrentMobileStep((prev) => {
+        if (prev < steps.length - 1) {
+          return prev + 1;
+        }
+        // Stay on the last step (step 6)
+        return prev;
+      });
+    }, 4200); // Slightly longer timing to match step execution
+
+    return () => clearInterval(interval);
+  }, [isMobile, steps.length]);
+
+  // Sync mobile step with current step execution for better coordination
+  useEffect(() => {
+    if (isMobile && currentStep >= 0) {
+      // Optionally sync with current executing step, but allow auto-cycling to continue
+      // This ensures mobile doesn't fall behind the actual execution
+      if (currentStep > currentMobileStep) {
+        setCurrentMobileStep(Math.min(currentStep, steps.length - 1));
+      }
+    }
+  }, [currentStep, isMobile, currentMobileStep, steps.length]);
+
+  // Calculate target progress based on step completion
+  const [targetProgress, setTargetProgress] = useState(0);
+
+  useEffect(() => {
+    const totalSteps = steps.length;
+    const completedStepsCount = completedSteps.size;
+    const activeStepProgress = currentStep >= 0 ? 1 : 0; // Give some progress for active step
+
+    // Calculate progress: each completed step is worth (100/totalSteps)%
+    // Active step gets partial credit
+    const stepProgress = (completedStepsCount * 100) / totalSteps;
+    const activeProgress = activeStepProgress * (100 / totalSteps) * 0.3; // 30% of step value for active
+
+    const newTargetProgress = Math.min(stepProgress + activeProgress, 100);
+    setTargetProgress(newTargetProgress);
+  }, [currentStep, completedSteps, steps.length]);
+
+  // Smooth progress bar animation toward target
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const diff = targetProgress - prev;
+        if (Math.abs(diff) < 0.1) return targetProgress;
+        return prev + diff * 0.05; // Smooth interpolation - slower for more realistic feel
+      });
+    }, 50); // Update every 50ms for smooth animation
+
+    return () => clearInterval(interval);
+  }, [targetProgress]);
 
   // Generate all 6 characteristics with OpenAI
   const generateAllCharacteristics = async (
@@ -166,24 +230,54 @@ Return a JSON object with this exact structure:
 
 Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", "Tech-savvy innovator", "Clear communicator", "Organized planner", "Creative problem solver"]}`;
 
-      const response = await fetch("/api/openai-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          maxTokens: 200,
-          temperature: 0.7,
-          responseFormat: { type: "json_object" },
-        }),
-      });
+      // Add timeout wrapper for the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-      if (!response.ok) {
-        throw new Error("Failed to generate characteristics");
+      let data: any;
+      try {
+        const response = await fetch("/api/openai-chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            maxTokens: 200,
+            temperature: 0.7,
+            responseFormat: { type: "json_object" },
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.error(
+            `API request failed with status ${response.status}: ${response.statusText}`,
+          );
+          const errorText = await response.text();
+          console.error("Error response body:", errorText);
+          throw new Error(
+            `API request failed: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        data = await response.json();
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError?.name === "AbortError") {
+          console.error("API request timed out after 15 seconds");
+          throw new Error("API request timed out");
+        }
+        throw fetchError;
       }
 
-      const data = await response.json();
+      // Check if we have content to work with
+      if (!data.content) {
+        console.error("No content in API response:", data);
+        throw new Error("No content in API response");
+      }
 
       // Clean up the response content (remove markdown code blocks if present)
       let cleanContent = data.content;
@@ -202,11 +296,16 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       ) {
         return parsed.characteristics;
       } else {
-        throw new Error("Invalid response format");
+        console.error("Invalid response format:", parsed);
+        throw new Error(
+          `Invalid response format - expected 6 characteristics, got: ${parsed?.characteristics?.length || "none"}`,
+        );
       }
     } catch (error) {
       console.error("Error generating all characteristics:", error);
-      // Fallback characteristics based on quiz data
+      console.log("Using fallback characteristics due to API failure");
+
+      // Robust fallback characteristics based on quiz data
       const fallbackCharacteristics = [
         quizData.selfMotivationLevel >= 4
           ? "Highly self-motivated"
@@ -228,6 +327,10 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           : "Analytical approach to challenges",
       ];
 
+      console.log(
+        "Generated fallback characteristics:",
+        fallbackCharacteristics,
+      );
       return fallbackCharacteristics;
     }
   };
@@ -611,9 +714,30 @@ Return JSON format:
 
         // Step 4: Generate characteristics
         const step4Result = await executeStep(3, async () => {
-          const characteristics =
-            await generateAllCharacteristics(activeQuizData);
-          return { allCharacteristics: characteristics };
+          try {
+            const characteristics =
+              await generateAllCharacteristics(activeQuizData);
+            return { allCharacteristics: characteristics };
+          } catch (error) {
+            console.error(
+              "Error in step 4 - characteristics generation:",
+              error,
+            );
+            // Return fallback characteristics if generation fails
+            const fallbackCharacteristics = [
+              "Self-motivated entrepreneur",
+              "Strategic business thinker",
+              "Adaptable problem solver",
+              "Goal-oriented achiever",
+              "Dedicated professional",
+              "Growth-minded individual",
+            ];
+            console.log(
+              "Using step 4 fallback characteristics:",
+              fallbackCharacteristics,
+            );
+            return { allCharacteristics: fallbackCharacteristics };
+          }
         });
         currentResults = { ...currentResults, ...step4Result };
 
@@ -678,17 +802,17 @@ Return JSON format:
         });
         currentResults = { ...currentResults, ...step6Result };
 
-        // Ensure minimum 10 seconds duration
+        // Ensure minimum 25 seconds duration to match mobile step timing
         const elapsedTime = Date.now() - startTime;
-        const minimumDuration = 10000; // 10 seconds
+        const minimumDuration = 25000; // 25 seconds (6 steps × 4.2 seconds)
 
         if (elapsedTime < minimumDuration) {
           const remainingTime = minimumDuration - elapsedTime;
           await new Promise((resolve) => setTimeout(resolve, remainingTime));
-
-          // Update progress to 100% during final wait
-          setProgress(100);
         }
+
+        // Set target progress to 100% only when everything is truly complete
+        setTargetProgress(100);
 
         // Clear the generation flag
         localStorage.removeItem("ai-generation-in-progress");
@@ -722,15 +846,17 @@ Return JSON format:
       } catch (error) {
         console.error("Error generating report:", error);
 
-        // Ensure minimum 10 seconds duration even on error
+        // Ensure minimum 25 seconds duration even on error
         const elapsedTime = Date.now() - startTime;
-        const minimumDuration = 10000; // 10 seconds
+        const minimumDuration = 25000; // 25 seconds
 
         if (elapsedTime < minimumDuration) {
           const remainingTime = minimumDuration - elapsedTime;
           await new Promise((resolve) => setTimeout(resolve, remainingTime));
-          setProgress(100);
         }
+
+        // Set target progress to 100% when complete (even with errors)
+        setTargetProgress(100);
 
         // Clear the generation flag even on error
         localStorage.removeItem("ai-generation-in-progress");
@@ -774,11 +900,7 @@ Return JSON format:
     // Mark step as active
     setCurrentStep(stepIndex);
 
-    // On mobile, make current step visible when it becomes active
-    if (isMobile) {
-      setVisibleMobileSteps((prev) => new Set([...prev, stepIndex]));
-    }
-
+    // Update step status to active
     setSteps((prev) =>
       prev.map((step, index) => ({
         ...step,
@@ -791,32 +913,8 @@ Return JSON format:
       })),
     );
 
-    // Calculate progress range for this step (each step gets equal portion)
-    const startProgress = (stepIndex / steps.length) * 100;
-    const endProgress = ((stepIndex + 1) / steps.length) * 100;
-    const progressRange = endProgress - startProgress;
-
-    // Start the async function
-    const resultPromise = asyncFunction();
-
-    // Animate progress smoothly during step execution
-    let currentProgress = startProgress;
-    const progressInterval = setInterval(
-      () => {
-        if (currentProgress < endProgress - 1) {
-          currentProgress += 1; // Increment by exactly 1%
-          setProgress(Math.round(currentProgress));
-        }
-      },
-      ((steps[stepIndex]?.estimatedTime || 3) * 1000) / progressRange,
-    ); // Distribute time evenly across the progress range
-
     try {
-      const result = await resultPromise;
-
-      // Clear the interval and ensure final progress for this step
-      clearInterval(progressInterval);
-      setProgress(Math.round(endProgress));
+      const result = await asyncFunction();
 
       // Store result
       setLoadingResults((prev: any) => ({ ...prev, ...result }));
@@ -824,11 +922,7 @@ Return JSON format:
       // Mark step as completed
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // On mobile, make next step visible when current step completes
-      if (isMobile && stepIndex < steps.length - 1) {
-        setVisibleMobileSteps((prev) => new Set([...prev, stepIndex + 1]));
-      }
-
+      // Update step status to completed
       setSteps((prev) =>
         prev.map((step, index) => ({
           ...step,
@@ -839,24 +933,18 @@ Return JSON format:
       return result;
     } catch (error) {
       console.error(`Error in step ${stepIndex}:`, error);
-      // Clear the interval and set final progress
-      clearInterval(progressInterval);
-      setProgress(Math.round(endProgress));
 
-      // Continue with fallback
+      // Continue with fallback - mark as completed despite error
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // On mobile, make next step visible even on error
-      if (isMobile && stepIndex < steps.length - 1) {
-        setVisibleMobileSteps((prev) => new Set([...prev, stepIndex + 1]));
-      }
-
+      // Update step status to completed even on error
       setSteps((prev) =>
         prev.map((step, index) => ({
           ...step,
           status: index <= stepIndex ? "completed" : "pending",
         })),
       );
+
       return {};
     }
   };
@@ -950,84 +1038,183 @@ Return JSON format:
 
         {/* Compact Loading Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-          {steps
-            .filter((step, index) => {
-              // On mobile, only show steps that are in the visible set
-              // On desktop, show all steps
-              return !isMobile || visibleMobileSteps.has(index);
-            })
-            .map((step, index) => {
-              // Find the original index for proper step handling
-              const originalIndex = steps.findIndex((s) => s.id === step.id);
-              return (
-                <motion.div
-                  key={step.id}
-                  className={`bg-gray-50 rounded-xl p-4 shadow-sm transition-all duration-300 ${
-                    step.status === "active"
-                      ? "ring-2 ring-blue-500 bg-blue-50"
-                      : step.status === "completed"
-                        ? "ring-2 ring-green-500 bg-green-50"
-                        : "ring-1 ring-gray-200"
-                  }`}
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  layout
-                >
-                  <div className="flex items-center mb-2">
-                    <div className="flex-shrink-0 mr-3">
-                      {getStepIcon(step, originalIndex)}
-                    </div>
-                    {step.status === "active" && (
-                      <motion.div
-                        className="flex space-x-1 ml-auto"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      >
-                        {[0, 1, 2].map((dot) => (
-                          <motion.div
-                            key={dot}
-                            className="w-1.5 h-1.5 bg-blue-500 rounded-full"
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [0.5, 1, 0.5],
-                            }}
-                            transition={{
-                              duration: 1,
-                              repeat: Infinity,
-                              delay: dot * 0.2,
-                            }}
-                          />
-                        ))}
-                      </motion.div>
-                    )}
+          {isMobile ? (
+            // Mobile: Show single card with smooth transitions
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={steps[currentMobileStep]?.id}
+                className={`bg-gradient-to-br rounded-2xl p-6 shadow-xl border-2 ring-4 ${
+                  steps[currentMobileStep]?.status === "completed"
+                    ? "from-green-50 to-emerald-50 ring-green-400 border-green-300"
+                    : "from-white to-blue-50 ring-blue-400 border-blue-300"
+                }`}
+                initial={{
+                  opacity: 0,
+                  scale: 0.8,
+                  y: 30,
+                  rotateY: 90,
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: 0,
+                  rotateY: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.8,
+                  y: -30,
+                  rotateY: -90,
+                }}
+                transition={{
+                  duration: 0.6,
+                  type: "spring",
+                  stiffness: 120,
+                }}
+              >
+                <div className="flex items-center mb-2">
+                  <div className="flex-shrink-0 mr-3">
+                    {getStepIcon(steps[currentMobileStep], currentMobileStep)}
                   </div>
-                  <h3
-                    className={`text-lg font-semibold mb-1 ${
-                      step.status === "active"
-                        ? "text-blue-900"
-                        : step.status === "completed"
-                          ? "text-green-900"
-                          : "text-gray-700"
-                    }`}
+                  <motion.div
+                    className="flex space-x-1 ml-auto"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                   >
-                    {step.title}
-                  </h3>
-                  <p
-                    className={`text-sm ${
-                      step.status === "active"
-                        ? "text-blue-600"
-                        : step.status === "completed"
-                          ? "text-green-600"
-                          : "text-gray-500"
-                    }`}
-                  >
-                    {step.description}
-                  </p>
+                    {[0, 1, 2].map((dot) => (
+                      <motion.div
+                        key={dot}
+                        className={`w-3 h-3 rounded-full ${
+                          steps[currentMobileStep]?.status === "completed"
+                            ? "bg-green-500"
+                            : "bg-blue-500"
+                        }`}
+                        animate={{
+                          scale: [1, 1.4, 1],
+                          opacity: [0.5, 1, 0.5],
+                          y: [0, -8, 0],
+                        }}
+                        transition={{
+                          duration: 1.2,
+                          repeat: Infinity,
+                          delay: dot * 0.2,
+                        }}
+                      />
+                    ))}
+                  </motion.div>
+                </div>
+                <h3
+                  className={`text-2xl font-semibold mb-1 ${
+                    steps[currentMobileStep]?.status === "completed"
+                      ? "text-green-900"
+                      : "text-blue-900"
+                  }`}
+                >
+                  {steps[currentMobileStep]?.title}
+                </h3>
+                <p
+                  className={`text-base ${
+                    steps[currentMobileStep]?.status === "completed"
+                      ? "text-green-600"
+                      : "text-blue-600"
+                  }`}
+                >
+                  {steps[currentMobileStep]?.description}
+                </p>
+                <motion.div
+                  className="mt-4 text-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-full inline-block">
+                    <span className="font-bold text-sm">
+                      Step {currentMobileStep + 1} of {steps.length}
+                    </span>
+                  </div>
                 </motion.div>
-              );
-            })}
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            // Desktop: Show all cards
+            steps.map((step, index) => (
+              <motion.div
+                key={step.id}
+                className={`bg-gray-50 rounded-xl p-4 shadow-sm transition-all duration-300 ${
+                  step.status === "active"
+                    ? "ring-2 ring-blue-500 bg-blue-50"
+                    : step.status === "completed"
+                      ? "ring-2 ring-green-500 bg-green-50"
+                      : "ring-1 ring-gray-200"
+                }`}
+                initial={{
+                  opacity: 0,
+                  scale: 0.9,
+                  y: 20,
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.3,
+                  delay: index * 0.05,
+                }}
+              >
+                <div className="flex items-center mb-2">
+                  <div className="flex-shrink-0 mr-3">
+                    {getStepIcon(step, index)}
+                  </div>
+                  {step.status === "active" && (
+                    <motion.div
+                      className="flex space-x-1 ml-auto"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      {[0, 1, 2].map((dot) => (
+                        <motion.div
+                          key={dot}
+                          className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            delay: dot * 0.2,
+                          }}
+                        />
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+                <h3
+                  className={`text-lg font-semibold mb-1 ${
+                    step.status === "active"
+                      ? "text-blue-900"
+                      : step.status === "completed"
+                        ? "text-green-900"
+                        : "text-gray-700"
+                  }`}
+                >
+                  {step.title}
+                </h3>
+                <p
+                  className={`text-sm ${
+                    step.status === "active"
+                      ? "text-blue-600"
+                      : step.status === "completed"
+                        ? "text-green-600"
+                        : "text-gray-500"
+                  }`}
+                >
+                  {step.description}
+                </p>
+              </motion.div>
+            ))
+          )}
         </div>
 
         {/* Compact Fun Facts */}
@@ -1046,7 +1233,7 @@ Return JSON format:
               <div className="text-xl mr-3">🧠</div>
               <div>
                 <p className="text-sm text-gray-600">
-                  Our AI analyzes over 12 different personality traits and
+                  Our AI analyzes over 50 different personality traits and
                   business factors to find your perfect match.
                 </p>
               </div>
