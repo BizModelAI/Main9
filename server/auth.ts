@@ -118,7 +118,7 @@ export function setupAuthRoutes(app: Express) {
     }
   });
 
-  app.get("/api/auth/session-test", async (req, res) => {
+  app.get("/api/auth/session-test", async (req: Request, res: Response) => {
     res.json({
       sessionId: req.sessionID,
       testValue: (req.session as any)?.testValue || null,
