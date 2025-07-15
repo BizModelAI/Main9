@@ -74,7 +74,18 @@ export interface IStorage {
   getRefundById(refundId: number): Promise<Refund | undefined>;
   getAllRefunds(): Promise<Refund[]>;
 
-  // Unpaid user email tracking
+  // Temporary user management (consolidated into users table)
+  storeTemporaryUser(
+    sessionId: string,
+    email: string,
+    data: any,
+  ): Promise<User>;
+  getTemporaryUser(sessionId: string): Promise<User | undefined>;
+  getTemporaryUserByEmail(email: string): Promise<User | undefined>;
+  cleanupExpiredTemporaryUsers(): Promise<void>;
+  convertTemporaryUserToPaid(sessionId: string): Promise<User | undefined>;
+
+  // Legacy methods (for backward compatibility during transition)
   storeUnpaidUserEmail(
     sessionId: string,
     email: string,
