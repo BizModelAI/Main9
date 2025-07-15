@@ -189,6 +189,7 @@ export class MemStorage implements IStorage {
       ...attempt,
       id,
       completedAt: new Date(),
+      aiContent: attempt.aiContent || null,
     };
     this.quizAttempts.set(id, quizAttempt);
     return quizAttempt;
