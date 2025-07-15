@@ -188,7 +188,10 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     const elapsed = Date.now() - startTime;
     const minProgress = Math.min((elapsed / 20000) * 90, 90); // 20s = 90%
 
-    let newTargetProgress = Math.max(stepProgress + activeProgress, minProgress);
+    let newTargetProgress = Math.max(
+      stepProgress + activeProgress,
+      minProgress,
+    );
     if (isLoadingComplete) {
       newTargetProgress = 100;
     } else {
@@ -219,7 +222,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     if (isLoadingComplete && Math.abs(progress - 100) < 0.1) {
       const timeout = setTimeout(() => {
         // Only call onComplete if not already called
-        if (typeof onComplete === 'function') {
+        if (typeof onComplete === "function") {
           onComplete(loadingResults);
         }
       }, 350); // 350ms delay for visual finish
@@ -491,7 +494,10 @@ Return JSON format:
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ quizData: quizData, businessMatches: businessMatches }),
+          body: JSON.stringify({
+            quizData: quizData,
+            businessMatches: businessMatches,
+          }),
         },
       );
 
@@ -850,10 +856,12 @@ Return JSON format:
               // Store in localStorage for Results component to use
               const aiData = {
                 insights: existingInsights.previewInsights || existingInsights,
-                previewInsights: existingInsights.previewInsights || existingInsights,
+                previewInsights:
+                  existingInsights.previewInsights || existingInsights,
                 analysis: null, // Will be generated on-demand if needed
                 topPaths:
-                  (currentAiResults as any).personalizedPaths?.slice(0, 3) || [],
+                  (currentAiResults as any).personalizedPaths?.slice(0, 3) ||
+                  [],
                 timestamp: Date.now(),
                 complete: true,
                 error: false,
@@ -863,7 +871,9 @@ Return JSON format:
                 JSON.stringify(aiData),
               );
 
-              console.log("✅ AI data stored successfully for Results component");
+              console.log(
+                "✅ AI data stored successfully for Results component",
+              );
               return { finalizedData: true };
             } else {
               console.log("⚠️ No AI insights found, storing fallback data");
@@ -873,7 +883,8 @@ Return JSON format:
                 insights: null,
                 analysis: null,
                 topPaths:
-                  (currentAiResults as any).personalizedPaths?.slice(0, 3) || [],
+                  (currentAiResults as any).personalizedPaths?.slice(0, 3) ||
+                  [],
                 timestamp: Date.now(),
                 complete: false,
                 error: true,
@@ -967,9 +978,11 @@ Return JSON format:
 
           // In case of error, still complete with current data
           onComplete({
-            personalizedPaths: (currentAiResults as any).personalizedPaths || [],
+            personalizedPaths:
+              (currentAiResults as any).personalizedPaths || [],
             aiInsights: (currentAiResults as any).aiInsights || null,
-            allCharacteristics: (currentAiResults as any).allCharacteristics || [],
+            allCharacteristics:
+              (currentAiResults as any).allCharacteristics || [],
             businessFitDescriptions:
               (currentAiResults as any).businessFitDescriptions || {},
             businessAvoidDescriptions:
@@ -984,8 +997,7 @@ Return JSON format:
         setSteps((prev) =>
           prev.map((step, idx) => ({
             ...step,
-            status:
-              idx === i ? "active" : idx < i ? "completed" : "pending",
+            status: idx === i ? "active" : idx < i ? "completed" : "pending",
           })),
         );
         if (i < loadingSteps.length - 1) {
@@ -994,10 +1006,10 @@ Return JSON format:
             const timeout = setTimeout(resolve, perCardDuration);
             stepTimeouts.push(timeout);
           });
-          setCompletedSteps((prev) => new Set([...prev, i]));
+          setCompletedSteps((prev) => new Set([...Array.from(prev), i]));
         } else {
           // Step 6: wait for AI if not done, otherwise proceed immediately
-          setCompletedSteps((prev) => new Set([...prev, i]));
+          setCompletedSteps((prev) => new Set([...Array.from(prev), i]));
           if (!aiDone) {
             await aiPromiseWrapper;
           }
@@ -1010,7 +1022,7 @@ Return JSON format:
       // Animate to 100% and rest for <1s
       setTimeout(() => {
         setIsLoadingComplete(true);
-        if (typeof onComplete === 'function') {
+        if (typeof onComplete === "function") {
           onComplete(loadingResults);
         }
       }, 700);
@@ -1172,7 +1184,8 @@ Return JSON format:
                 Generating Your Personalized Report
               </h3>
               <p className="text-base text-blue-700 mb-6 text-center max-w-xs">
-                Our advanced AI is analyzing your responses and creating custom insights just for you. This usually takes 15-30 seconds.
+                Our advanced AI is analyzing your responses and creating custom
+                insights just for you. This usually takes 15-30 seconds.
               </p>
               {/* Removed duplicate progress bar from inside the card */}
             </motion.div>
