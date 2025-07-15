@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { storage } from "./storage.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
