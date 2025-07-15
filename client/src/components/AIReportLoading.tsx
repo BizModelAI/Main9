@@ -1031,17 +1031,47 @@ Return JSON format:
                 return (
                   <motion.div
                     key={step.id}
-                    className={`bg-gray-50 rounded-xl p-4 shadow-sm transition-all duration-300 ${
+                    className={`${
+                      isMobile
+                        ? "bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 shadow-xl border-2"
+                        : "bg-gray-50 rounded-xl p-4 shadow-sm"
+                    } transition-all duration-300 ${
                       step.status === "active"
-                        ? "ring-2 ring-blue-500 bg-blue-50"
+                        ? isMobile
+                          ? "ring-4 ring-blue-400 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-300"
+                          : "ring-2 ring-blue-500 bg-blue-50"
                         : step.status === "completed"
-                          ? "ring-2 ring-green-500 bg-green-50"
-                          : "ring-1 ring-gray-200"
+                          ? isMobile
+                            ? "ring-4 ring-green-400 bg-gradient-to-br from-green-50 to-emerald-50 border-green-300"
+                            : "ring-2 ring-green-500 bg-green-50"
+                          : isMobile
+                            ? "ring-2 ring-gray-200 border-gray-200"
+                            : "ring-1 ring-gray-200"
                     }`}
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    initial={{
+                      opacity: 0,
+                      scale: isMobile ? 0.8 : 0.9,
+                      y: isMobile ? 30 : 20,
+                      rotateX: isMobile ? 45 : 0,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      y: 0,
+                      rotateX: 0,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scale: isMobile ? 0.8 : 0.9,
+                      y: isMobile ? -30 : -20,
+                      rotateX: isMobile ? -45 : 0,
+                    }}
+                    transition={{
+                      duration: isMobile ? 0.5 : 0.3,
+                      delay: index * 0.05,
+                      type: isMobile ? "spring" : "tween",
+                      stiffness: isMobile ? 120 : undefined,
+                    }}
                     layout
                   >
                     <div className="flex items-center mb-2">
