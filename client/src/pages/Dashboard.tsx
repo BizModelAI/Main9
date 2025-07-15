@@ -513,7 +513,7 @@ const Dashboard: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className="relative bg-white rounded-3xl p-6 shadow-xl border-2 border-gray-200 w-full aspect-[4/3] flex items-center justify-center"
+                    className="relative bg-white rounded-3xl shadow-xl border-2 border-gray-200 w-full p-4 md:p-6 md:aspect-[4/3] h-48 md:h-auto flex items-center justify-center"
                   >
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </motion.div>
