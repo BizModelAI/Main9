@@ -81,7 +81,7 @@ async function ensureAIContentColumn() {
       AND column_name = 'ai_content'
     `);
 
-    if (checkResult.length === 0) {
+    if (checkResult.rows.length === 0) {
       console.log("➕ Applying ai_content column migration...");
       await db.execute(
         sql`ALTER TABLE "quiz_attempts" ADD COLUMN "ai_content" jsonb`,
