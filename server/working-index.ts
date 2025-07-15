@@ -480,7 +480,7 @@ async function setupApp() {
     });
 
     // Fallback to basic HTML for non-API routes
-    app.get("*", (req, res) => {
+    app.get("*", (req: Request, res: Response) => {
       res.send(`
         <!DOCTYPE html>
         <html>
