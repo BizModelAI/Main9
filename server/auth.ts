@@ -487,7 +487,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Forgot password
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
