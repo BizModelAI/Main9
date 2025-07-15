@@ -28,24 +28,48 @@ const ContactUs: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitStatus("idle");
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setSubmitStatus("success");
-    setIsSubmitting(false);
-
-    // Reset form after success
-    setTimeout(() => {
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        message: "",
-        category: "general",
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       });
-      setSubmitStatus("idle");
-    }, 3000);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus("success");
+        // Reset form after success
+        setTimeout(() => {
+          setFormData({
+            name: "",
+            email: "",
+            subject: "",
+            message: "",
+            category: "general",
+          });
+          setSubmitStatus("idle");
+        }, 5000);
+      } else {
+        console.error("Contact form submission failed:", data.error);
+        setSubmitStatus("error");
+        setTimeout(() => {
+          setSubmitStatus("idle");
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      setSubmitStatus("error");
+      setTimeout(() => {
+        setSubmitStatus("idle");
+      }, 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -95,7 +119,8 @@ const ContactUs: React.FC = () => {
                   Message Sent Successfully!
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Thank you for reaching out. We'll get back to you soon.
+                  Thank you for reaching out. We'll get back to you within 24
+                  hours.
                 </p>
                 <button
                   onClick={() => setSubmitStatus("idle")}
