@@ -922,7 +922,11 @@ const Dashboard: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="mt-12 mb-8"
           >
-            <QuizAttemptHistory userId={parseInt(String(user.id))} />
+            <QuizAttemptHistory
+              key={refreshKey}
+              userId={parseInt(String(user.id))}
+              onQuizSelected={handleQuizSelected}
+            />
           </motion.div>
         )}
       </div>
