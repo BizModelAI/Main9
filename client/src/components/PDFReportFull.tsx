@@ -37,15 +37,24 @@ interface PDFReportFullProps {
 export const PDFReportFull: React.FC<PDFReportFullProps> = ({
   quizData,
   userEmail,
+  aiAnalysis: passedAIAnalysis,
+  topBusinessPath: passedTopBusinessPath,
 }) => {
   const paths = generatePersonalizedPaths(quizData);
   const topThreePaths = paths.slice(0, 3);
   const userName = userEmail?.split("@")[0] || "User";
 
-  // Get the cached AI analysis that was generated on the Results/FullReport page
-  const cachedData = aiCacheManager.getCachedAIContent(quizData);
-  const aiInsights = cachedData.insights;
-  const aiAnalysis = cachedData.analysis;
+  // Use passed AI data if available, otherwise fall back to cache
+  let aiInsights, aiAnalysis;
+  if (passedAIAnalysis) {
+    aiInsights = passedAIAnalysis;
+    aiAnalysis = passedAIAnalysis;
+  } else {
+    // Fallback to cached data if no AI data was passed
+    const cachedData = aiCacheManager.getCachedAIContent(quizData);
+    aiInsights = cachedData.insights;
+    aiAnalysis = cachedData.analysis;
+  }
 
   // Calculate trait scores
   const traitScores = {
