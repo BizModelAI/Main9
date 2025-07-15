@@ -122,6 +122,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
       setSelectedAttemptId(attempt.id);
 
       // Fetch AI content for this attempt
+      console.log(`🔍 Fetching AI content for quiz attempt ${attempt.id}...`);
       const response = await fetch(
         `/api/quiz-attempts/${attempt.id}/ai-content`,
       );
@@ -130,18 +131,32 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
       if (response.ok) {
         const data = await response.json();
         aiContent = data.aiContent;
+        console.log(
+          `✅ AI content fetched for attempt ${attempt.id}:`,
+          aiContent ? "Found" : "None",
+        );
 
         // Store AI content in localStorage if it exists
         if (aiContent) {
           localStorage.setItem("loadedReportData", JSON.stringify(aiContent));
+          console.log(
+            `💾 AI content stored in localStorage for attempt ${attempt.id}`,
+          );
         } else {
           localStorage.removeItem("loadedReportData");
+          console.log(`🗑️ No AI content to store for attempt ${attempt.id}`);
         }
       } else {
         console.log(
-          "No AI content found for this attempt or error fetching:",
+          `⚠️ AI content fetch failed for attempt ${attempt.id}:`,
           response.status,
+          response.statusText,
         );
+        if (response.status === 500) {
+          console.log(
+            "💡 This might be due to missing ai_content column in database",
+          );
+        }
         localStorage.removeItem("loadedReportData");
       }
 
