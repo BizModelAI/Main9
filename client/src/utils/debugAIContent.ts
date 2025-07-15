@@ -74,7 +74,9 @@ export const debugAIContent = {
 
     // Get quiz attempts
     try {
-      const response = await fetch("/api/quiz-attempts/5");
+      const response = await fetch("/api/quiz-attempts/5", {
+        credentials: "include",
+      });
       if (response.ok) {
         const attempts = await response.json();
         console.log("📋 Available attempts:", attempts.length);
@@ -101,7 +103,9 @@ export const debugAIContent = {
     // This mimics what happens when user clicks on a quiz attempt
     try {
       // Get quiz attempts to find the one we want
-      const response = await fetch("/api/quiz-attempts/5");
+      const response = await fetch("/api/quiz-attempts/5", {
+        credentials: "include",
+      });
       if (response.ok) {
         const attempts = await response.json();
         const attempt = attempts.find((a: any) => a.id === attemptId);
@@ -116,6 +120,9 @@ export const debugAIContent = {
           // Fetch AI content
           const aiResponse = await fetch(
             `/api/quiz-attempts/${attempt.id}/ai-content`,
+            {
+              credentials: "include",
+            },
           );
           let aiContent = null;
 
