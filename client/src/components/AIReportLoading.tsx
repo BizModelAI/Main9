@@ -1012,7 +1012,11 @@ Return JSON format:
             <AnimatePresence mode="wait">
               <motion.div
                 key={steps[currentMobileStep]?.id}
-                className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 shadow-xl border-2 ring-4 ring-blue-400 border-blue-300"
+                className={`bg-gradient-to-br rounded-2xl p-6 shadow-xl border-2 ring-4 ${
+                  steps[currentMobileStep]?.status === "completed"
+                    ? "from-green-50 to-emerald-50 ring-green-400 border-green-300"
+                    : "from-white to-blue-50 ring-blue-400 border-blue-300"
+                }`}
                 initial={{
                   opacity: 0,
                   scale: 0.8,
