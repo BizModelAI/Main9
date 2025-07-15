@@ -1091,7 +1091,7 @@ Return JSON format:
               </motion.div>
             </AnimatePresence>
           ) : (
-            // Desktop: Show all cards
+                        // Desktop: Show all cards
             steps.map((step, index) => (
               <motion.div
                 key={step.id}
@@ -1102,104 +1102,74 @@ Return JSON format:
                       ? "ring-2 ring-blue-500 bg-blue-50"
                       : "ring-1 ring-gray-200"
                 }`}
-                    initial={{
-                      opacity: 0,
-                      scale: isMobile ? 0.8 : 0.9,
-                      y: isMobile ? 30 : 20,
-                      rotateX: isMobile ? 45 : 0,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: 0,
-                      rotateX: 0,
-                    }}
-                    exit={{
-                      opacity: 0,
-                      scale: isMobile ? 0.8 : 0.9,
-                      y: isMobile ? -30 : -20,
-                      rotateX: isMobile ? -45 : 0,
-                    }}
-                    transition={{
-                      duration: isMobile ? 0.5 : 0.3,
-                      delay: index * 0.05,
-                      type: isMobile ? "spring" : "tween",
-                      stiffness: isMobile ? 120 : undefined,
-                    }}
-                    layout
-                  >
-                    <div className="flex items-center mb-2">
-                      <div className="flex-shrink-0 mr-3">
-                        {getStepIcon(step, originalIndex)}
-                      </div>
-                      {step.status === "active" && (
+                initial={{
+                  opacity: 0,
+                  scale: 0.9,
+                  y: 20,
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 0.3,
+                  delay: index * 0.05,
+                }}
+              >
+                <div className="flex items-center mb-2">
+                  <div className="flex-shrink-0 mr-3">
+                    {getStepIcon(step, index)}
+                  </div>
+                  {step.status === "active" && (
+                    <motion.div
+                      className="flex space-x-1 ml-auto"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      {[0, 1, 2].map((dot) => (
                         <motion.div
-                          className="flex space-x-1 ml-auto"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                        >
-                          {[0, 1, 2].map((dot) => (
-                            <motion.div
-                              key={dot}
-                              className={`${
-                                isMobile ? "w-3 h-3" : "w-1.5 h-1.5"
-                              } bg-blue-500 rounded-full`}
-                              animate={{
-                                scale: isMobile ? [1, 1.4, 1] : [1, 1.2, 1],
-                                opacity: [0.5, 1, 0.5],
-                                y: isMobile ? [0, -8, 0] : [0, 0, 0],
-                              }}
-                              transition={{
-                                duration: isMobile ? 1.2 : 1,
-                                repeat: Infinity,
-                                delay: dot * 0.2,
-                              }}
-                            />
-                          ))}
-                        </motion.div>
-                      )}
-                    </div>
-                    <h3
-                      className={`${
-                        isMobile ? "text-2xl" : "text-lg"
-                      } font-semibold mb-1 ${
-                        step.status === "active"
-                          ? "text-blue-900"
-                          : step.status === "completed"
-                            ? "text-green-900"
-                            : "text-gray-700"
-                      }`}
-                    >
-                      {step.title}
-                    </h3>
-                    <p
-                      className={`${isMobile ? "text-base" : "text-sm"} ${
-                        step.status === "active"
-                          ? "text-blue-600"
-                          : step.status === "completed"
-                            ? "text-green-600"
-                            : "text-gray-500"
-                      }`}
-                    >
-                      {step.description}
-                    </p>
-                    {isMobile && (
-                      <motion.div
-                        className="mt-4 text-center"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-full inline-block">
-                          <span className="font-bold text-sm">
-                            Step {originalIndex + 1} of {steps.length}
-                          </span>
-                        </div>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                );
-              })}
+                          key={dot}
+                          className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            delay: dot * 0.2,
+                          }}
+                        />
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+                <h3
+                  className={`text-lg font-semibold mb-1 ${
+                    step.status === "active"
+                      ? "text-blue-900"
+                      : step.status === "completed"
+                        ? "text-blue-900"
+                        : "text-gray-700"
+                  }`}
+                >
+                  {step.title}
+                </h3>
+                <p
+                  className={`text-sm ${
+                    step.status === "active"
+                      ? "text-blue-600"
+                      : step.status === "completed"
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                  }`}
+                >
+                  {step.description}
+                </p>
+              </motion.div>
+            ))
+          )}
           </AnimatePresence>
         </div>
 
