@@ -48,6 +48,14 @@ const Settings: React.FC = () => {
     }
   }, [user]);
 
+  // Update active tab when URL changes
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["profile", "notifications", "account"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
     { id: "notifications", label: "Notifications", icon: Bell },
