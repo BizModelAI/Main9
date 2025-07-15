@@ -253,20 +253,13 @@ const ContactUs: React.FC = () => {
               Don't wait any longer. Take our AI-powered quiz and get
               personalized business recommendations in just 15 minutes.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <Link
                 to="/quiz"
                 className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-50 transition-colors flex items-center justify-center"
               >
                 <PlayCircle className="h-5 w-5 mr-2" />
                 Take the Quiz Now
-              </Link>
-              <Link
-                to="/explore"
-                className="bg-blue-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
-              >
-                <Grid3X3 className="h-5 w-5 mr-2" />
-                Browse Business Models
               </Link>
             </div>
           </motion.div>
