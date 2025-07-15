@@ -139,7 +139,6 @@ export class MemStorage implements IStorage {
       ...insertUser,
       name: insertUser.name ?? null,
       id,
-      email: null,
       isUnsubscribed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
