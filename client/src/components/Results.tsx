@@ -358,71 +358,48 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     );
   };
 
-  // Function to generate AI content for the results preview
-  const generateAIContentForPreview = async () => {
+  // Function to load cached preview data (NO API calls on Results page!)
+  const loadCachedPreviewData = async () => {
     try {
-      console.log("Generating AI content for results preview...");
+      console.log("✅ Loading cached preview data from quiz loading phase...");
       setIsGeneratingAI(true);
 
-      const aiService = AIService.getInstance();
-      const topPath = personalizedPaths[0];
+      // Get cached preview data from localStorage (set during quiz loading)
+      const cachedData = localStorage.getItem("quiz-completion-ai-insights");
+      if (cachedData) {
+        const aiData = JSON.parse(cachedData);
+        if (aiData.insights && aiData.complete) {
+          console.log("✅ Using cached preview insights from quiz loading");
+          setAiInsights(aiData.insights);
 
-      if (!topPath) {
-        console.warn("No business path found, using fallback content");
-        // Don't throw error, just use fallback content
-        const fallbackInsights = generateFallbackInsights(undefined);
-        const fallbackAnalysis = generateFallbackAnalysis();
-        setAiInsights(fallbackInsights);
-        setAiAnalysis(fallbackAnalysis);
-        setIsGeneratingAI(false);
-        return;
-      }
+          // Generate fallback analysis for top path preview
+          const topPath = personalizedPaths[0];
+          if (topPath) {
+            const fallbackAnalysis = generateFallbackAnalysis();
+            setAiAnalysis(fallbackAnalysis);
+          }
 
-      // Generate personalized insights using OpenAI
-      const insights = await aiService.generatePersonalizedInsights(
-        quizData,
-        personalizedPaths.slice(0, 3),
-      );
-
-      // Generate detailed analysis for the top path
-      const analysis = await aiService.generateDetailedAnalysis(
-        quizData,
-        topPath,
-      );
-
-      console.log("AI content generated successfully");
-      setAiInsights(insights);
-      setAiAnalysis(analysis);
-
-      // Cache the AI content
-      aiCacheManager.cacheAIContent(quizData, insights, analysis, topPath);
-
-      setIsGeneratingAI(false);
-    } catch (error) {
-      console.error("Error generating AI content:", error);
-
-      // Use fallback content if AI generation fails
-      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
-      const fallbackAnalysis = generateFallbackAnalysis();
-
-      console.log("Using fallback content due to AI generation error");
-      setAiInsights(fallbackInsights);
-      setAiAnalysis(fallbackAnalysis);
-
-      // Only cache if we have valid quiz data and paths
-      if (quizData && personalizedPaths[0]) {
-        try {
-          aiCacheManager.cacheAIContent(
-            quizData,
-            fallbackInsights,
-            fallbackAnalysis,
-            personalizedPaths[0],
-          );
-        } catch (cacheError) {
-          console.warn("Failed to cache fallback content:", cacheError);
+          setIsGeneratingAI(false);
+          return;
         }
       }
 
+      // Fallback if no cached data available
+      console.log("⚠️ No cached preview data found, using fallback content");
+      const topPath = personalizedPaths[0];
+      const fallbackInsights = generateFallbackInsights(topPath);
+      const fallbackAnalysis = generateFallbackAnalysis();
+      setAiInsights(fallbackInsights);
+      setAiAnalysis(fallbackAnalysis);
+      setIsGeneratingAI(false);
+    } catch (error) {
+      console.error("Error loading cached preview data:", error);
+
+      // Use fallback content if loading cached data fails
+      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
+      const fallbackAnalysis = generateFallbackAnalysis();
+      setAiInsights(fallbackInsights);
+      setAiAnalysis(fallbackAnalysis);
       setIsGeneratingAI(false);
     }
   };
