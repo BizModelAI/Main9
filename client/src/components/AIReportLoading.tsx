@@ -650,9 +650,30 @@ Return JSON format:
 
         // Step 4: Generate characteristics
         const step4Result = await executeStep(3, async () => {
-          const characteristics =
-            await generateAllCharacteristics(activeQuizData);
-          return { allCharacteristics: characteristics };
+          try {
+            const characteristics =
+              await generateAllCharacteristics(activeQuizData);
+            return { allCharacteristics: characteristics };
+          } catch (error) {
+            console.error(
+              "Error in step 4 - characteristics generation:",
+              error,
+            );
+            // Return fallback characteristics if generation fails
+            const fallbackCharacteristics = [
+              "Self-motivated entrepreneur",
+              "Strategic business thinker",
+              "Adaptable problem solver",
+              "Goal-oriented achiever",
+              "Dedicated professional",
+              "Growth-minded individual",
+            ];
+            console.log(
+              "Using step 4 fallback characteristics:",
+              fallbackCharacteristics,
+            );
+            return { allCharacteristics: fallbackCharacteristics };
+          }
         });
         currentResults = { ...currentResults, ...step4Result };
 
