@@ -1129,6 +1129,20 @@ Return JSON format:
                     >
                       {step.description}
                     </p>
+                    {isMobile && (
+                      <motion.div
+                        className="mt-4 text-center"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-full inline-block">
+                          <span className="font-bold text-sm">
+                            Step {originalIndex + 1} of {steps.length}
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
                   </motion.div>
                 );
               })}
