@@ -447,22 +447,27 @@ export async function registerRoutes(app: Express): Promise<void> {
   );
 
   // Income projections endpoint using hardcoded data
-  app.post("/api/generate-income-projections", async (req, res) => {
-    try {
-      const { businessId } = req.body;
+  app.post(
+    "/api/generate-income-projections",
+    async (req: Request, res: Response) => {
+      try {
+        const { businessId } = req.body;
 
-      if (!businessId) {
-        return res.status(400).json({ error: "Business ID is required" });
+        if (!businessId) {
+          return res.status(400).json({ error: "Business ID is required" });
+        }
+
+        // Use hardcoded projections based on business model
+        const projections = getFallbackProjections(businessId);
+        res.json(projections);
+      } catch (error) {
+        console.error("Error generating income projections:", error);
+        res
+          .status(500)
+          .json({ error: "Failed to generate income projections" });
       }
-
-      // Use hardcoded projections based on business model
-      const projections = getFallbackProjections(businessId);
-      res.json(projections);
-    } catch (error) {
-      console.error("Error generating income projections:", error);
-      res.status(500).json({ error: "Failed to generate income projections" });
-    }
-  });
+    },
+  );
 
   function getFallbackProjections(businessId: string) {
     const baseData: any = {
@@ -590,44 +595,47 @@ export async function registerRoutes(app: Express): Promise<void> {
   }
 
   // Quiz retake system endpoints
-  app.get("/api/quiz-retake-status/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      let user = await storage.getUser(userId);
+  app.get(
+    "/api/quiz-retake-status/:userId",
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        let user = await storage.getUser(userId);
 
-      // Create user if doesn't exist (for testing)
-      if (!user) {
-        user = await storage.createUser({
-          username: `user${userId}`,
-          password: "test123",
+        // Create user if doesn't exist (for testing)
+        if (!user) {
+          user = await storage.createUser({
+            username: `user${userId}`,
+            password: "test123",
+          });
+        }
+
+        const attemptsCount = await storage.getQuizAttemptsCount(userId);
+
+        // Pure pay-per-report system logic:
+        // - Everyone can take unlimited quiz attempts for free
+        // - They pay per report unlock
+
+        const isFirstQuiz = attemptsCount === 0;
+
+        res.json({
+          canRetake: true, // Everyone can always retake
+          attemptsCount,
+          hasAccessPass: false, // No longer used
+          quizRetakesRemaining: 999, // Unlimited for everyone
+          totalQuizRetakesUsed: 0, // Not used in new system, always 0
+          isFirstQuiz,
+          isFreeQuizUsed: attemptsCount > 0,
+          isGuestUser: false, // No longer relevant since everyone can take quizzes
         });
+      } catch (error) {
+        console.error("Error getting quiz retake status:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
+    },
+  );
 
-      const attemptsCount = await storage.getQuizAttemptsCount(userId);
-
-      // Pure pay-per-report system logic:
-      // - Everyone can take unlimited quiz attempts for free
-      // - They pay per report unlock
-
-      const isFirstQuiz = attemptsCount === 0;
-
-      res.json({
-        canRetake: true, // Everyone can always retake
-        attemptsCount,
-        hasAccessPass: false, // No longer used
-        quizRetakesRemaining: 999, // Unlimited for everyone
-        totalQuizRetakesUsed: 0, // Not used in new system, always 0
-        isFirstQuiz,
-        isFreeQuizUsed: attemptsCount > 0,
-        isGuestUser: false, // No longer relevant since everyone can take quizzes
-      });
-    } catch (error) {
-      console.error("Error getting quiz retake status:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.post("/api/quiz-attempt", async (req, res) => {
+  app.post("/api/quiz-attempt", async (req: Request, res: Response) => {
     try {
       const { userId, quizData } = req.body;
 
@@ -675,7 +683,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Get quiz attempts history for a user
-  app.get("/api/quiz-attempts/:userId", async (req, res) => {
+  app.get("/api/quiz-attempts/:userId", async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       const currentUserId = getUserIdFromRequest(req);
@@ -721,39 +729,42 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Save AI content for a specific quiz attempt
-  app.post("/api/quiz-attempts/:quizAttemptId/ai-content", async (req, res) => {
-    try {
-      const quizAttemptId = parseInt(req.params.quizAttemptId);
-      const { aiContent } = req.body;
-      const currentUserId = getUserIdFromRequest(req);
+  app.post(
+    "/api/quiz-attempts/:quizAttemptId/ai-content",
+    async (req: Request, res: Response) => {
+      try {
+        const quizAttemptId = parseInt(req.params.quizAttemptId);
+        const { aiContent } = req.body;
+        const currentUserId = getUserIdFromRequest(req);
 
-      if (!currentUserId) {
-        return res.status(401).json({ error: "Not authenticated" });
+        if (!currentUserId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        if (!aiContent) {
+          return res.status(400).json({ error: "AI content is required" });
+        }
+
+        // Verify the quiz attempt belongs to the current user
+        const attempts = await storage.getQuizAttempts(currentUserId);
+        const attempt = attempts.find((a) => a.id === quizAttemptId);
+
+        if (!attempt) {
+          return res
+            .status(404)
+            .json({ error: "Quiz attempt not found or unauthorized" });
+        }
+
+        await storage.saveAIContentToQuizAttempt(quizAttemptId, aiContent);
+
+        console.log(`AI content saved for quiz attempt ${quizAttemptId}`);
+        res.json({ success: true, message: "AI content saved successfully" });
+      } catch (error) {
+        console.error("Error saving AI content:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      if (!aiContent) {
-        return res.status(400).json({ error: "AI content is required" });
-      }
-
-      // Verify the quiz attempt belongs to the current user
-      const attempts = await storage.getQuizAttempts(currentUserId);
-      const attempt = attempts.find((a) => a.id === quizAttemptId);
-
-      if (!attempt) {
-        return res
-          .status(404)
-          .json({ error: "Quiz attempt not found or unauthorized" });
-      }
-
-      await storage.saveAIContentToQuizAttempt(quizAttemptId, aiContent);
-
-      console.log(`AI content saved for quiz attempt ${quizAttemptId}`);
-      res.json({ success: true, message: "AI content saved successfully" });
-    } catch (error) {
-      console.error("Error saving AI content:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Get AI content for a specific quiz attempt
   app.get("/api/quiz-attempts/:quizAttemptId/ai-content", async (req, res) => {
