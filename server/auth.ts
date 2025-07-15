@@ -88,7 +88,7 @@ export function setupAuthRoutes(app: Express) {
     res.json({
       sessionId: req.sessionID,
       userId: req.session?.userId,
-      testValue: (req.session as any)?.testValue || "none",
+      testValue: req.session?.testValue || "none",
       sessionExists: !!req.session,
       cookieHeader: req.headers.cookie?.substring(0, 100) + "..." || "none",
       userAgent: req.headers["user-agent"]?.substring(0, 50) + "..." || "none",
