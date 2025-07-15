@@ -846,6 +846,7 @@ Return JSON format:
 
     // On mobile, immediately show the current step
     if (isMobile) {
+      console.log(`📱 Mobile: Showing step ${stepIndex}`);
       setVisibleMobileSteps(new Set([stepIndex]));
     }
 
