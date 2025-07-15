@@ -553,7 +553,7 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
 
         setAiInsights({
           // New structure (priority)
-          previewInsights: fallbackPreviewInsights,
+          insights: fallbackPreviewInsights,
           keySuccessIndicators: fallbackKeyIndicators,
           personalizedRecommendations: [
             `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
