@@ -960,6 +960,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                 `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
                 {
                   method: "POST",
+                  credentials: "include",
                   headers: {
                     "Content-Type": "application/json",
                   },
