@@ -584,62 +584,74 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
 
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 mb-6">
             <div className="space-y-4 text-gray-700 leading-relaxed">
-              <p>
-                Based on your quiz responses, our AI has identified key patterns
-                in your entrepreneurial profile that suggest strong potential
-                for success in {topThreePaths[0]?.name.toLowerCase()} and
-                similar business models. Your responses show{" "}
-                {quizData.selfMotivationLevel >= 7
-                  ? "strong self-motivation"
-                  : "good self-motivation with external structure"}{" "}
-                and{" "}
-                {quizData.uncertaintyHandling >= 7
-                  ? "excellent ability to handle uncertainty"
-                  : "preference for more structured approaches"}
-                , which align particularly well with{" "}
-                {quizData.workStylePreference === "independent"
-                  ? "independent business models"
-                  : "collaborative business approaches"}
-                .
-              </p>
-              <p>
-                Your time availability of{" "}
-                {getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)},
-                combined with your{" "}
-                {quizData.riskComfortLevel <= 2
-                  ? "conservative risk approach"
-                  : quizData.riskComfortLevel >= 7
-                    ? "high risk tolerance"
-                    : "balanced risk approach"}
-                , positions you well for business models that can{" "}
-                {quizData.firstIncomeTimeline === "under-1-month"
-                  ? "generate quick returns"
-                  : quizData.firstIncomeTimeline === "no-rush"
-                    ? "build steadily over time"
-                    : "provide returns within your " +
-                      getTimelineLabel(quizData.firstIncomeTimeline) +
-                      " timeline"}
-                . Your investment capacity of{" "}
-                {getInvestmentRangeLabel(quizData.upfrontInvestment)} aligns
-                perfectly with the startup requirements of your top matches.
-              </p>
-              <p>
-                The analysis reveals that your preferred learning style (
-                {quizData.learningPreference?.replace("-", " ")}) and{" "}
-                {quizData.workStructurePreference?.replace("-", " ")} work
-                structure preferences are strong indicators for success in your
-                top-recommended business paths. With your{" "}
-                {quizData.techSkillsRating >= 7
-                  ? "strong technical skills"
-                  : quizData.techSkillsRating >= 4
-                    ? "solid technical foundation"
-                    : "developing technical abilities"}{" "}
-                and {quizData.supportSystemStrength} support system, you have{" "}
-                {quizData.meaningfulContributionImportance >= 7
-                  ? "strong motivation to make a meaningful impact"
-                  : "good foundation for business success"}{" "}
-                in your chosen field.
-              </p>
+              {aiAnalysis?.fullAnalysis ? (
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: aiAnalysis.fullAnalysis.replace(/\n/g, "<br>"),
+                  }}
+                />
+              ) : (
+                <>
+                  <p>
+                    Based on your quiz responses, our AI has identified key
+                    patterns in your entrepreneurial profile that suggest strong
+                    potential for success in{" "}
+                    {topThreePaths[0]?.name.toLowerCase()} and similar business
+                    models. Your responses show{" "}
+                    {quizData.selfMotivationLevel >= 7
+                      ? "strong self-motivation"
+                      : "good self-motivation with external structure"}{" "}
+                    and{" "}
+                    {quizData.uncertaintyHandling >= 7
+                      ? "excellent ability to handle uncertainty"
+                      : "preference for more structured approaches"}
+                    , which align particularly well with{" "}
+                    {quizData.workStylePreference === "independent"
+                      ? "independent business models"
+                      : "collaborative business approaches"}
+                    .
+                  </p>
+                  <p>
+                    Your time availability of{" "}
+                    {getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)}
+                    , combined with your{" "}
+                    {quizData.riskComfortLevel <= 2
+                      ? "conservative risk approach"
+                      : quizData.riskComfortLevel >= 7
+                        ? "high risk tolerance"
+                        : "balanced risk approach"}
+                    , positions you well for business models that can{" "}
+                    {quizData.firstIncomeTimeline === "under-1-month"
+                      ? "generate quick returns"
+                      : quizData.firstIncomeTimeline === "no-rush"
+                        ? "build steadily over time"
+                        : "provide returns within your " +
+                          getTimelineLabel(quizData.firstIncomeTimeline) +
+                          " timeline"}
+                    . Your investment capacity of{" "}
+                    {getInvestmentRangeLabel(quizData.upfrontInvestment)} aligns
+                    perfectly with the startup requirements of your top matches.
+                  </p>
+                  <p>
+                    The analysis reveals that your preferred learning style (
+                    {quizData.learningPreference?.replace("-", " ")}) and{" "}
+                    {quizData.workStructurePreference?.replace("-", " ")} work
+                    structure preferences are strong indicators for success in
+                    your top-recommended business paths. With your{" "}
+                    {quizData.techSkillsRating >= 7
+                      ? "strong technical skills"
+                      : quizData.techSkillsRating >= 4
+                        ? "solid technical foundation"
+                        : "developing technical abilities"}{" "}
+                    and {quizData.supportSystemStrength} support system, you
+                    have{" "}
+                    {quizData.meaningfulContributionImportance >= 7
+                      ? "strong motivation to make a meaningful impact"
+                      : "good foundation for business success"}{" "}
+                    in your chosen field.
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
