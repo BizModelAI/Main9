@@ -170,6 +170,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
+      let data: any;
       try {
         const response = await fetch("/api/openai-chat", {
           method: "POST",
@@ -198,11 +199,10 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           );
         }
 
-        const data = await response.json();
-        return data;
-      } catch (fetchError) {
+        data = await response.json();
+      } catch (fetchError: any) {
         clearTimeout(timeoutId);
-        if (fetchError.name === "AbortError") {
+        if (fetchError?.name === "AbortError") {
           console.error("API request timed out after 15 seconds");
           throw new Error("API request timed out");
         }
