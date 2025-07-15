@@ -934,7 +934,7 @@ CRITICAL: Use ONLY the actual data provided in the user profile. Do NOT make up 
   ): Promise<{
     personalizedRecommendations: string[];
     potentialChallenges: string[];
-    keyInsights: string[];
+    keyInsights: string[]; // ✅ REUSED from preview, not generated fresh
     bestFitCharacteristics: string[];
     top3Fits: { model: string; reason: string }[];
     bottom3Avoid: {
