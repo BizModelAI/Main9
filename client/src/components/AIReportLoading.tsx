@@ -1011,7 +1011,7 @@ Return JSON format:
           </div>
         </motion.div>
 
-                {/* Compact Loading Steps Grid */}
+        {/* Compact Loading Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
           {isMobile ? (
             // Mobile: Show single card with smooth transitions
@@ -1091,7 +1091,7 @@ Return JSON format:
               </motion.div>
             </AnimatePresence>
           ) : (
-                        // Desktop: Show all cards
+            // Desktop: Show all cards
             steps.map((step, index) => (
               <motion.div
                 key={step.id}
@@ -1170,7 +1170,6 @@ Return JSON format:
               </motion.div>
             ))
           )}
-          </AnimatePresence>
         </div>
 
         {/* Compact Fun Facts */}
@@ -1186,7 +1185,7 @@ Return JSON format:
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="flex items-start">
-              <div className="text-xl mr-3">🧠</div>
+              <div className="text-xl mr-3">���</div>
               <div>
                 <p className="text-sm text-gray-600">
                   Our AI analyzes over 50 different personality traits and
