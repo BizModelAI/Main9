@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl p-6 md:p-8 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto"
+                      className="relative bg-white rounded-3xl p-6 md:p-8 lg:p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[340px] lg:aspect-auto"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
                       <div className="absolute -top-3 left-6">
@@ -537,34 +537,34 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-3 sm:mb-4 md:mb-4">
-                        <div className="text-3xl sm:text-4xl md:text-4xl mr-3 sm:mr-4 md:mr-4 flex-shrink-0">
+                      <div className="flex items-start mb-3 sm:mb-4 md:mb-4 lg:mb-3">
+                        <div className="text-3xl sm:text-4xl md:text-4xl lg:text-3xl mr-3 sm:mr-4 md:mr-4 lg:mr-3 flex-shrink-0">
                           {model.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl md:text-xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-3 leading-tight">
+                          <h3 className="text-lg sm:text-xl md:text-xl lg:text-lg font-bold text-gray-900 mb-2 sm:mb-3 md:mb-3 lg:mb-2 leading-tight">
                             {model.name}
                           </h3>
-                          <p className="text-gray-600 text-sm sm:text-base md:text-base mb-3 sm:mb-4 md:mb-4 leading-tight sm:leading-relaxed md:leading-relaxed">
+                          <p className="text-gray-600 text-sm sm:text-base md:text-base lg:text-sm mb-3 sm:mb-4 md:mb-4 lg:mb-3 leading-tight sm:leading-relaxed md:leading-relaxed lg:leading-normal">
                             {model.description}
                           </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 mb-4 sm:mb-6 md:mb-6">
-                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4">
-                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2">
+                      <div className="grid grid-cols-2 gap-4 mb-4 sm:mb-6 md:mb-6 lg:gap-3 lg:mb-4">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-lg lg:p-2">
+                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
                             Time to Profit
                           </div>
-                          <div className="font-semibold sm:font-bold md:font-bold text-gray-900 text-sm md:text-base">
+                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
                             {model.timeToProfit}
                           </div>
                         </div>
-                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4">
-                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-lg lg:p-2">
+                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
                             Income
                           </div>
-                          <div className="font-semibold sm:font-bold md:font-bold text-gray-900 text-sm md:text-base">
+                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
                             {model.potentialIncome}
                           </div>
                         </div>
