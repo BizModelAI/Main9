@@ -1009,23 +1009,48 @@ const Dashboard: React.FC = () => {
                 Recent Activity
               </h2>
               <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div
-                      className={`w-8 h-8 bg-${activity.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}
-                    >
-                      <activity.icon
-                        className={`h-4 w-4 text-${activity.color}-600`}
-                      />
+                {activityLoading ? (
+                  // Loading state
+                  <>
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="flex items-start space-x-3 animate-pulse"
+                      >
+                        <div className="w-8 h-8 bg-gray-200 rounded-xl flex-shrink-0"></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : recentActivity.length > 0 ? (
+                  // Show actual activities
+                  recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div
+                        className={`w-8 h-8 bg-${activity.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}
+                      >
+                        <activity.icon
+                          className={`h-4 w-4 text-${activity.color}-600`}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {activity.action}
+                        </p>
+                        <p className="text-xs text-gray-500">{activity.time}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {activity.action}
-                      </p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                    </div>
+                  ))
+                ) : (
+                  // Empty state
+                  <div className="text-center py-4">
+                    <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No recent activity</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </motion.div>
