@@ -400,7 +400,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Logout
-  app.post("/api/auth/logout", async (req, res) => {
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
     try {
       req.session.destroy((err) => {
         if (err) {
