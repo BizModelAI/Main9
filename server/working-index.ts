@@ -1,5 +1,9 @@
 import "dotenv/config";
-import express, { type Request, Response, NextFunction } from "express";
+import express from "express";
+
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { createServer } from "http";
