@@ -2336,10 +2336,10 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
     async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
-        const storedEmail = await storage.getUnpaidUserEmail(sessionId);
+        const storedUser = await storage.getTemporaryUser(sessionId);
 
-        if (storedEmail) {
-          res.json({ email: storedEmail.email });
+        if (storedUser) {
+          res.json({ email: storedUser.email });
         } else {
           res.json({ email: null });
         }
