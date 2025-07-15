@@ -365,7 +365,6 @@ export function setupAuthRoutes(app: Express) {
       // Return a temporary user object for frontend
       res.json({
         id: `temp_${sessionId}`,
-        username: email,
         email: email,
         name: name,
         isTemporary: true,
