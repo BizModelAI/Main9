@@ -572,7 +572,15 @@ const QuizCompletionLoadingWrapper: React.FC<{
           onComplete={handleLoadingComplete}
         />
       )}
-      {showCongratulations && quizData && (
+      {showCongratulations && quizData && user && (
+        <LoggedInCongratulations
+          onContinue={handleCongratulationsComplete}
+          onSendEmailPreview={() => {}}
+          quizData={quizData}
+          onStartAIGeneration={handleCongratulationsComplete}
+        />
+      )}
+      {showCongratulations && quizData && !user && (
         <EmailCapture
           onEmailSubmit={handleCongratulationsComplete}
           onContinueAsGuest={handleCongratulationsComplete}
