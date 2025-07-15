@@ -154,13 +154,14 @@ const ContactUs: React.FC = () => {
                       htmlFor="category"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Category
+                      Category *
                     </label>
                     <select
                       id="category"
                       name="category"
                       value={formData.category}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     >
                       <option value="general">General Inquiry</option>
