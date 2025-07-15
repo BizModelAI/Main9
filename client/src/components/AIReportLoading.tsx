@@ -239,7 +239,9 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       }
     } catch (error) {
       console.error("Error generating all characteristics:", error);
-      // Fallback characteristics based on quiz data
+      console.log("Using fallback characteristics due to API failure");
+
+      // Robust fallback characteristics based on quiz data
       const fallbackCharacteristics = [
         quizData.selfMotivationLevel >= 4
           ? "Highly self-motivated"
@@ -261,6 +263,10 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           : "Analytical approach to challenges",
       ];
 
+      console.log(
+        "Generated fallback characteristics:",
+        fallbackCharacteristics,
+      );
       return fallbackCharacteristics;
     }
   };
