@@ -331,7 +331,7 @@ Rules: Use only provided data, no invented details.`;
       this.cacheInsights(cacheKey, result);
       return result;
     } catch (err) {
-      console.error("❌ Error generating preview insights:", err);
+      console.error("��� Error generating preview insights:", err);
       return {
         previewInsights:
           "Your profile shows promising alignment with entrepreneurial success. Your traits suggest you're capable of building something meaningful. The combination of your skills, motivation, and available resources creates a strong foundation for your chosen business path.",
@@ -956,7 +956,6 @@ Return JSON:
 {
   "personalizedRecommendations": ["6 specific suggestions"],
   "potentialChallenges": ["4 challenges with mitigation"],
-  "keyInsights": ["4 observations from profile"],
   "bestFitCharacteristics": ["6 fit characteristics"],
   "top3Fits": [{"model": "${topPaths[0]?.name}", "reason": "short explanation"}],
   "bottom3Avoid": [{"model": "model name", "reason": "why avoid", "futureConsideration": "when viable"}]
