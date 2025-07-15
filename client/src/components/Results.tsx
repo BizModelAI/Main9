@@ -427,8 +427,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Use cached AI data from loading page or set fallback content
   useEffect(() => {
     if (personalizedPaths.length > 0) {
-      // Check for cached AI data from the loading page first
-      const cachedAIData = localStorage.getItem("quiz-completion-ai-insights");
+      // Start generating AI content immediately
+      generateAIContentForPreview();
 
       console.log("���� DEBUGGING AI INSIGHTS LOADING:");
       console.log("Cached AI data found:", !!cachedAIData);
