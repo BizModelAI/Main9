@@ -906,9 +906,13 @@ Return JSON format:
 
       // Wait a moment to show completion, then move to next step on mobile
       if (isMobile && stepIndex < steps.length - 1) {
+        console.log(
+          `📱 Mobile: Step ${stepIndex} completed, moving to step ${stepIndex + 1}`,
+        );
         // Small delay to show the completed state
         await new Promise((resolve) => setTimeout(resolve, 800));
         const nextStepIndex = stepIndex + 1;
+        console.log(`📱 Mobile: Now showing step ${nextStepIndex}`);
         setVisibleMobileSteps(new Set([nextStepIndex]));
       }
 
