@@ -114,7 +114,7 @@ export class PDFService {
   }
 
   private generateHTMLFallback(options: PDFGenerationOptions): Buffer {
-    const { quizData, userEmail } = options;
+    const { quizData, userEmail, aiAnalysis, topBusinessPath } = options;
 
     // Enhanced HTML template that closely matches the PDFReport component
     const htmlContent = `
