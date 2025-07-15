@@ -71,16 +71,6 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
   ); // Start with first step visible
   const isMobile = useIsMobile();
 
-  // Debug mobile state
-  useEffect(() => {
-    if (isMobile) {
-      console.log(
-        `Mobile mode: Current step ${currentStep}, Visible steps:`,
-        Array.from(visibleMobileSteps),
-      );
-    }
-  }, [isMobile, currentStep, visibleMobileSteps]);
-
   const loadingSteps: LoadingStep[] = [
     {
       id: "analyzing-profile",
