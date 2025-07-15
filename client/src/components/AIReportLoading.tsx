@@ -1103,7 +1103,9 @@ Return JSON format:
                       )}
                     </div>
                     <h3
-                      className={`text-lg font-semibold mb-1 ${
+                      className={`${
+                        isMobile ? "text-2xl" : "text-lg"
+                      } font-semibold mb-1 ${
                         step.status === "active"
                           ? "text-blue-900"
                           : step.status === "completed"
@@ -1114,7 +1116,7 @@ Return JSON format:
                       {step.title}
                     </h3>
                     <p
-                      className={`text-sm ${
+                      className={`${isMobile ? "text-base" : "text-sm"} ${
                         step.status === "active"
                           ? "text-blue-600"
                           : step.status === "completed"
