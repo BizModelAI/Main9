@@ -824,9 +824,9 @@ Return JSON format:
       // Mark step as completed
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // On mobile, make next step visible when current step completes
+      // On mobile, switch to show next step when current step completes
       if (isMobile && stepIndex < steps.length - 1) {
-        setVisibleMobileSteps((prev) => new Set([...prev, stepIndex + 1]));
+        setVisibleMobileSteps(new Set([stepIndex + 1]));
       }
 
       setSteps((prev) =>
