@@ -147,7 +147,7 @@ const ContactUs: React.FC = () => {
                   </div>
                 </div>
 
-                                {/* Category and Subject Row */}
+                {/* Category and Subject Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label
@@ -166,13 +166,16 @@ const ContactUs: React.FC = () => {
                         required
                         className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none"
                       >
-                      <option value="general">General Inquiry</option>
-                      <option value="quiz">Quiz Help</option>
-                      <option value="business">Business Model Questions</option>
-                      <option value="technical">Technical Support</option>
-                      <option value="billing">Billing & Account</option>
-                      <option value="partnership">Partnership</option>
-                    </select>
+                        <option value="general">General Inquiry</option>
+                        <option value="quiz">Quiz Help</option>
+                        <option value="business">
+                          Business Model Questions
+                        </option>
+                        <option value="technical">Technical Support</option>
+                        <option value="billing">Billing & Account</option>
+                        <option value="partnership">Partnership</option>
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label
