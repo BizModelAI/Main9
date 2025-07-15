@@ -351,6 +351,62 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     );
   };
 
+  // Function to generate AI content for the results preview
+  const generateAIContentForPreview = async () => {
+    try {
+      console.log("Generating AI content for results preview...");
+      setIsGeneratingAI(true);
+
+      const aiService = AIService.getInstance();
+      const topPath = personalizedPaths[0];
+
+      if (!topPath) {
+        throw new Error("No business path found");
+      }
+
+      // Generate personalized insights using OpenAI
+      const insights = await aiService.generatePersonalizedInsights(
+        quizData,
+        personalizedPaths.slice(0, 3),
+      );
+
+      // Generate detailed analysis for the top path
+      const analysis = await aiService.generateDetailedAnalysis(
+        quizData,
+        topPath,
+      );
+
+      console.log("AI content generated successfully");
+      setAiInsights(insights);
+      setAiAnalysis(analysis);
+
+      // Cache the AI content
+      aiCacheManager.cacheAIContent(quizData, insights, analysis, topPath);
+
+      setIsGeneratingAI(false);
+    } catch (error) {
+      console.error("Error generating AI content:", error);
+
+      // Use fallback content if AI generation fails
+      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
+      const fallbackAnalysis = generateFallbackAnalysis();
+
+      console.log("Using fallback content due to AI generation error");
+      setAiInsights(fallbackInsights);
+      setAiAnalysis(fallbackAnalysis);
+
+      // Cache the fallback content
+      aiCacheManager.cacheAIContent(
+        quizData,
+        fallbackInsights,
+        fallbackAnalysis,
+        personalizedPaths[0],
+      );
+
+      setIsGeneratingAI(false);
+    }
+  };
+
   // Generate full AI content only when user accesses specific pages (on-demand)
   const generateFullAIContent = async (paths: BusinessPath[]) => {
     try {
@@ -1415,7 +1471,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">���</div>
+                                    <div className="text-3xl mt-1">����</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Step-by-Step Launch Guidance
