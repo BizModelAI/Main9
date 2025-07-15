@@ -459,7 +459,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Delete account
-  app.delete("/api/auth/account", async (req, res) => {
+  app.delete("/api/auth/account", async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ error: "Not authenticated" });
