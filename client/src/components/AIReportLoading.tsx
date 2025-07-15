@@ -837,9 +837,6 @@ Return JSON format:
       // On mobile, switch to show next step when current step completes
       if (isMobile && stepIndex < steps.length - 1) {
         const nextStepIndex = stepIndex + 1;
-        console.log(
-          `Mobile: Step ${stepIndex} completed, switching to step ${nextStepIndex}`,
-        );
         setVisibleMobileSteps(new Set([nextStepIndex]));
       }
 
