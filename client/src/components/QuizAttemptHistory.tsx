@@ -49,6 +49,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
   const [selectedAttemptId, setSelectedAttemptId] = React.useState<
     number | null
   >(null);
+  const [showAllAttempts, setShowAllAttempts] = React.useState(false);
 
   // Check if current localStorage quiz data matches any attempt
   React.useEffect(() => {
