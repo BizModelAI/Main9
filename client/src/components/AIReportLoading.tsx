@@ -66,10 +66,10 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
   const [progress, setProgress] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [loadingResults, setLoadingResults] = useState<any>({});
-  const [visibleMobileSteps, setVisibleMobileSteps] = useState<Set<number>>(
-    new Set([0]),
-  ); // Start with first step visible
   const isMobile = useIsMobile();
+  const [visibleMobileSteps, setVisibleMobileSteps] = useState<Set<number>>(
+    () => new Set(isMobile ? [0] : [0, 1, 2, 3, 4, 5]),
+  ); // Start with first step on mobile, all steps on desktop
 
   const loadingSteps: LoadingStep[] = [
     {
