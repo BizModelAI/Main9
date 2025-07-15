@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { QuizData } from "../types";
 import { quizSteps } from "../data/quizSteps";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 
 // Mobile-specific content for scale questions
 const mobileScaleContent: Record<
