@@ -56,6 +56,28 @@ const UserMenu: React.FC = () => {
     navigate("/");
   };
 
+  const settingsSubmenuItems = [
+    {
+      icon: UserIcon,
+      label: "Profile",
+      href: "/settings?tab=profile",
+      description: "Update your personal information",
+    },
+    {
+      icon: Bell,
+      label: "Notifications",
+      href: "/settings?tab=notifications",
+      description: "Manage email preferences",
+    },
+    {
+      icon: Trash2,
+      label: "Account Management",
+      href: "/settings?tab=account",
+      description: "Delete account and data",
+      className: "text-red-600 hover:text-red-700",
+    },
+  ];
+
   const menuItems = user
     ? [
         {
@@ -68,7 +90,11 @@ const UserMenu: React.FC = () => {
           icon: Settings,
           label: "Settings",
           href: "/settings",
-          onClick: () => setIsOpen(false),
+          onClick: () => {
+            setIsSettingsExpanded(!isSettingsExpanded);
+          },
+          hasSubmenu: true,
+          isExpanded: isSettingsExpanded,
         },
         {
           icon: LogOut,
