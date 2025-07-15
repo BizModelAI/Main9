@@ -499,7 +499,7 @@ Return JSON format:
           localStorage.removeItem("ai-generation-timestamp");
         } else {
           console.log(
-            "���� AI generation already in progress, skipping duplicate call",
+            "🔄 AI generation already in progress, skipping duplicate call",
           );
           return;
         }
@@ -1175,7 +1175,7 @@ Return JSON format:
                     step.status === "active"
                       ? "text-blue-600"
                       : step.status === "completed"
-                        ? "text-blue-600"
+                        ? "text-green-600"
                         : "text-gray-500"
                   }`}
                 >
