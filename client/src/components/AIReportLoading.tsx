@@ -828,9 +828,9 @@ Return JSON format:
       } catch (error) {
         console.error("Error generating report:", error);
 
-        // Ensure minimum 10 seconds duration even on error
+        // Ensure minimum 25 seconds duration even on error
         const elapsedTime = Date.now() - startTime;
-        const minimumDuration = 10000; // 10 seconds
+        const minimumDuration = 25000; // 25 seconds
 
         if (elapsedTime < minimumDuration) {
           const remainingTime = minimumDuration - elapsedTime;
