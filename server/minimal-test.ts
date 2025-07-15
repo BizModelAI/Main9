@@ -1,15 +1,15 @@
-import express from "express";
+import express, { Request, Response } from "express";
 
 console.log("Starting minimal test server...");
 
 const app = express();
 const port = 5000;
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (req: Request, res: Response) => {
   res.json({ status: "Test server is running!" });
 });
 
-app.get("*", (req, res) => {
+app.get("*", (req: Request, res: Response) => {
   res.send(`
     <!DOCTYPE html>
     <html>
