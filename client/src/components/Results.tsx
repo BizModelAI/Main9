@@ -429,6 +429,49 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     }
   }, [personalizedPaths]);
 
+  // Monitor for newly generated AI insights from AIReportLoading component
+  useEffect(() => {
+    const checkForNewAIData = () => {
+      const cachedData = localStorage.getItem("quiz-completion-ai-insights");
+      if (cachedData) {
+        try {
+          const aiData = JSON.parse(cachedData);
+          // Check if we have new complete AI data that we haven't loaded yet
+          if (aiData.insights && aiData.complete && !aiInsights) {
+            console.log("🔄 New AI insights detected, refreshing content...");
+            setAiInsights(aiData.insights);
+
+            // Generate fallback analysis for the new insights
+            const topPath = personalizedPaths[0];
+            if (topPath) {
+              const fallbackAnalysis = generateFallbackAnalysis();
+              setAiAnalysis(fallbackAnalysis);
+            }
+            setIsGeneratingAI(false);
+          }
+        } catch (error) {
+          console.error("Error parsing new AI data:", error);
+        }
+      }
+    };
+
+    // Check immediately
+    checkForNewAIData();
+
+    // Set up interval to check for new AI data every 2 seconds
+    const interval = setInterval(checkForNewAIData, 2000);
+
+    // Clean up interval after 30 seconds (AI should be done by then)
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [personalizedPaths, aiInsights]);
+
   // Helper function to execute download action (PDF)
   const executeDownloadAction = async () => {
     try {
