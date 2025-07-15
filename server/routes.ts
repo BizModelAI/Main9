@@ -767,40 +767,44 @@ export async function registerRoutes(app: Express): Promise<void> {
   );
 
   // Get AI content for a specific quiz attempt
-  app.get("/api/quiz-attempts/:quizAttemptId/ai-content", async (req, res) => {
-    try {
-      const quizAttemptId = parseInt(req.params.quizAttemptId);
-      const currentUserId = getUserIdFromRequest(req);
+  app.get(
+    "/api/quiz-attempts/:quizAttemptId/ai-content",
+    async (req: Request, res: Response) => {
+      try {
+        const quizAttemptId = parseInt(req.params.quizAttemptId);
+        const currentUserId = getUserIdFromRequest(req);
 
-      if (!currentUserId) {
-        return res.status(401).json({ error: "Not authenticated" });
+        if (!currentUserId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        // Verify the quiz attempt belongs to the current user
+        const attempts = await storage.getQuizAttempts(currentUserId);
+        const attempt = attempts.find((a) => a.id === quizAttemptId);
+
+        if (!attempt) {
+          return res
+            .status(404)
+            .json({ error: "Quiz attempt not found or unauthorized" });
+        }
+
+        const aiContent =
+          await storage.getAIContentForQuizAttempt(quizAttemptId);
+
+        console.log(
+          `AI content retrieved for quiz attempt ${quizAttemptId}:`,
+          !!aiContent,
+        );
+        res.json({ aiContent });
+      } catch (error) {
+        console.error("Error getting AI content:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      // Verify the quiz attempt belongs to the current user
-      const attempts = await storage.getQuizAttempts(currentUserId);
-      const attempt = attempts.find((a) => a.id === quizAttemptId);
-
-      if (!attempt) {
-        return res
-          .status(404)
-          .json({ error: "Quiz attempt not found or unauthorized" });
-      }
-
-      const aiContent = await storage.getAIContentForQuizAttempt(quizAttemptId);
-
-      console.log(
-        `AI content retrieved for quiz attempt ${quizAttemptId}:`,
-        !!aiContent,
-      );
-      res.json({ aiContent });
-    } catch (error) {
-      console.error("Error getting AI content:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Get latest quiz data for authenticated user (for business model pages)
-  app.get("/api/auth/latest-quiz-data", async (req, res) => {
+  app.get("/api/auth/latest-quiz-data", async (req: Request, res: Response) => {
     console.log("LATEST QUIZ DATA: Endpoint called!");
     console.log("API: GET /api/auth/latest-quiz-data", {
       sessionId: req.sessionID,
@@ -881,54 +885,57 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Get latest PAID quiz data for authenticated user (for navigation guard)
-  app.get("/api/auth/latest-paid-quiz-data", async (req, res) => {
-    console.log("API: GET /api/auth/latest-paid-quiz-data", {
-      sessionId: req.sessionID,
-      userId: req.session?.userId,
-      hasCookie: !!req.headers.cookie,
-    });
-
-    try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      console.log(`Latest paid quiz data: Fetching for user ${userId}`);
-
-      // Get user info
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      const attempts = await storage.getQuizAttempts(userId);
-      console.log(`Latest paid quiz data: Found ${attempts.length} attempts`);
-
-      if (attempts.length === 0) {
-        console.log("Latest paid quiz data: No attempts found");
-        return res.json(null);
-      }
-
-      // In pure pay-per-report model: all logged-in users have access to their latest quiz data
-      // They just need to pay per report unlock if they want full reports
-      const latestAttempt = attempts[0]; // attempts are sorted by most recent
-      console.log(
-        `Latest paid quiz data: Returning latest attempt ${latestAttempt.id}`,
-      );
-      return res.json({
-        quizData: latestAttempt.quizData,
-        quizAttemptId: latestAttempt.id,
-        isUnlocked: true,
+  app.get(
+    "/api/auth/latest-paid-quiz-data",
+    async (req: Request, res: Response) => {
+      console.log("API: GET /api/auth/latest-paid-quiz-data", {
+        sessionId: req.sessionID,
+        userId: req.session?.userId,
+        hasCookie: !!req.headers.cookie,
       });
-    } catch (error) {
-      console.error("Error getting latest paid quiz data:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+
+      try {
+        const userId = getUserIdFromRequest(req);
+        if (!userId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        console.log(`Latest paid quiz data: Fetching for user ${userId}`);
+
+        // Get user info
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        const attempts = await storage.getQuizAttempts(userId);
+        console.log(`Latest paid quiz data: Found ${attempts.length} attempts`);
+
+        if (attempts.length === 0) {
+          console.log("Latest paid quiz data: No attempts found");
+          return res.json(null);
+        }
+
+        // In pure pay-per-report model: all logged-in users have access to their latest quiz data
+        // They just need to pay per report unlock if they want full reports
+        const latestAttempt = attempts[0]; // attempts are sorted by most recent
+        console.log(
+          `Latest paid quiz data: Returning latest attempt ${latestAttempt.id}`,
+        );
+        return res.json({
+          quizData: latestAttempt.quizData,
+          quizAttemptId: latestAttempt.id,
+          isUnlocked: true,
+        });
+      } catch (error) {
+        console.error("Error getting latest paid quiz data:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Save quiz data for authenticated user (pay-per-quiz model)
-  app.post("/api/auth/save-quiz-data", async (req, res) => {
+  app.post("/api/auth/save-quiz-data", async (req: Request, res: Response) => {
     console.log("API: POST /api/auth/save-quiz-data", {
       sessionId: req.sessionID,
       userId: req.session?.userId,
@@ -1013,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Access pass concept removed - use report unlock payments instead
 
   // Get pricing for user without creating payment intent
-  app.get("/api/user-pricing/:userId", async (req, res) => {
+  app.get("/api/user-pricing/:userId", async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
 
