@@ -104,7 +104,7 @@ export const refunds = pgTable("refunds", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  email: true,
   password: true,
   name: true,
 });
