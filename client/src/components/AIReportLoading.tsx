@@ -198,7 +198,8 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           );
         }
 
-        return response;
+        const data = await response.json();
+        return data;
       } catch (fetchError) {
         clearTimeout(timeoutId);
         if (fetchError.name === "AbortError") {
@@ -207,17 +208,6 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
         }
         throw fetchError;
       }
-
-      if (!response.ok) {
-        console.error(
-          `API request failed with status ${response.status}: ${response.statusText}`,
-        );
-        throw new Error(
-          `API request failed: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const data = await response.json();
 
       // Check if we have content to work with
       if (!data.content) {
