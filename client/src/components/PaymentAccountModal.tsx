@@ -461,9 +461,19 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setAmount(parseFloat(data.amount) || 4.99);
-        setIsFirstReport(data.isFirstReport || false);
+        try {
+          const data = await response.json();
+          setAmount(parseFloat(data.amount) || 4.99);
+          setIsFirstReport(data.isFirstReport || false);
+        } catch (parseError) {
+          console.error(
+            "Failed to parse JSON response from user-pricing:",
+            parseError,
+          );
+          // Final fallback for logged users
+          setAmount(4.99);
+          setIsFirstReport(false);
+        }
       } else {
         // Final fallback for logged users
         setAmount(4.99);
