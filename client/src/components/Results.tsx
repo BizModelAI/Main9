@@ -361,7 +361,14 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       const topPath = personalizedPaths[0];
 
       if (!topPath) {
-        throw new Error("No business path found");
+        console.warn("No business path found, using fallback content");
+        // Don't throw error, just use fallback content
+        const fallbackInsights = generateFallbackInsights(undefined);
+        const fallbackAnalysis = generateFallbackAnalysis();
+        setAiInsights(fallbackInsights);
+        setAiAnalysis(fallbackAnalysis);
+        setIsGeneratingAI(false);
+        return;
       }
 
       // Generate personalized insights using OpenAI
