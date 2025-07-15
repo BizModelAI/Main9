@@ -151,13 +151,6 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     return () => clearInterval(interval);
   }, [isMobile, steps.length]);
 
-  // Update visible mobile steps when currentMobileStep changes
-  useEffect(() => {
-    if (isMobile) {
-      setVisibleMobileSteps(new Set([currentMobileStep]));
-    }
-  }, [currentMobileStep, isMobile]);
-
   // Smooth progress bar updates
   useEffect(() => {
     const interval = setInterval(() => {
