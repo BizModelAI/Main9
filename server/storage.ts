@@ -547,6 +547,24 @@ export class DatabaseStorage implements IStorage {
     return user ? true : false;
   }
 
+  async saveAIContentToQuizAttempt(
+    quizAttemptId: number,
+    aiContent: any,
+  ): Promise<void> {
+    await this.ensureDb()
+      .update(quizAttempts)
+      .set({ aiContent })
+      .where(eq(quizAttempts.id, quizAttemptId));
+  }
+
+  async getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null> {
+    const [attempt] = await this.ensureDb()
+      .select({ aiContent: quizAttempts.aiContent })
+      .from(quizAttempts)
+      .where(eq(quizAttempts.id, quizAttemptId));
+    return attempt?.aiContent || null;
+  }
+
   async decrementQuizRetakes(userId: number): Promise<void> {
     // No longer needed in pay-per-report system
     // This method is kept for backward compatibility but does nothing
