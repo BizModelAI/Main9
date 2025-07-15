@@ -527,7 +527,7 @@ Promise.race([
       res.json({ status: "Server is running (fallback mode)!" });
     });
 
-    app.get("*", (req, res) => {
+    app.get("*", (req: Request, res: Response) => {
       res.send(`
         <!DOCTYPE html>
         <html>
