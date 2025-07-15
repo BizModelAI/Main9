@@ -1,7 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Settings, LogOut, LogIn, LayoutDashboard } from "lucide-react";
+import {
+  User,
+  Settings,
+  LogOut,
+  LogIn,
+  LayoutDashboard,
+  ChevronDown,
+  ChevronRight,
+  Mail,
+  Bell,
+  Trash2,
+  UserIcon,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const UserMenu: React.FC = () => {
