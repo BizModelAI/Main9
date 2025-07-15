@@ -774,9 +774,9 @@ Return JSON format:
     // Mark step as active
     setCurrentStep(stepIndex);
 
-    // On mobile, make current step visible when it becomes active
+    // On mobile, show only the current active step
     if (isMobile) {
-      setVisibleMobileSteps((prev) => new Set([...prev, stepIndex]));
+      setVisibleMobileSteps(new Set([stepIndex]));
     }
 
     setSteps((prev) =>
