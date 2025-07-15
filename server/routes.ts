@@ -2472,7 +2472,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Test email endpoint for debugging
-  app.post("/api/test-email", async (req, res) => {
+  app.post("/api/test-email", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
@@ -2509,50 +2509,56 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Data cleanup endpoint (for manual triggering or cron jobs)
-  app.post("/api/admin/cleanup-expired-data", async (req, res) => {
-    try {
-      await storage.cleanupExpiredData();
-      res.json({ success: true, message: "Expired data cleanup completed" });
-    } catch (error) {
-      console.error("Error during data cleanup:", error);
-      res.status(500).json({ error: "Data cleanup failed" });
-    }
-  });
+  app.post(
+    "/api/admin/cleanup-expired-data",
+    async (req: Request, res: Response) => {
+      try {
+        await storage.cleanupExpiredData();
+        res.json({ success: true, message: "Expired data cleanup completed" });
+      } catch (error) {
+        console.error("Error during data cleanup:", error);
+        res.status(500).json({ error: "Data cleanup failed" });
+      }
+    },
+  );
 
   // Get user data retention status
-  app.get("/api/auth/data-retention-status", async (req, res) => {
-    try {
-      const userId = getUserIdFromRequest(req);
+  app.get(
+    "/api/auth/data-retention-status",
+    async (req: Request, res: Response) => {
+      try {
+        const userId = getUserIdFromRequest(req);
 
-      if (!userId) {
-        console.log("Data retention status: Not authenticated", {
-          sessionUserId: req.session?.userId,
-          cacheUserId: userId,
-          sessionKey: getSessionKey(req),
+        if (!userId) {
+          console.log("Data retention status: Not authenticated", {
+            sessionUserId: req.session?.userId,
+            cacheUserId: userId,
+            sessionKey: getSessionKey(req),
+          });
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        const isPaid = await storage.isPaidUser(userId);
+        const user = await storage.getUser(userId);
+
+        res.json({
+          isPaidUser: isPaid,
+          dataRetentionPolicy: isPaid
+            ? "permanent"
+            : "24_hours_from_quiz_completion",
+          hasAccessPass: false, // Access pass concept removed
+          accountCreatedAt: user?.createdAt,
+          dataWillBeDeletedIfUnpaid: !isPaid,
         });
-        return res.status(401).json({ error: "Not authenticated" });
+      } catch (error) {
+        console.error("Error getting data retention status:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      const isPaid = await storage.isPaidUser(userId);
-      const user = await storage.getUser(userId);
-
-      res.json({
-        isPaidUser: isPaid,
-        dataRetentionPolicy: isPaid
-          ? "permanent"
-          : "24_hours_from_quiz_completion",
-        hasAccessPass: false, // Access pass concept removed
-        accountCreatedAt: user?.createdAt,
-        dataWillBeDeletedIfUnpaid: !isPaid,
-      });
-    } catch (error) {
-      console.error("Error getting data retention status:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Test endpoint for debugging retake issue
-  app.post("/api/test-retake-flow", async (req, res) => {
+  app.post("/api/test-retake-flow", async (req: Request, res: Response) => {
     try {
       console.log("=== Testing retake flow ===");
 
