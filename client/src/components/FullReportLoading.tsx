@@ -57,6 +57,17 @@ export default function FullReportLoading({
   useEffect(() => {
     let timeouts: NodeJS.Timeout[] = [];
     let totalTime = 0;
+    let progressInterval: NodeJS.Timeout;
+
+    // Start smooth progress animation
+    const startTime = Date.now();
+    const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
+
+    progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const newProgress = Math.min((elapsed / totalDuration) * 100, 100);
+      setProgress(newProgress);
+    }, 50);
 
     // Start the step progression
     steps.forEach((step, index) => {
@@ -76,11 +87,13 @@ export default function FullReportLoading({
     // Complete the loading after all steps
     const completeTimeout = setTimeout(() => {
       setIsComplete(true);
+      setProgress(100);
     }, totalTime);
     timeouts.push(completeTimeout);
 
     return () => {
       timeouts.forEach(clearTimeout);
+      clearInterval(progressInterval);
     };
   }, []);
 
