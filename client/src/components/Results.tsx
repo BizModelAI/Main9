@@ -459,7 +459,19 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     // Check immediately
     checkForNewAIData();
 
-    // Set up interval to check for new AI data every 2 seconds
+    // Listen for localStorage changes (more responsive than polling)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "quiz-completion-ai-insights" && e.newValue) {
+        console.log(
+          "📡 Detected AI insights storage change, checking for new data...",
+        );
+        checkForNewAIData();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // Set up interval as backup to check for new AI data every 2 seconds
     const interval = setInterval(checkForNewAIData, 2000);
 
     // Clean up interval after 30 seconds (AI should be done by then)
@@ -468,6 +480,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     }, 30000);
 
     return () => {
+      window.removeEventListener("storage", handleStorageChange);
       clearInterval(interval);
       clearTimeout(timeout);
     };
