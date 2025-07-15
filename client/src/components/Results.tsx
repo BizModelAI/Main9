@@ -409,13 +409,19 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       setAiInsights(fallbackInsights);
       setAiAnalysis(fallbackAnalysis);
 
-      // Cache the fallback content
-      aiCacheManager.cacheAIContent(
-        quizData,
-        fallbackInsights,
-        fallbackAnalysis,
-        personalizedPaths[0],
-      );
+      // Only cache if we have valid quiz data and paths
+      if (quizData && personalizedPaths[0]) {
+        try {
+          aiCacheManager.cacheAIContent(
+            quizData,
+            fallbackInsights,
+            fallbackAnalysis,
+            personalizedPaths[0],
+          );
+        } catch (cacheError) {
+          console.warn("Failed to cache fallback content:", cacheError);
+        }
+      }
 
       setIsGeneratingAI(false);
     }
