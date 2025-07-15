@@ -40,6 +40,13 @@ export interface IStorage {
   getQuizAttemptsCount(userId: number): Promise<number>;
   getQuizAttempts(userId: number): Promise<QuizAttempt[]>;
   canUserRetakeQuiz(userId: number): Promise<boolean>;
+
+  // AI content operations
+  saveAIContentToQuizAttempt(
+    quizAttemptId: number,
+    aiContent: any,
+  ): Promise<void>;
+  getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null>;
   decrementQuizRetakes(userId: number): Promise<void>;
 
   // Payment operations
