@@ -608,7 +608,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Reset password
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
     try {
       const { token, password } = req.body;
 
