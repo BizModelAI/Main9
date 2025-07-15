@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Send, CheckCircle, PlayCircle, Grid3X3 } from "lucide-react";
+import { Send, CheckCircle, PlayCircle } from "lucide-react";
 
 const ContactUs: React.FC = () => {
   const [formData, setFormData] = useState({
