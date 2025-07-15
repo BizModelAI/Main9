@@ -297,7 +297,7 @@ export function setupAuthRoutes(app: Express) {
       // Check if user already exists as a paid user
       let existingUser;
       try {
-        existingUser = await storage.getUserByUsername(email);
+        existingUser = await storage.getUserByEmail(email);
       } catch (dbError) {
         console.error("Database error checking existing user:", dbError);
         return res.status(500).json({
