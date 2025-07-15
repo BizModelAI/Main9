@@ -475,12 +475,15 @@ const AIReportLoadingWrapper: React.FC<{
       console.log("Showing congratulations for the first time");
       setShowCongratulations(true);
       localStorage.setItem("congratulationsShown", "true");
+      // Navigate to results page where congratulations popup will be handled
+      navigate("/results");
     } else {
-      console.log("Congratulations already shown, skipping");
+      console.log(
+        "Congratulations already shown, navigating directly to results",
+      );
+      // Navigate directly to results page
+      navigate("/results");
     }
-
-    // Navigate back to quiz route where congratulations popup will be handled
-    navigate("/quiz");
   };
 
   if (!quizData) {
