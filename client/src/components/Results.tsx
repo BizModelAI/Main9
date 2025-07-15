@@ -954,11 +954,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           setShowFullReportLoading(false);
           setShowFullReport(true);
 
-          // Save AI content to database if we have a quiz attempt ID
+          // Save AI content to database if we have a quiz attempt ID and user is authenticated
           const currentQuizAttemptId = localStorage.getItem(
             "currentQuizAttemptId",
           );
-          if (currentQuizAttemptId && data) {
+          if (currentQuizAttemptId && data && user) {
             try {
               const response = await fetch(
                 `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
@@ -985,6 +985,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
             } catch (error) {
               console.error("Error saving AI content to database:", error);
             }
+          } else if (currentQuizAttemptId && data && !user) {
+            console.log(
+              "Skipping AI content save to database - user not authenticated",
+            );
           }
         }}
         onExit={() => setShowFullReportLoading(false)}
