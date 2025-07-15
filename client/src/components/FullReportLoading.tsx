@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { QuizData } from "../types";
+import { motion } from "framer-motion";
 import {
   CheckCircle,
   Clock,
@@ -7,6 +8,8 @@ import {
   BarChart3,
   Target,
   Lightbulb,
+  FileText,
+  Zap,
 } from "lucide-react";
 
 interface FullReportLoadingProps {
@@ -25,6 +28,7 @@ export default function FullReportLoading({
   const [currentStep, setCurrentStep] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [fullReportData, setFullReportData] = useState<any>(null);
+  const [progress, setProgress] = useState(0);
 
   const steps = [
     {
