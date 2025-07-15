@@ -1046,7 +1046,7 @@ Return JSON format:
               <div className="text-xl mr-3">🧠</div>
               <div>
                 <p className="text-sm text-gray-600">
-                  Our AI analyzes over 12 different personality traits and
+                  Our AI analyzes over 50 different personality traits and
                   business factors to find your perfect match.
                 </p>
               </div>
