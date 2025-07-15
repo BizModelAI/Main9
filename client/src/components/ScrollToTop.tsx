@@ -42,7 +42,7 @@ const ScrollToTop: React.FC = () => {
           aria-label="Scroll to top"
           type="button"
         >
-          <ArrowUp className="h-5 w-5" />
+          <ArrowUp className="h-6 w-6" />
         </motion.button>
       )}
     </AnimatePresence>
