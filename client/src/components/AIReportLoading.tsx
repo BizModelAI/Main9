@@ -312,8 +312,11 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       }
 
       // Clean up the response content (remove markdown code blocks if present)
-      let cleanContent = data.content;
-      if (cleanContent.includes("```json")) {
+      let cleanContent = data.content || data || "";
+      if (
+        typeof cleanContent === "string" &&
+        cleanContent.includes("```json")
+      ) {
         cleanContent = cleanContent
           .replace(/```json\n?/g, "")
           .replace(/```/g, "");
