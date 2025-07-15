@@ -5,6 +5,8 @@ import * as fs from "fs";
 export interface PDFGenerationOptions {
   quizData: QuizData;
   userEmail?: string;
+  aiAnalysis?: any;
+  topBusinessPath?: any;
   baseUrl: string;
 }
 
