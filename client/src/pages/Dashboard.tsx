@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full p-4 md:p-6 md:aspect-[4/3]"
+                      className="relative bg-white rounded-3xl shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full p-4 md:p-6 min-h-[280px] md:min-h-0 md:aspect-[4/3]"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
                       <div className="absolute -top-3 left-4 md:left-6">
