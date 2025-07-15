@@ -910,18 +910,21 @@ Return JSON format:
       // Continue with fallback
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // On mobile, switch to show next step even on error
-      if (isMobile && stepIndex < steps.length - 1) {
-        const nextStepIndex = stepIndex + 1;
-        setVisibleMobileSteps(new Set([nextStepIndex]));
-      }
-
+      // Update step status even on error
       setSteps((prev) =>
         prev.map((step, index) => ({
           ...step,
           status: index <= stepIndex ? "completed" : "pending",
         })),
       );
+
+      // On mobile, switch to show next step even on error (with delay)
+      if (isMobile && stepIndex < steps.length - 1) {
+        setTimeout(() => {
+          const nextStepIndex = stepIndex + 1;
+          setVisibleMobileSteps(new Set([nextStepIndex]));
+        }, 600); // Delay to show completed state
+      }
       return {};
     }
   };
