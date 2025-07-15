@@ -2368,15 +2368,16 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         .from(users)
         .where(sql`${users.email} IS NOT NULL`);
 
-      // Get emails from unpaid users (including expired ones for marketing)
+      // Get emails from unpaid/temporary users (including expired ones for marketing)
       const unpaidUsers = await db
         .select({
-          email: unpaidUserEmails.email,
+          email: users.email,
           source: sql<string>`'unpaid_user'`,
-          createdAt: unpaidUserEmails.createdAt,
-          expiresAt: unpaidUserEmails.expiresAt,
+          createdAt: users.createdAt,
+          expiresAt: users.expiresAt,
         })
-        .from(unpaidUserEmails);
+        .from(users)
+        .where(sql`${users.isTemporary} = true`);
 
       // Combine and deduplicate emails
       const allEmails = [...paidUsers, ...unpaidUsers];
