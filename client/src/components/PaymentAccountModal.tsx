@@ -413,36 +413,58 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         const storedQuizAttemptId = localStorage.getItem(
           "currentQuizAttemptId",
         );
-        const quizAttemptId = storedQuizAttemptId
-          ? parseInt(storedQuizAttemptId)
-          : null;
 
-        // If no valid quiz attempt ID, this is likely a returning user
-        // We should still get their pricing based on payment history
-        const response = await fetch("/api/create-report-unlock-payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            userId: user.id,
-            quizAttemptId: quizAttemptId || Date.now(), // Use timestamp as fallback
-          }),
-        });
+        if (storedQuizAttemptId) {
+          // User has a valid quiz attempt, create payment intent
+          const response = await fetch("/api/create-report-unlock-payment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              userId: user.id,
+              quizAttemptId: parseInt(storedQuizAttemptId),
+            }),
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          setAmount(parseFloat(data.amount) || 4.99);
-          setIsFirstReport(data.isFirstReport || false);
+          if (response.ok) {
+            const data = await response.json();
+            setAmount(parseFloat(data.amount) || 4.99);
+            setIsFirstReport(data.isFirstReport || false);
+          } else {
+            // Fallback to pricing endpoint
+            await fetchUserPricing();
+          }
         } else {
-          // Fallback to default pricing for logged users
-          setAmount(4.99);
-          setIsFirstReport(false);
+          // No quiz attempt ID, just get pricing for display
+          await fetchUserPricing();
         }
       }
     } catch (error) {
       console.error("Error fetching report pricing:", error);
+      // Try fallback pricing endpoint
+      await fetchUserPricing();
+    }
+  };
+
+  const fetchUserPricing = async () => {
+    try {
+      const response = await fetch(`/api/user-pricing/${user.id}`, {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAmount(parseFloat(data.amount) || 4.99);
+        setIsFirstReport(data.isFirstReport || false);
+      } else {
+        // Final fallback for logged users
+        setAmount(4.99);
+        setIsFirstReport(false);
+      }
+    } catch (error) {
+      console.error("Error fetching user pricing:", error);
       // Fallback pricing for logged users should be $4.99 (returning user price)
       setAmount(4.99);
       setIsFirstReport(false);
