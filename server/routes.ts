@@ -115,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Debug endpoint to check OpenAI configuration
-  app.get("/api/openai-status", (req, res) => {
+  app.get("/api/openai-status", (req: Request, res: Response) => {
     const hasApiKey = !!process.env.OPENAI_API_KEY;
     const keyLength = hasApiKey ? process.env.OPENAI_API_KEY!.length : 0;
 
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // General OpenAI chat endpoint
-  app.post("/api/openai-chat", async (req, res) => {
+  app.post("/api/openai-chat", async (req: Request, res: Response) => {
     // Add CORS headers
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -262,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Skills analysis endpoint using OpenAI
-  app.post("/api/analyze-skills", async (req, res) => {
+  app.post("/api/analyze-skills", async (req: Request, res: Response) => {
     try {
       const { quizData, requiredSkills, businessModel, userProfile } = req.body;
 
@@ -375,69 +375,76 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // AI-powered business fit scoring endpoint
-  app.post("/api/ai-business-fit-analysis", async (req, res) => {
-    console.log("📥 AI business fit analysis request received");
+  app.post(
+    "/api/ai-business-fit-analysis",
+    async (req: Request, res: Response) => {
+      console.log("📥 AI business fit analysis request received");
 
-    try {
-      // Rate limiting for concurrent quiz takers
-      const clientIP = req.ip || req.connection.remoteAddress || "unknown";
-      if (!openaiRateLimiter.canMakeRequest(clientIP)) {
-        console.log("❌ Rate limit exceeded for IP:", clientIP);
-        return res.status(429).json({
-          error: "Too many requests. Please wait a moment before trying again.",
+      try {
+        // Rate limiting for concurrent quiz takers
+        const clientIP = req.ip || req.connection.remoteAddress || "unknown";
+        if (!openaiRateLimiter.canMakeRequest(clientIP)) {
+          console.log("❌ Rate limit exceeded for IP:", clientIP);
+          return res.status(429).json({
+            error:
+              "Too many requests. Please wait a moment before trying again.",
+          });
+        }
+
+        const { quizData } = req.body;
+
+        if (!quizData) {
+          console.log("❌ No quiz data provided");
+          return res.status(400).json({ error: "Quiz data is required" });
+        }
+
+        // Add timeout to prevent hanging requests
+        const analysisPromise = aiScoringService.analyzeBusinessFit(quizData);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Analysis timed out after 35 seconds")),
+            35000,
+          ),
+        );
+
+        const analysis = await Promise.race([analysisPromise, timeoutPromise]);
+        console.log("✅ AI business fit analysis completed successfully");
+        res.json(analysis);
+      } catch (error) {
+        console.error("❌ Error in AI business fit analysis:", {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : "No stack trace",
+        });
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        res.status(500).json({
+          error: "Failed to analyze business fit",
+          details: errorMessage,
         });
       }
-
-      const { quizData } = req.body;
-
-      if (!quizData) {
-        console.log("❌ No quiz data provided");
-        return res.status(400).json({ error: "Quiz data is required" });
-      }
-
-      // Add timeout to prevent hanging requests
-      const analysisPromise = aiScoringService.analyzeBusinessFit(quizData);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Analysis timed out after 35 seconds")),
-          35000,
-        ),
-      );
-
-      const analysis = await Promise.race([analysisPromise, timeoutPromise]);
-      console.log("✅ AI business fit analysis completed successfully");
-      res.json(analysis);
-    } catch (error) {
-      console.error("❌ Error in AI business fit analysis:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : "No stack trace",
-      });
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({
-        error: "Failed to analyze business fit",
-        details: errorMessage,
-      });
-    }
-  });
+    },
+  );
 
   // AI-powered personality analysis endpoint
-  app.post("/api/ai-personality-analysis", async (req, res) => {
-    try {
-      const { quizData } = req.body;
+  app.post(
+    "/api/ai-personality-analysis",
+    async (req: Request, res: Response) => {
+      try {
+        const { quizData } = req.body;
 
-      if (!quizData) {
-        return res.status(400).json({ error: "Quiz data is required" });
+        if (!quizData) {
+          return res.status(400).json({ error: "Quiz data is required" });
+        }
+
+        const analysis =
+          await personalityAnalysisService.analyzePersonality(quizData);
+        res.json(analysis);
+      } catch (error) {
+        console.error("Error in AI personality analysis:", error);
+        res.status(500).json({ error: "Failed to analyze personality" });
       }
-
-      const analysis =
-        await personalityAnalysisService.analyzePersonality(quizData);
-      res.json(analysis);
-    } catch (error) {
-      console.error("Error in AI personality analysis:", error);
-      res.status(500).json({ error: "Failed to analyze personality" });
-    }
-  });
+    },
+  );
 
   // Income projections endpoint using hardcoded data
   app.post("/api/generate-income-projections", async (req, res) => {
