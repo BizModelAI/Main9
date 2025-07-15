@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Rate limiting for concurrent users
       const clientIP = req.ip || req.connection.remoteAddress || "unknown";
       if (!openaiRateLimiter.canMakeRequest(clientIP)) {
-        console.log("❌ Rate limit exceeded for IP:", clientIP);
+        console.log("�� Rate limit exceeded for IP:", clientIP);
         return res.status(429).json({
           error: "Too many requests. Please wait a moment before trying again.",
         });
@@ -207,11 +207,21 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       if (!openaiResponse.ok) {
         const errorText = await openaiResponse.text();
-        console.error(`OpenAI API error: ${openaiResponse.status}`, errorText);
-        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+        console.error(
+          `❌ OpenAI API error: ${openaiResponse.status}`,
+          errorText,
+        );
+        throw new Error(
+          `OpenAI API error: ${openaiResponse.status} - ${errorText}`,
+        );
       }
 
       const data = await openaiResponse.json();
+      console.log(
+        "✅ OpenAI API response received, content length:",
+        data.choices?.[0]?.message?.content?.length || 0,
+      );
+
       const content = data.choices[0].message.content;
 
       res.json({ content });
