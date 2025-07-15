@@ -205,53 +205,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       console.log("✅ Quiz data safely stored in localStorage");
     }
 
-        // Check if AI generation is still in progress before clearing caches
-    const aiGenerationInProgress = localStorage.getItem("ai-generation-in-progress");
-    const aiGenerationTimestamp = localStorage.getItem("ai-generation-timestamp");
-
-    // If AI generation started recently (within last 2 minutes), don't clear caches yet
-    const recentGenerationThreshold = 2 * 60 * 1000; // 2 minutes
-    const isRecentGeneration = aiGenerationTimestamp &&
-      (Date.now() - parseInt(aiGenerationTimestamp)) < recentGenerationThreshold;
-
-    if (aiGenerationInProgress === "true" || isRecentGeneration) {
-      console.log("⏳ AI generation in progress, skipping cache clear to avoid interference");
-    } else {
-      // Force clear AI caches for fresh results (but not active AI generation data)
-      console.log("🧹 Clearing AI caches for fresh quiz results...");
-
-      // Clear AI cache manager caches
-      aiCacheManager.clearAllCache();
-        } else {
-      // Clear specific localStorage items that might cause inconsistencies
-      // NOTE: Don't clear quiz-completion-ai-insights as AIReportLoading may be writing to it
-      const specificKeys = [
-        "ai-cache-reset-timestamp",
-      ];
-
-      specificKeys.forEach((key) => localStorage.removeItem(key));
-
-      // Clear any AI-related cache keys (but preserve generation status)
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (
-          key &&
-          (key.startsWith("ai-analysis-") ||
-            key.startsWith("skills-analysis-") ||
-            key.startsWith("ai-cache-")) &&
-          key !== "ai-generation-in-progress" &&
-          key !== "ai-generation-timestamp"
-        ) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach((key) => localStorage.removeItem(key));
-      console.log(
-        `✅ Cleared ${keysToRemove.length + specificKeys.length} AI cache entries for fresh results`,
-      );
-    }
-
     // Trigger confetti blast only on first visit to results page
     const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
     const hasShownConfetti = localStorage.getItem(confettiKey);
