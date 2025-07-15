@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
                   timeToProfit: "2-6 months",
                   potentialIncome: "$1K-50K/month",
                   difficulty: "Medium",
-                  icon: "����",
+                  icon: "🛍️",
                 },
                 "virtual-assistant": {
                   id: "virtual-assistant",
