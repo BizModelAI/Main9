@@ -9,6 +9,9 @@ export const debugAIContent = {
       console.log("1. Testing GET endpoint...");
       const getResponse = await fetch(
         `/api/quiz-attempts/${quizAttemptId}/ai-content`,
+        {
+          credentials: "include",
+        },
       );
       console.log("GET Response status:", getResponse.status);
 
@@ -31,6 +34,7 @@ export const debugAIContent = {
         `/api/quiz-attempts/${quizAttemptId}/ai-content`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -48,6 +52,9 @@ export const debugAIContent = {
         console.log("3. Verifying saved data...");
         const verifyResponse = await fetch(
           `/api/quiz-attempts/${quizAttemptId}/ai-content`,
+          {
+            credentials: "include",
+          },
         );
         if (verifyResponse.ok) {
           const verifyData = await verifyResponse.json();
