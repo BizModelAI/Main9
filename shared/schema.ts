@@ -57,7 +57,8 @@ export const payments = pgTable("payments", {
   completedAt: timestamp("completed_at"),
 });
 
-// Temporary email tracking for unpaid users (expires after 24 hours)
+// DEPRECATED: Temporary email tracking for unpaid users (expires after 24 hours)
+// This table is now consolidated into the users table - keeping for migration purposes only
 export const unpaidUserEmails = pgTable("unpaid_user_emails", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull().unique(), // Browser session ID
