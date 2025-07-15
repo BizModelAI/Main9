@@ -1155,7 +1155,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
 
         // Verify temporary user data exists
-        const tempData = await storage.getUnpaidUserEmail(sessionId);
+        const tempData = await storage.getTemporaryUser(sessionId);
         if (!tempData) {
           return res
             .status(404)
