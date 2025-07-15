@@ -85,7 +85,7 @@ function Header() {
             <div className="md:hidden">
               <button
                 onClick={toggleMobileMenu}
-                className="text-gray-700 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="text-gray-700 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-100 hover:shadow-lg transition-all duration-200"
                 aria-label="Toggle mobile menu"
               >
                 {isMobileMenuOpen ? (
