@@ -118,15 +118,53 @@ const ContactUs: React.FC = () => {
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   Message Sent Successfully!
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Thank you for reaching out. We'll get back to you within 24
-                  hours.
+                <p className="text-gray-600 mb-4">
+                  Thank you for reaching out. We've sent you a confirmation
+                  email and will get back to you within 24 hours.
                 </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                  <p className="text-blue-800 text-sm">
+                    <strong>What's next?</strong> Check your email for a
+                    confirmation message. Our team will review your inquiry and
+                    respond personally.
+                  </p>
+                </div>
                 <button
                   onClick={() => setSubmitStatus("idle")}
                   className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
                 >
                   Send Another Message
+                </button>
+              </div>
+            ) : submitStatus === "error" ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg
+                    className="h-8 w-8 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  Something went wrong
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  We couldn't send your message right now. Please try again or
+                  contact us directly at team@bizmodelai.com.
+                </p>
+                <button
+                  onClick={() => setSubmitStatus("idle")}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Try Again
                 </button>
               </div>
             ) : (
