@@ -68,7 +68,7 @@ declare module "express-session" {
 
 export function setupAuthRoutes(app: Express) {
   // Cookie test endpoint - sets a test value and returns session info
-  app.get("/api/auth/cookie-test", async (req, res) => {
+  app.get("/api/auth/cookie-test", async (req: Request, res: Response) => {
     const testValue = `test-${Date.now()}`;
     (req.session as any).testValue = testValue;
 
