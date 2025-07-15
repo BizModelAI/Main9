@@ -784,9 +784,9 @@ Return JSON format:
         });
         currentResults = { ...currentResults, ...step6Result };
 
-        // Ensure minimum 10 seconds duration
+        // Ensure minimum 25 seconds duration to match mobile step timing
         const elapsedTime = Date.now() - startTime;
-        const minimumDuration = 10000; // 10 seconds
+        const minimumDuration = 25000; // 25 seconds (6 steps × 4.2 seconds)
 
         if (elapsedTime < minimumDuration) {
           const remainingTime = minimumDuration - elapsedTime;
