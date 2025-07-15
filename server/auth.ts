@@ -495,7 +495,7 @@ export function setupAuthRoutes(app: Express) {
       }
 
       // Find user by email
-      const user = await storage.getUserByUsername(email);
+      const user = await storage.getUserByEmail(email);
       if (!user) {
         // Don't reveal whether the email exists or not for security
         return res.json({
@@ -591,7 +591,7 @@ export function setupAuthRoutes(app: Express) {
       }
 
       // Find user by email
-      const user = await storage.getUserByUsername(email);
+      const user = await storage.getUserByEmail(email);
       if (user) {
         // Update user to mark as unsubscribed
         await storage.updateUser(user.id, { isUnsubscribed: true });
