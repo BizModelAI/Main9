@@ -19,74 +19,111 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  console.log("Starting Vite development server...");
+  const isProduction = process.env.NODE_ENV === "production";
 
-  try {
-    const serverOptions = {
-      middlewareMode: true,
-      hmr: { server },
-      allowedHosts: true as const,
-    };
+  if (isProduction) {
+    console.log("🚀 Starting in PRODUCTION mode - serving static assets...");
 
-    const vite = await createViteServer({
-      configFile: path.resolve(import.meta.dirname, "..", "vite.config.ts"),
-      customLogger: {
-        ...viteLogger,
-        error: (msg, options) => {
-          console.error("Vite error:", msg);
-          // Don't exit process on vite errors
-        },
-      },
-      server: serverOptions,
-      appType: "custom",
-    });
+    // In production, serve static assets from dist/public
+    const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
 
-    app.use(vite.middlewares);
+    if (!fs.existsSync(distPath)) {
+      console.error(`❌ Production build not found at: ${distPath}`);
+      console.log("Please run 'npm run build' first");
+      throw new Error("Production build required");
+    }
+
+    // Serve static assets
+    app.use(express.static(distPath));
+
+    // Serve index.html for all non-API routes
     app.use("*", async (req, res, next) => {
-      const url = req.originalUrl;
-
-      try {
-        const clientTemplate = path.resolve(
-          import.meta.dirname,
-          "..",
-          "client",
-          "index.html",
-        );
-
-        // always reload the index.html file from disk incase it changes
-        let template = await fs.promises.readFile(clientTemplate, "utf-8");
-        template = template.replace(
-          `src="/src/main.tsx"`,
-          `src="/src/main.tsx?v=${nanoid()}"`,
-        );
-        const page = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(page);
-      } catch (e) {
-        console.error("Error transforming HTML:", e);
-        next(e);
+      // Skip API routes
+      if (req.originalUrl.startsWith("/api")) {
+        return next();
       }
-    });
 
-    console.log("✅ Vite development server started successfully!");
-  } catch (error) {
-    console.error("❌ Failed to start Vite:", error);
-    // Fallback to static serving
-    console.log("Falling back to static HTML serving...");
-    app.use("*", async (req, res, next) => {
       try {
-        const clientTemplate = path.resolve(
-          import.meta.dirname,
-          "..",
-          "client",
-          "index.html",
-        );
-        let template = await fs.promises.readFile(clientTemplate, "utf-8");
+        const indexPath = path.resolve(distPath, "index.html");
+        const template = await fs.promises.readFile(indexPath, "utf-8");
         res.status(200).set({ "Content-Type": "text/html" }).end(template);
       } catch (e) {
-        console.error("Error serving HTML:", e);
+        console.error("Error serving production HTML:", e);
         next(e);
       }
     });
+
+    console.log("✅ Production server started successfully!");
+  } else {
+    console.log("Starting Vite development server...");
+
+    try {
+      const serverOptions = {
+        middlewareMode: true,
+        hmr: { server },
+        allowedHosts: true as const,
+      };
+
+      const vite = await createViteServer({
+        configFile: path.resolve(import.meta.dirname, "..", "vite.config.ts"),
+        customLogger: {
+          ...viteLogger,
+          error: (msg, options) => {
+            console.error("Vite error:", msg);
+            // Don't exit process on vite errors
+          },
+        },
+        server: serverOptions,
+        appType: "custom",
+      });
+
+      app.use(vite.middlewares);
+      app.use("*", async (req, res, next) => {
+        const url = req.originalUrl;
+
+        try {
+          const clientTemplate = path.resolve(
+            import.meta.dirname,
+            "..",
+            "client",
+            "index.html",
+          );
+
+          // always reload the index.html file from disk incase it changes
+          let template = await fs.promises.readFile(clientTemplate, "utf-8");
+          template = template.replace(
+            `src="/src/main.tsx"`,
+            `src="/src/main.tsx?v=${nanoid()}"`,
+          );
+          const page = await vite.transformIndexHtml(url, template);
+          res.status(200).set({ "Content-Type": "text/html" }).end(page);
+        } catch (e) {
+          console.error("Error transforming HTML:", e);
+          next(e);
+        }
+      });
+
+      console.log("✅ Vite development server started successfully!");
+    } catch (error) {
+      console.error("❌ Failed to start Vite:", error);
+      // Fallback to static serving
+      console.log("Falling back to static HTML serving...");
+      app.use("*", async (req, res, next) => {
+        try {
+          const clientTemplate = path.resolve(
+            import.meta.dirname,
+            "..",
+            "client",
+            "index.html",
+          );
+          let template = await fs.promises.readFile(clientTemplate, "utf-8");
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          console.error("Error serving HTML:", e);
+          next(e);
+        }
+      });
+    }
   }
 }
 
