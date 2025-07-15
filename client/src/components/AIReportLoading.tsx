@@ -424,11 +424,24 @@ Return JSON format:
       }
 
       const data = await response.json();
-      let cleanContent = data.content || data || "";
-      if (
-        typeof cleanContent === "string" &&
-        cleanContent.includes("```json")
-      ) {
+      let cleanContent = data.content || "";
+
+      // If data.content is not available, check if data itself is a string
+      if (!cleanContent && typeof data === "string") {
+        cleanContent = data;
+      }
+
+      // If we still don't have content, try to stringify the data object
+      if (!cleanContent && typeof data === "object" && data !== null) {
+        cleanContent = JSON.stringify(data);
+      }
+
+      // Ensure cleanContent is a string before proceeding
+      if (typeof cleanContent !== "string") {
+        throw new Error("Invalid response format: expected string content");
+      }
+
+      if (cleanContent.includes("```json")) {
         cleanContent = cleanContent
           .replace(/```json\n?/g, "")
           .replace(/```/g, "");
