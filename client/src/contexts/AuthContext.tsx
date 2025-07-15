@@ -56,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           );
 
           const xhr = new XMLHttpRequest();
+          console.log("Making XMLHttpRequest to /api/auth/me");
           xhr.open("GET", "/api/auth/me", true);
           xhr.withCredentials = true;
           xhr.setRequestHeader("Content-Type", "application/json");
