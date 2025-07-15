@@ -145,6 +145,36 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     }
   }, [isMobile]);
 
+  // Auto-cycle through mobile steps every 3 seconds
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const interval = setInterval(() => {
+      setCurrentMobileStep((prev) => (prev + 1) % steps.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isMobile, steps.length]);
+
+  // Update visible mobile steps when currentMobileStep changes
+  useEffect(() => {
+    if (isMobile) {
+      setVisibleMobileSteps(new Set([currentMobileStep]));
+    }
+  }, [currentMobileStep, isMobile]);
+
+  // Smooth progress bar updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const newProgress = prev + 0.5; // Increment by 0.5% every 100ms
+        return newProgress >= 100 ? 100 : newProgress;
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Generate all 6 characteristics with OpenAI
   const generateAllCharacteristics = async (
     quizData: QuizData,
