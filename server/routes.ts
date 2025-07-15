@@ -1490,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   );
 
   // Stripe webhook endpoint
-  app.post("/api/stripe/webhook", async (req, res) => {
+  app.post("/api/stripe/webhook", async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -1670,21 +1670,24 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Business resources endpoint
-  app.get("/api/business-resources/:businessModel", async (req, res) => {
-    try {
-      const businessModel = req.params.businessModel;
-      const resources = await generateBusinessResources(businessModel);
+  app.get(
+    "/api/business-resources/:businessModel",
+    async (req: Request, res: Response) => {
+      try {
+        const businessModel = req.params.businessModel;
+        const resources = await generateBusinessResources(businessModel);
 
-      res.json(resources);
-    } catch (error) {
-      console.error("Error generating business resources:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json(resources);
+      } catch (error) {
+        console.error("Error generating business resources:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Admin refund endpoints
   // Get all payments with optional pagination (admin only)
-  app.get("/api/admin/payments", async (req, res) => {
+  app.get("/api/admin/payments", async (req: Request, res: Response) => {
     try {
       // TODO: Add admin authentication check here
       // For now, we'll add a simple API key check
@@ -1716,7 +1719,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Process a refund (admin only)
-  app.post("/api/admin/refund", async (req, res) => {
+  app.post("/api/admin/refund", async (req: Request, res: Response) => {
     try {
       // TODO: Add admin authentication check here
       const adminKey = req.headers["x-admin-key"];
@@ -1840,7 +1843,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Get all refunds (admin only)
-  app.get("/api/admin/refunds", async (req, res) => {
+  app.get("/api/admin/refunds", async (req: Request, res: Response) => {
     try {
       const adminKey = req.headers["x-admin-key"];
       if (adminKey !== process.env.ADMIN_API_KEY) {
