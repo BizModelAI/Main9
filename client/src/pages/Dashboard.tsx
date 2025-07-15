@@ -30,6 +30,7 @@ const Dashboard: React.FC = () => {
   const [hasEverSelectedModel, setHasEverSelectedModel] = useState(false);
   const [topBusinessModels, setTopBusinessModels] = useState<any[]>([]);
   const [isLoadingScores, setIsLoadingScores] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0); // For triggering re-renders
 
   // Load real business model scores from user's quiz data
   useEffect(() => {
