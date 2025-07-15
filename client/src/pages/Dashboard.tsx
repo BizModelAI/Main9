@@ -529,9 +529,9 @@ const Dashboard: React.FC = () => {
                       className="relative bg-white rounded-3xl shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full p-4 md:p-6 md:aspect-[4/3]"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
-                      <div className="absolute -top-3 left-6">
+                      <div className="absolute -top-3 left-4 md:left-6">
                         <div
-                          className={`${fitCategory.color} text-white px-4 py-1 rounded-full text-sm font-semibold`}
+                          className={`${fitCategory.color} text-white px-4 md:px-4 py-2 md:py-1 rounded-full text-sm md:text-sm font-bold shadow-lg`}
                         >
                           {fitCategory.label} • {model.fitScore}%
                         </div>
