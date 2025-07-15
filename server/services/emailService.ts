@@ -166,6 +166,37 @@ export class EmailService {
     });
   }
 
+  async sendContactFormNotification(formData: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    category: string;
+  }): Promise<boolean> {
+    const subject = `New Contact Form: ${formData.subject}`;
+    const html = this.generateContactFormNotificationHTML(formData);
+
+    return await this.sendEmail({
+      to: "team@bizmodelai.com",
+      subject,
+      html,
+    });
+  }
+
+  async sendContactFormConfirmation(
+    userEmail: string,
+    userName: string,
+  ): Promise<boolean> {
+    const subject = "We received your message - BizModelAI";
+    const html = this.generateContactFormConfirmationHTML(userName);
+
+    return await this.sendEmail({
+      to: userEmail,
+      subject,
+      html,
+    });
+  }
+
   private generateQuizResultsHTML(quizData: QuizData): string {
     const topBusinessModel = this.getTopBusinessModel(quizData);
 
