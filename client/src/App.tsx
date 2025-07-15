@@ -801,15 +801,20 @@ const QuizWithNavigation: React.FC<{
   };
 
   const handleReturnToQuiz = () => {
-    console.log("Returning to quiz - explicitly clearing quiz data");
+    console.log("Returning to quiz - clearing all quiz-related cache");
+
+    // Clear all quiz-related state
     setShowCongratulations(false);
     setQuizData(null);
-    // Clear localStorage quiz data when user explicitly returns to quiz
-    localStorage.removeItem("quizData");
-    localStorage.removeItem("loadedReportData");
-    // Reset congratulations tracking for next quiz completion
+    setUserEmail(null);
+    setShowAILoading(false);
+    setShowEmailCapture(false);
     setCongratulationsShown(false);
-    localStorage.setItem("congratulationsShown", "false");
+    setLoadedReportData(null);
+
+    // Clear all localStorage cache
+    clearQuizRelatedCache();
+
     // Stay on current page (quiz)
   };
 
