@@ -21,7 +21,7 @@ interface QuizAttempt {
 
 interface QuizAttemptHistoryProps {
   userId: number;
-  onQuizSelected?: (quizData: QuizData) => void;
+  onQuizSelected?: (quizData: QuizData, aiContent?: any) => void;
 }
 
 export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
@@ -114,18 +114,50 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
     );
   }
 
-  const handleSelectQuiz = (attempt: QuizAttempt) => {
-    // Store the selected quiz data in localStorage
-    localStorage.setItem("quizData", JSON.stringify(attempt.quizData));
-    setSelectedAttemptId(attempt.id);
+  const handleSelectQuiz = async (attempt: QuizAttempt) => {
+    try {
+      // Store the selected quiz data in localStorage
+      localStorage.setItem("quizData", JSON.stringify(attempt.quizData));
+      localStorage.setItem("currentQuizAttemptId", attempt.id.toString());
+      setSelectedAttemptId(attempt.id);
 
-    // Call the callback if provided
-    if (onQuizSelected) {
-      onQuizSelected(attempt.quizData);
+      // Fetch AI content for this attempt
+      const response = await fetch(
+        `/api/quiz-attempts/${attempt.id}/ai-content`,
+      );
+      let aiContent = null;
+
+      if (response.ok) {
+        const data = await response.json();
+        aiContent = data.aiContent;
+
+        // Store AI content in localStorage if it exists
+        if (aiContent) {
+          localStorage.setItem("loadedReportData", JSON.stringify(aiContent));
+        } else {
+          localStorage.removeItem("loadedReportData");
+        }
+      } else {
+        console.log(
+          "No AI content found for this attempt or error fetching:",
+          response.status,
+        );
+        localStorage.removeItem("loadedReportData");
+      }
+
+      // Call the callback if provided
+      if (onQuizSelected) {
+        onQuizSelected(attempt.quizData, aiContent);
+      }
+
+      // Instead of page reload, trigger a React state update
+      // This will be handled by the parent component
+      console.log("Quiz attempt switched successfully without page reload");
+    } catch (error) {
+      console.error("Error switching quiz attempt:", error);
+      // Fallback to page reload if API fails
+      window.location.reload();
     }
-
-    // Refresh the page to update all components that rely on localStorage
-    window.location.reload();
   };
 
   // Since users can't create accounts without taking the quiz,
