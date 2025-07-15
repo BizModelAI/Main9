@@ -410,6 +410,15 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         setIsFirstReport(true);
       } else {
         // Logged users get dynamic pricing from the API
+        const storedQuizAttemptId = localStorage.getItem(
+          "currentQuizAttemptId",
+        );
+        const quizAttemptId = storedQuizAttemptId
+          ? parseInt(storedQuizAttemptId)
+          : null;
+
+        // If no valid quiz attempt ID, this is likely a returning user
+        // We should still get their pricing based on payment history
         const response = await fetch("/api/create-report-unlock-payment", {
           method: "POST",
           headers: {
@@ -418,7 +427,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
           credentials: "include",
           body: JSON.stringify({
             userId: user.id,
-            quizAttemptId: localStorage.getItem("currentQuizAttemptId") || 0,
+            quizAttemptId: quizAttemptId || Date.now(), // Use timestamp as fallback
           }),
         });
 
