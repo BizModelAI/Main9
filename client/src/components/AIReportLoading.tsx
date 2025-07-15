@@ -166,18 +166,47 @@ Return a JSON object with this exact structure:
 
 Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", "Tech-savvy innovator", "Clear communicator", "Organized planner", "Creative problem solver"]}`;
 
-      const response = await fetch("/api/openai-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          maxTokens: 200,
-          temperature: 0.7,
-          responseFormat: { type: "json_object" },
-        }),
-      });
+      // Add timeout wrapper for the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+      try {
+        const response = await fetch("/api/openai-chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            maxTokens: 200,
+            temperature: 0.7,
+            responseFormat: { type: "json_object" },
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.error(
+            `API request failed with status ${response.status}: ${response.statusText}`,
+          );
+          const errorText = await response.text();
+          console.error("Error response body:", errorText);
+          throw new Error(
+            `API request failed: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        return response;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === "AbortError") {
+          console.error("API request timed out after 15 seconds");
+          throw new Error("API request timed out");
+        }
+        throw fetchError;
+      }
 
       if (!response.ok) {
         console.error(
