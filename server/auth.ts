@@ -60,12 +60,7 @@ export function setUserIdInRequest(req: any, userId: number): void {
   });
 }
 
-declare module "express-session" {
-  interface SessionData {
-    userId?: number;
-    testValue?: string;
-  }
-}
+// Session types are now declared in server/types.d.ts
 
 export function setupAuthRoutes(app: Express) {
   // Cookie test endpoint - sets a test value and returns session info
