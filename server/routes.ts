@@ -2429,14 +2429,15 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         .from(users)
         .where(sql`${users.email} IS NOT NULL`);
 
-      // Get emails from unpaid users
+      // Get emails from unpaid/temporary users
       const unpaidUsers = await db
         .select({
-          email: unpaidUserEmails.email,
+          email: users.email,
           source: sql<string>`'unpaid_user'`,
-          createdAt: unpaidUserEmails.createdAt,
+          createdAt: users.createdAt,
         })
-        .from(unpaidUserEmails);
+        .from(users)
+        .where(sql`${users.isTemporary} = true`);
 
       // Combine and deduplicate
       const allEmails = [...paidUsers, ...unpaidUsers];
