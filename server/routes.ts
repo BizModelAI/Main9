@@ -1403,13 +1403,13 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
 
           // Get the temporary user data
-          const tempData = await storage.getUnpaidUserEmail(sessionId);
+          const tempData = await storage.getTemporaryUser(sessionId);
           if (!tempData) {
             throw new Error("Temporary user data not found");
           }
 
-          // Extract signup data from tempData.quizData (which contains signup info)
-          const signupData = tempData.quizData as any;
+          // Extract signup data from tempData.tempQuizData (which contains signup info)
+          const signupData = tempData.tempQuizData as any;
 
           // Create the actual user account
           const user = await storage.createUser({
