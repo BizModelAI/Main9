@@ -219,6 +219,21 @@ export class MemStorage implements IStorage {
     return true;
   }
 
+  async saveAIContentToQuizAttempt(
+    quizAttemptId: number,
+    aiContent: any,
+  ): Promise<void> {
+    const attempt = this.quizAttempts.get(quizAttemptId);
+    if (attempt) {
+      attempt.aiContent = aiContent;
+    }
+  }
+
+  async getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null> {
+    const attempt = this.quizAttempts.get(quizAttemptId);
+    return attempt?.aiContent || null;
+  }
+
   async decrementQuizRetakes(userId: number): Promise<void> {
     // No longer needed in pay-per-report system
     // This method is kept for backward compatibility but does nothing
