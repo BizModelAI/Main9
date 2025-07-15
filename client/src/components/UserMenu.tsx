@@ -19,6 +19,7 @@ import { useAuth } from "../contexts/AuthContext";
 const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
