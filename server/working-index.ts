@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
 // Session configuration that ensures cookies work in all environments
 app.use(
-  session({
+  (session as any)({
     secret:
       process.env.SESSION_SECRET ||
       "development-secret-key-change-in-production",
