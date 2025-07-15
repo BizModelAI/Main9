@@ -154,10 +154,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         "quiz-completion-ai-insights",
       );
       if (preGeneratedData) {
-        const { insights, analysis, complete, error, timestamp } =
+        const { insights, complete, error, timestamp } =
           JSON.parse(preGeneratedData);
         const isRecent = Date.now() - timestamp < 5 * 60 * 1000;
-        return isRecent && insights && analysis && complete && !error;
+        // Only require insights and complete flag (analysis can be generated as fallback)
+        return isRecent && insights && complete && !error;
       }
     } catch {
       return false;
