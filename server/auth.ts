@@ -340,9 +340,9 @@ export function setupAuthRoutes(app: Express) {
         });
       }
 
-      console.log("Storing unpaid user email...");
+      console.log("Storing temporary user...");
       try {
-        await storage.storeUnpaidUserEmail(sessionId, email, {
+        await storage.storeTemporaryUser(sessionId, email, {
           email,
           password: hashedPassword,
           name,
