@@ -654,4 +654,56 @@ export function setupAuthRoutes(app: Express) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // Change password (authenticated users)
+  app.post("/api/auth/change-password", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          error: "Current password and new password are required",
+        });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          error: "New password must be at least 8 characters long",
+        });
+      }
+
+      // Get current user to verify current password
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Verify current password
+      const validCurrentPassword = await bcrypt.compare(
+        currentPassword,
+        user.password,
+      );
+      if (!validCurrentPassword) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+
+      // Hash new password and update
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUserPassword(userId, hashedNewPassword);
+
+      console.log(
+        `Password changed successfully for user ${userId} (${user.email})`,
+      );
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error in /api/auth/change-password:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 }
