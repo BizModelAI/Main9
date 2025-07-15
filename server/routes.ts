@@ -114,6 +114,20 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.sendStatus(200);
   });
 
+  // Debug endpoint to check OpenAI configuration
+  app.get("/api/openai-status", (req, res) => {
+    const hasApiKey = !!process.env.OPENAI_API_KEY;
+    const keyLength = hasApiKey ? process.env.OPENAI_API_KEY!.length : 0;
+
+    res.json({
+      configured: hasApiKey,
+      keyLength: keyLength,
+      keyPrefix: hasApiKey
+        ? process.env.OPENAI_API_KEY!.substring(0, 7) + "..."
+        : "none",
+    });
+  });
+
   // General OpenAI chat endpoint
   app.post("/api/openai-chat", async (req, res) => {
     // Add CORS headers
