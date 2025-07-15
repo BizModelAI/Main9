@@ -504,6 +504,49 @@ const AIReportLoadingWrapper: React.FC<{
   );
 };
 
+// Comprehensive cache clearing function for new quiz sessions
+const clearQuizRelatedCache = () => {
+  console.log("🧹 Clearing all quiz-related cache for new session");
+
+  // Quiz data
+  localStorage.removeItem("quizData");
+  localStorage.removeItem("hasCompletedQuiz");
+  localStorage.removeItem("currentQuizAttemptId");
+  localStorage.removeItem("pendingQuizData");
+  localStorage.removeItem("requiresQuizPayment");
+
+  // AI-related data
+  localStorage.removeItem("quiz-completion-ai-insights");
+  localStorage.removeItem("loadedReportData");
+  localStorage.removeItem("ai-generation-in-progress");
+  localStorage.removeItem("ai-generation-timestamp");
+
+  // UI state flags
+  localStorage.removeItem("congratulationsShown");
+  localStorage.removeItem("hasEverSelectedModel");
+  localStorage.removeItem("selectedBusinessModel");
+
+  // Clear any AI cache keys
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (
+      key &&
+      (key.startsWith("ai-analysis-") ||
+        key.startsWith("skills-analysis-") ||
+        key.startsWith("ai-cache-") ||
+        key.startsWith("confetti_shown_"))
+    ) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+  console.log(
+    `✅ Cleared ${keysToRemove.length + 12} cache entries for new quiz session`,
+  );
+};
+
 // Quiz completion loading wrapper component for the /loading route
 const QuizCompletionLoadingWrapper: React.FC<{
   quizData: QuizData | null;
