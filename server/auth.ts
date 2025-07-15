@@ -217,7 +217,7 @@ export function setupAuthRoutes(app: Express) {
       });
 
       // Force session save before sending response
-      req.session.save((err) => {
+      req.session.save((err: any) => {
         if (err) {
           console.error("Login: Failed to save session:", err);
           return res.status(500).json({ error: "Session save failed" });
