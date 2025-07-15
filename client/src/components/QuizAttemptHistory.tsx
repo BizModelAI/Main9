@@ -125,6 +125,9 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
       console.log(`🔍 Fetching AI content for quiz attempt ${attempt.id}...`);
       const response = await fetch(
         `/api/quiz-attempts/${attempt.id}/ai-content`,
+        {
+          credentials: "include",
+        },
       );
       let aiContent = null;
 
