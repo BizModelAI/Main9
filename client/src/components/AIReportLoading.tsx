@@ -152,7 +152,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
         // Stay on the last step (step 6)
         return prev;
       });
-    }, 4000);
+    }, 4200); // Slightly longer timing to match step execution
 
     return () => clearInterval(interval);
   }, [isMobile, steps.length]);
