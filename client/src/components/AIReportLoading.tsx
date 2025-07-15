@@ -125,14 +125,24 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
 
   const [steps, setSteps] = useState<LoadingStep[]>(loadingSteps);
 
-  // Clear any potentially stuck state on component mount
+  // Clear any potentially stuck state on component mount and handle mobile detection
   useEffect(() => {
     console.log(
       "🚀 AIReportLoading component mounted, clearing any stuck state",
     );
+    console.log("📱 Mobile detection:", isMobile);
     localStorage.removeItem("ai-generation-in-progress");
     localStorage.removeItem("ai-generation-timestamp");
-  }, []);
+
+    // Set initial visible steps based on mobile detection
+    if (isMobile) {
+      console.log("📱 Mobile detected - showing only step 0");
+      setVisibleMobileSteps(new Set([0]));
+    } else {
+      console.log("💻 Desktop detected - showing all steps");
+      setVisibleMobileSteps(new Set([0, 1, 2, 3, 4, 5]));
+    }
+  }, [isMobile]);
 
   // Generate all 6 characteristics with OpenAI
   const generateAllCharacteristics = async (
