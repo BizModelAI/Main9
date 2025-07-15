@@ -197,6 +197,13 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   useEffect(() => {
     console.log("Results component received quizData:", quizData);
 
+    // Ensure quiz data is preserved in localStorage to prevent navigation issues
+    if (quizData) {
+      localStorage.setItem("quizData", JSON.stringify(quizData));
+      localStorage.setItem("hasCompletedQuiz", "true");
+      console.log("✅ Quiz data safely stored in localStorage");
+    }
+
     // Force clear ALL AI caches to ensure fresh and accurate results
     console.log("🧹 Force clearing all AI caches for fresh quiz results...");
 
