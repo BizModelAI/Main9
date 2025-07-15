@@ -891,6 +891,141 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // New consolidated temporary user methods for DatabaseStorage
+  async storeTemporaryUser(
+    sessionId: string,
+    email: string,
+    data: any,
+  ): Promise<User> {
+    console.log("storeTemporaryUser called with:", {
+      sessionId,
+      email,
+      dataKeys: Object.keys(data),
+    });
+
+    try {
+      return await this.ensureDb().transaction(async (tx) => {
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+        // Delete any existing temporary user for this session or email
+        await tx
+          .delete(users)
+          .where(
+            or(
+              and(eq(users.sessionId, sessionId), eq(users.isTemporary, true)),
+              and(eq(users.email, email), eq(users.isTemporary, true)),
+            ),
+          );
+
+        // Insert new temporary user
+        const [newUser] = await tx
+          .insert(users)
+          .values({
+            email,
+            password: data.password || "",
+            name: data.name || null,
+            sessionId,
+            isPaid: false,
+            isTemporary: true,
+            tempQuizData: data.quizData || data,
+            expiresAt,
+          })
+          .returning();
+
+        console.log("Successfully stored temporary user:", newUser?.id);
+        return newUser;
+      });
+    } catch (error) {
+      console.error("Error in storeTemporaryUser:", error);
+      throw error;
+    }
+  }
+
+  async getTemporaryUser(sessionId: string): Promise<User | undefined> {
+    const [user] = await this.ensureDb()
+      .select()
+      .from(users)
+      .where(and(eq(users.sessionId, sessionId), eq(users.isTemporary, true)));
+
+    if (!user) return undefined;
+
+    // Check if expired
+    if (user.expiresAt && user.expiresAt < new Date()) {
+      await this.ensureDb().delete(users).where(eq(users.id, user.id));
+      return undefined;
+    }
+
+    return user;
+  }
+
+  async getTemporaryUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await this.ensureDb()
+      .select()
+      .from(users)
+      .where(and(eq(users.email, email), eq(users.isTemporary, true)));
+
+    if (!user) return undefined;
+
+    // Check if expired
+    if (user.expiresAt && user.expiresAt < new Date()) {
+      await this.ensureDb().delete(users).where(eq(users.id, user.id));
+      return undefined;
+    }
+
+    return user;
+  }
+
+  async cleanupExpiredTemporaryUsers(): Promise<void> {
+    try {
+      await this.ensureDb()
+        .delete(users)
+        .where(
+          and(
+            eq(users.isTemporary, true),
+            sql`${users.expiresAt} < ${new Date()}`,
+          ),
+        );
+    } catch (error) {
+      console.error("Error cleaning up expired temporary users:", error);
+    }
+  }
+
+  async convertTemporaryUserToPaid(
+    sessionId: string,
+  ): Promise<User | undefined> {
+    try {
+      return await this.ensureDb().transaction(async (tx) => {
+        const [user] = await tx
+          .select()
+          .from(users)
+          .where(
+            and(eq(users.sessionId, sessionId), eq(users.isTemporary, true)),
+          );
+
+        if (!user) return undefined;
+
+        // Convert to paid user
+        const [updatedUser] = await tx
+          .update(users)
+          .set({
+            isPaid: true,
+            isTemporary: false,
+            sessionId: null,
+            tempQuizData: null,
+            expiresAt: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, user.id))
+          .returning();
+
+        return updatedUser;
+      });
+    } catch (error) {
+      console.error("Error converting temporary user to paid:", error);
+      throw error;
+    }
+  }
+
   async isPaidUser(userId: number): Promise<boolean> {
     try {
       const userPayments = await this.ensureDb()
