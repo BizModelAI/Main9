@@ -424,6 +424,7 @@ const AIReportLoadingWrapper: React.FC<{
   setShowCongratulations: (show: boolean) => void;
 }> = ({ quizData, setShowCongratulations }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleAILoadingComplete = async (data: any) => {
     console.log(
@@ -433,9 +434,9 @@ const AIReportLoadingWrapper: React.FC<{
     // Store loaded report data in localStorage
     localStorage.setItem("loadedReportData", JSON.stringify(data));
 
-    // Save AI content to database if we have a quiz attempt ID
+    // Save AI content to database if we have a quiz attempt ID and user is authenticated
     const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
-    if (currentQuizAttemptId && data) {
+    if (currentQuizAttemptId && data && user) {
       try {
         const response = await fetch(
           `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
@@ -462,6 +463,10 @@ const AIReportLoadingWrapper: React.FC<{
       } catch (error) {
         console.error("Error saving AI content to database:", error);
       }
+    } else if (currentQuizAttemptId && data && !user) {
+      console.log(
+        "Skipping AI content save to database - user not authenticated",
+      );
     }
 
     // Check if congratulations was already shown
