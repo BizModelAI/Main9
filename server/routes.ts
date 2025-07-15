@@ -1,4 +1,8 @@
-import type { Express, Request, Response } from "express";
+import express from "express";
+
+type Express = express.Express;
+type Request = express.Request;
+type Response = express.Response;
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { getUserIdFromRequest, getSessionKey } from "./auth.js";
