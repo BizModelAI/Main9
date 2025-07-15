@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { QuizData } from "../../shared/types";
+import { QuizData } from "../types";
 import {
   CheckCircle,
   Clock,
