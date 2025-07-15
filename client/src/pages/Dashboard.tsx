@@ -361,7 +361,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-9 months",
       potentialIncome: "$500-15K/month",
       difficulty: "Medium",
-      icon: "���",
+      icon: "📹",
     },
     {
       id: "local-service-arbitrage",
@@ -504,7 +504,7 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto px-4 md:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto px-8">
             {isLoadingScores
               ? // Loading state
                 Array.from({ length: 9 }).map((_, index) => (
