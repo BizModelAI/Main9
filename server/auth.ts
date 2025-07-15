@@ -418,7 +418,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Update profile
-  app.put("/api/auth/profile", async (req, res) => {
+  app.put("/api/auth/profile", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
 
