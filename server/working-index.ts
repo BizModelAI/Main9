@@ -322,7 +322,7 @@ async function setupApp() {
     } catch (viteError) {
       console.warn(
         "⚠️ Vite not available, using fallback static serving:",
-        viteError.message,
+        (viteError as Error).message,
       );
       // Fallback to static serving without Vite
       const path = await import("path");
