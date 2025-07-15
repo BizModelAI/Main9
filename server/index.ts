@@ -31,7 +31,7 @@ app.use(
 );
 
 // JSON parsing for all routes except Stripe webhooks
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.path === "/api/stripe/webhook") {
     next();
   } else {
