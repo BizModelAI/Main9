@@ -786,7 +786,6 @@ Return JSON format:
 
     // On mobile, show only the current active step
     if (isMobile) {
-      console.log(`Mobile: Setting visible step to ${stepIndex}`);
       setVisibleMobileSteps(new Set([stepIndex]));
     }
 
