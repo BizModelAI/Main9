@@ -268,7 +268,7 @@ app.get("/api/test/database", async (req, res) => {
   }
 });
 
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 // Global error handler for unhandled errors
 process.on("unhandledRejection", (reason, promise) => {
