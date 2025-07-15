@@ -232,7 +232,7 @@ const Dashboard: React.FC = () => {
     };
 
     loadBusinessModelScores();
-  }, [user, getLatestQuizData, authLoading]);
+  }, [user, getLatestQuizData, authLoading, refreshKey]);
 
   // Check if user has ever selected a business model on component mount
   React.useEffect(() => {
