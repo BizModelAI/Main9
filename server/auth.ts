@@ -247,7 +247,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Signup - Store temporary account data until payment
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
     // Ensure we always return JSON
     res.header("Content-Type", "application/json");
 
