@@ -14,10 +14,9 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(), // Email is now the primary identifier
   password: text("password").notNull(),
   name: text("name"), // User's full name
-  email: text("email"), // Optional email for paid users
   isUnsubscribed: boolean("is_unsubscribed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
