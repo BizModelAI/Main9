@@ -263,7 +263,7 @@ However, this assessment is based on your current situation and profile. As you 
     quizData: QuizData,
     topPaths: BusinessPath[],
   ): Promise<{
-    previewInsights: string;
+    insights: string;
     keyInsights: string[];
     successPredictors: string[];
   }> {
@@ -287,7 +287,7 @@ Description: ${topBusinessModel.description}
 
 Return JSON:
 {
-  "previewInsights": "3 paragraphs on entrepreneurial potential and alignment",
+  "insights": "3 paragraphs on entrepreneurial potential and alignment",
   "keyInsights": ["4 themes from quiz data"],
   "successPredictors": ["4 success predictors based on profile"]
 }
@@ -313,8 +313,8 @@ Rules: Use only provided data, no invented details.`;
       const parsed = JSON.parse(clean);
 
       const result = {
-        previewInsights:
-          parsed.previewInsights ||
+        insights:
+          parsed.insights ||
           "Your entrepreneurial potential is strong and well-aligned with your goals.",
         keyInsights: this.validateArray(
           parsed.keyInsights,
@@ -333,7 +333,7 @@ Rules: Use only provided data, no invented details.`;
     } catch (err) {
       console.error("❌ Error generating preview insights:", err);
       return {
-        previewInsights:
+        insights:
           "Your profile shows promising alignment with entrepreneurial success. Your traits suggest you're capable of building something meaningful. The combination of your skills, motivation, and available resources creates a strong foundation for your chosen business path.",
         keyInsights: [
           "You value structure and clarity in your work.",
