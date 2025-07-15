@@ -190,8 +190,8 @@ export function setupAuthRoutes(app: Express) {
           .json({ error: "Email and password are required" });
       }
 
-      // Find user by email (using username field for now)
-      const user = await storage.getUserByUsername(email);
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
