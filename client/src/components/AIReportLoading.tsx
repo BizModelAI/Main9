@@ -967,7 +967,7 @@ Return JSON format:
           </div>
         </motion.div>
 
-                {/* Compact Loading Steps Grid */}
+        {/* Compact Loading Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
           <AnimatePresence mode="wait">
             {steps
@@ -982,78 +982,79 @@ Return JSON format:
                 }
                 return shouldShow;
               })
-            .map((step, index) => {
-              // Find the original index for proper step handling
-              const originalIndex = steps.findIndex((s) => s.id === step.id);
-              return (
-                <motion.div
-                  key={step.id}
-                  className={`bg-gray-50 rounded-xl p-4 shadow-sm transition-all duration-300 ${
-                    step.status === "active"
-                      ? "ring-2 ring-blue-500 bg-blue-50"
-                      : step.status === "completed"
-                        ? "ring-2 ring-green-500 bg-green-50"
-                        : "ring-1 ring-gray-200"
-                  }`}
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  layout
-                >
-                  <div className="flex items-center mb-2">
-                    <div className="flex-shrink-0 mr-3">
-                      {getStepIcon(step, originalIndex)}
+              .map((step, index) => {
+                // Find the original index for proper step handling
+                const originalIndex = steps.findIndex((s) => s.id === step.id);
+                return (
+                  <motion.div
+                    key={step.id}
+                    className={`bg-gray-50 rounded-xl p-4 shadow-sm transition-all duration-300 ${
+                      step.status === "active"
+                        ? "ring-2 ring-blue-500 bg-blue-50"
+                        : step.status === "completed"
+                          ? "ring-2 ring-green-500 bg-green-50"
+                          : "ring-1 ring-gray-200"
+                    }`}
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    layout
+                  >
+                    <div className="flex items-center mb-2">
+                      <div className="flex-shrink-0 mr-3">
+                        {getStepIcon(step, originalIndex)}
+                      </div>
+                      {step.status === "active" && (
+                        <motion.div
+                          className="flex space-x-1 ml-auto"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          {[0, 1, 2].map((dot) => (
+                            <motion.div
+                              key={dot}
+                              className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                              animate={{
+                                scale: [1, 1.2, 1],
+                                opacity: [0.5, 1, 0.5],
+                              }}
+                              transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                delay: dot * 0.2,
+                              }}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
                     </div>
-                    {step.status === "active" && (
-                      <motion.div
-                        className="flex space-x-1 ml-auto"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      >
-                        {[0, 1, 2].map((dot) => (
-                          <motion.div
-                            key={dot}
-                            className="w-1.5 h-1.5 bg-blue-500 rounded-full"
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [0.5, 1, 0.5],
-                            }}
-                            transition={{
-                              duration: 1,
-                              repeat: Infinity,
-                              delay: dot * 0.2,
-                            }}
-                          />
-                        ))}
-                      </motion.div>
-                    )}
-                  </div>
-                  <h3
-                    className={`text-lg font-semibold mb-1 ${
-                      step.status === "active"
-                        ? "text-blue-900"
-                        : step.status === "completed"
-                          ? "text-green-900"
-                          : "text-gray-700"
-                    }`}
-                  >
-                    {step.title}
-                  </h3>
-                  <p
-                    className={`text-sm ${
-                      step.status === "active"
-                        ? "text-blue-600"
-                        : step.status === "completed"
-                          ? "text-green-600"
-                          : "text-gray-500"
-                    }`}
-                  >
-                    {step.description}
-                  </p>
-                </motion.div>
-              );
-            })}
+                    <h3
+                      className={`text-lg font-semibold mb-1 ${
+                        step.status === "active"
+                          ? "text-blue-900"
+                          : step.status === "completed"
+                            ? "text-green-900"
+                            : "text-gray-700"
+                      }`}
+                    >
+                      {step.title}
+                    </h3>
+                    <p
+                      className={`text-sm ${
+                        step.status === "active"
+                          ? "text-blue-600"
+                          : step.status === "completed"
+                            ? "text-green-600"
+                            : "text-gray-500"
+                      }`}
+                    >
+                      {step.description}
+                    </p>
+                  </motion.div>
+                );
+              })}
+          </AnimatePresence>
         </div>
 
         {/* Compact Fun Facts */}
