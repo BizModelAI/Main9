@@ -1087,13 +1087,16 @@ Return JSON format:
                           {[0, 1, 2].map((dot) => (
                             <motion.div
                               key={dot}
-                              className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                              className={`${
+                                isMobile ? "w-3 h-3" : "w-1.5 h-1.5"
+                              } bg-blue-500 rounded-full`}
                               animate={{
-                                scale: [1, 1.2, 1],
+                                scale: isMobile ? [1, 1.4, 1] : [1, 1.2, 1],
                                 opacity: [0.5, 1, 0.5],
+                                y: isMobile ? [0, -8, 0] : [0, 0, 0],
                               }}
                               transition={{
-                                duration: 1,
+                                duration: isMobile ? 1.2 : 1,
                                 repeat: Infinity,
                                 delay: dot * 0.2,
                               }}
