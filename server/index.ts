@@ -18,7 +18,7 @@ const app = express();
 
 // Session configuration with persistent storage
 app.use(
-  session({
+  (session as any)({
     secret:
       process.env.SESSION_SECRET || "your-secret-key-change-in-production",
     resave: false,
