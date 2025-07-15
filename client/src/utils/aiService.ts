@@ -331,7 +331,7 @@ Rules: Use only provided data, no invented details.`;
       this.cacheInsights(cacheKey, result);
       return result;
     } catch (err) {
-      console.error("��� Error generating preview insights:", err);
+      console.error("❌ Error generating preview insights:", err);
       return {
         previewInsights:
           "Your profile shows promising alignment with entrepreneurial success. Your traits suggest you're capable of building something meaningful. The combination of your skills, motivation, and available resources creates a strong foundation for your chosen business path.",
@@ -1004,11 +1004,7 @@ Use only provided data. No invented details.`;
           4,
           "Initial learning curve may require patience and persistence.",
         ),
-        keyInsights: this.validateArray(
-          parsed.keyInsights,
-          4,
-          "Your profile shows strong entrepreneurial potential.",
-        ),
+        keyInsights: keySuccessIndicators, // ✅ REUSE from cached preview instead of generating fresh
         bestFitCharacteristics: this.validateArray(
           parsed.bestFitCharacteristics,
           6,
