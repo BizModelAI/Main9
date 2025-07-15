@@ -455,26 +455,105 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const recentActivity = [
-    {
-      action: "Completed Business Path Quiz",
-      time: "2 hours ago",
-      icon: BookOpen,
-      color: "blue",
-    },
-    {
-      action: "Viewed Content Creation results",
-      time: "2 hours ago",
-      icon: Target,
-      color: "green",
-    },
-    {
-      action: "Joined Business Path community",
-      time: "1 day ago",
-      icon: Users,
-      color: "purple",
-    },
-  ];
+  // Dynamic Recent Activity based on real user data
+  const [recentActivity, setRecentActivity] = useState<
+    Array<{
+      action: string;
+      time: string;
+      icon: any;
+      color: string;
+    }>
+  >([]);
+
+  // Generate recent activity from user data
+  useEffect(() => {
+    const generateRecentActivity = async () => {
+      if (!user || authLoading) return;
+
+      const activities = [];
+
+      try {
+        // Get quiz attempts to track quiz activity
+        const quizAttemptsResponse = await fetch(
+          `/api/quiz-attempts/${user.id}`,
+        );
+        if (quizAttemptsResponse.ok) {
+          const attempts = await quizAttemptsResponse.json();
+
+          // Add quiz completion activities
+          attempts.slice(0, 2).forEach((attempt: any, index: number) => {
+            const completedAt = new Date(attempt.completedAt);
+            const timeAgo = getTimeAgo(completedAt);
+
+            activities.push({
+              action:
+                index === 0
+                  ? "Completed latest Business Path Quiz"
+                  : "Retook Business Path Quiz",
+              time: timeAgo,
+              icon: BookOpen,
+              color: "blue",
+            });
+          });
+        }
+
+        // Add business model viewing activity based on selected model
+        if (selectedBusinessModel) {
+          activities.push({
+            action: `Selected ${selectedBusinessModel.name}`,
+            time: "Recently",
+            icon: Target,
+            color: "green",
+          });
+        }
+
+        // Add login activity
+        activities.push({
+          action: "Logged into account",
+          time: "Today",
+          icon: Users,
+          color: "purple",
+        });
+
+        // Limit to 3 most recent activities
+        setRecentActivity(activities.slice(0, 3));
+      } catch (error) {
+        console.error("Error generating recent activity:", error);
+        // Fallback to basic activity
+        setRecentActivity([
+          {
+            action: "Accessed Dashboard",
+            time: "Just now",
+            icon: BookOpen,
+            color: "blue",
+          },
+        ]);
+      }
+    };
+
+    generateRecentActivity();
+  }, [user, authLoading, selectedBusinessModel]);
+
+  // Helper function to calculate time ago
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60),
+    );
+
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24)
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7)
+      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+
+    return date.toLocaleDateString();
+  };
 
   const learningModules = [
     {
