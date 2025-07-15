@@ -1813,10 +1813,12 @@ export async function registerRoutes(app: Express): Promise<void> {
   // PDF generation endpoint
   app.post("/api/generate-pdf", async (req, res) => {
     try {
-      const { quizData, userEmail } = req.body;
+      const { quizData, userEmail, aiAnalysis, topBusinessPath } = req.body;
 
       console.log("PDF generation request received", {
         hasQuizData: !!quizData,
+        hasAIAnalysis: !!aiAnalysis,
+        hasTopBusinessPath: !!topBusinessPath,
         userEmail,
       });
 
@@ -1830,10 +1832,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         : "https://bizmodelai.com";
       console.log("Base URL:", baseUrl);
 
-      // Generate PDF
+      // Generate PDF with AI data included
       const pdfBuffer = await pdfService.generatePDF({
         quizData,
         userEmail,
+        aiAnalysis,
+        topBusinessPath,
         baseUrl,
       });
 
