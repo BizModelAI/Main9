@@ -42,7 +42,7 @@ export async function setupVite(app: Express, server: Server) {
     app.use(express.static(distPath));
 
     // Serve index.html for all non-API routes
-    app.use("*", async (req, res, next) => {
+    app.use("*", async (req: Request, res: Response, next: NextFunction) => {
       // Skip API routes
       if (req.originalUrl.startsWith("/api")) {
         return next();
@@ -83,7 +83,7 @@ export async function setupVite(app: Express, server: Server) {
       });
 
       app.use(vite.middlewares);
-      app.use("*", async (req, res, next) => {
+      app.use("*", async (req: Request, res: Response, next: NextFunction) => {
         const url = req.originalUrl;
 
         try {
@@ -113,7 +113,7 @@ export async function setupVite(app: Express, server: Server) {
       console.error("❌ Failed to start Vite:", error);
       // Fallback to static serving
       console.log("Falling back to static HTML serving...");
-      app.use("*", async (req, res, next) => {
+      app.use("*", async (req: Request, res: Response, next: NextFunction) => {
         try {
           const clientTemplate = path.resolve(
             import.meta.dirname,
@@ -144,7 +144,7 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  app.use("*", (_req: Request, res: Response) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
