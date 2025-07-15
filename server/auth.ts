@@ -749,9 +749,23 @@ export function setupAuthRoutes(app: Express) {
 
       if (!notificationSent) {
         console.error("Failed to send contact form notification");
-        return res.status(500).json({
-          error: "Failed to send notification to team",
-        });
+
+        // In development, just log the form data instead of failing
+        if (process.env.NODE_ENV === "development") {
+          console.log("=== CONTACT FORM SUBMISSION (Development Mode) ===");
+          console.log("Name:", name);
+          console.log("Email:", email);
+          console.log("Category:", category);
+          console.log("Subject:", subject);
+          console.log("Message:", message);
+          console.log("=== END CONTACT FORM ===");
+
+          // Continue to success even if email fails in development
+        } else {
+          return res.status(500).json({
+            error: "Failed to send notification to team",
+          });
+        }
       }
 
       // Send confirmation email to user
