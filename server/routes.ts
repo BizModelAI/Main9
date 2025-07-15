@@ -2119,23 +2119,27 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
   );
 
   // Generate detailed "Why This Doesn't Fit Your Current Profile" descriptions for bottom 3 business matches
-  app.post("/api/generate-business-avoid-descriptions", async (req, res) => {
-    try {
-      const { quizData, businessMatches } = req.body;
+  app.post(
+    "/api/generate-business-avoid-descriptions",
+    async (req: Request, res: Response) => {
+      try {
+        const { quizData, businessMatches } = req.body;
 
-      if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
-        return res
-          .status(400)
-          .json({ error: "Missing or invalid quiz data or business matches" });
-      }
+        if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
+          return res
+            .status(400)
+            .json({
+              error: "Missing or invalid quiz data or business matches",
+            });
+        }
 
-      const descriptions = [];
+        const descriptions = [];
 
-      for (let i = 0; i < businessMatches.length; i++) {
-        const match = businessMatches[i];
-        const rank = i + 1;
+        for (let i = 0; i < businessMatches.length; i++) {
+          const match = businessMatches[i];
+          const rank = i + 1;
 
-        const prompt = `Based on this user's quiz responses, generate a detailed "Why This Doesn't Fit Your Current Profile" description for their ${rank === 1 ? "lowest scoring" : rank === 2 ? "second lowest scoring" : "third lowest scoring"} business match.
+          const prompt = `Based on this user's quiz responses, generate a detailed "Why This Doesn't Fit Your Current Profile" description for their ${rank === 1 ? "lowest scoring" : rank === 2 ? "second lowest scoring" : "third lowest scoring"} business match.
 
 User Quiz Data:
 - Main Motivation: ${quizData.mainMotivation}
@@ -2179,66 +2183,67 @@ Reference specific quiz data points and explain the misalignments. Be honest but
 
 CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in the user profile. If the user selected a range, always refer to the full range, never specific numbers within it.`;
 
-        const openaiResponse = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          const openaiResponse = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models don't fit individual users based on their quiz responses. Be honest but constructive, helping users understand misalignments.",
+                  },
+                  {
+                    role: "user",
+                    content: prompt,
+                  },
+                ],
+                temperature: 0.7,
+                max_tokens: 500,
+              }),
             },
-            body: JSON.stringify({
-              model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models don't fit individual users based on their quiz responses. Be honest but constructive, helping users understand misalignments.",
-                },
-                {
-                  role: "user",
-                  content: prompt,
-                },
-              ],
-              temperature: 0.7,
-              max_tokens: 500,
-            }),
-          },
-        );
+          );
 
-        if (!openaiResponse.ok) {
-          throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          if (!openaiResponse.ok) {
+            throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          }
+
+          const data = await openaiResponse.json();
+          const content = data.choices[0].message.content;
+
+          descriptions.push({
+            businessId: match.id,
+            description:
+              content ||
+              `This business model doesn't align well with your current profile. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable. Your ${quizData.techSkillsRating}/5 technical skills and ${quizData.selfMotivationLevel}/5 self-motivation level indicate potential challenges with this path. Consider focusing on business models that better match your strengths and current situation.`,
+          });
         }
 
-        const data = await openaiResponse.json();
-        const content = data.choices[0].message.content;
+        res.json({ descriptions });
+      } catch (error) {
+        console.error("Error generating business avoid descriptions:", error);
 
-        descriptions.push({
-          businessId: match.id,
-          description:
-            content ||
-            `This business model doesn't align well with your current profile. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable. Your ${quizData.techSkillsRating}/5 technical skills and ${quizData.selfMotivationLevel}/5 self-motivation level indicate potential challenges with this path. Consider focusing on business models that better match your strengths and current situation.`,
-        });
+        // Return fallback descriptions
+        const fallbackDescriptions = req.body.businessMatches.map(
+          (match: any, index: number) => ({
+            businessId: match.id,
+            description: `This business model scored ${match.fitScore}% for your profile, indicating significant misalignment with your current goals, skills, and preferences. Based on your quiz responses, you would likely face substantial challenges in this field that could impact your success. Consider focusing on higher-scoring business models that better match your natural strengths and current situation.`,
+          }),
+        );
+
+        res.json({ descriptions: fallbackDescriptions });
       }
-
-      res.json({ descriptions });
-    } catch (error) {
-      console.error("Error generating business avoid descriptions:", error);
-
-      // Return fallback descriptions
-      const fallbackDescriptions = req.body.businessMatches.map(
-        (match: any, index: number) => ({
-          businessId: match.id,
-          description: `This business model scored ${match.fitScore}% for your profile, indicating significant misalignment with your current goals, skills, and preferences. Based on your quiz responses, you would likely face substantial challenges in this field that could impact your success. Consider focusing on higher-scoring business models that better match your natural strengths and current situation.`,
-        }),
-      );
-
-      res.json({ descriptions: fallbackDescriptions });
-    }
-  });
+    },
+  );
 
   // Enhanced email functionality for unpaid users
-  app.post("/api/email-results", async (req, res) => {
+  app.post("/api/email-results", async (req: Request, res: Response) => {
     try {
       const { sessionId, email, quizData, isPaidUser } = req.body;
 
@@ -2328,24 +2333,27 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Get stored email for unpaid users
-  app.get("/api/get-stored-email/:sessionId", async (req, res) => {
-    try {
-      const { sessionId } = req.params;
-      const storedEmail = await storage.getUnpaidUserEmail(sessionId);
+  app.get(
+    "/api/get-stored-email/:sessionId",
+    async (req: Request, res: Response) => {
+      try {
+        const { sessionId } = req.params;
+        const storedEmail = await storage.getUnpaidUserEmail(sessionId);
 
-      if (storedEmail) {
-        res.json({ email: storedEmail.email });
-      } else {
-        res.json({ email: null });
+        if (storedEmail) {
+          res.json({ email: storedEmail.email });
+        } else {
+          res.json({ email: null });
+        }
+      } catch (error) {
+        console.error("Error getting stored email:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-    } catch (error) {
-      console.error("Error getting stored email:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Get all collected emails endpoint for marketing/advertising
-  app.get("/api/admin/all-emails", async (req, res) => {
+  app.get("/api/admin/all-emails", async (req: Request, res: Response) => {
     try {
       console.log("Fetching all collected emails...");
 
@@ -2407,7 +2415,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
   });
 
   // Export email list as CSV for marketing tools
-  app.get("/api/admin/emails-csv", async (req, res) => {
+  app.get("/api/admin/emails-csv", async (req: Request, res: Response) => {
     try {
       // Get emails from paid users
       if (!db) {
