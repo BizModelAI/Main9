@@ -9,6 +9,9 @@ import {
   CheckCircle,
   Bell,
   Trash2,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
