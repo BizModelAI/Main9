@@ -85,7 +85,7 @@ export class EmailService {
       }
 
       const { data, error } = await resend.emails.send({
-        from: "BizModelAI <onboarding@resend.dev>",
+        from: "BizModelAI <team@bizmodelai.com>",
         to: [options.to],
         subject: options.subject,
         html: options.html,
