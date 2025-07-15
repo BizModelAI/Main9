@@ -1011,38 +1011,97 @@ Return JSON format:
           </div>
         </motion.div>
 
-        {/* Compact Loading Steps Grid */}
+                {/* Compact Loading Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-          <AnimatePresence mode="wait">
-            {steps
-              .filter((step, index) => {
-                // On mobile, only show steps that are in the visible set
-                // On desktop, show all steps
-                return !isMobile || visibleMobileSteps.has(index);
-              })
-              .map((step, index) => {
-                // Find the original index for proper step handling
-                const originalIndex = steps.findIndex((s) => s.id === step.id);
-                return (
+          {isMobile ? (
+            // Mobile: Show single card with smooth transitions
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={steps[currentMobileStep]?.id}
+                className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 shadow-xl border-2 ring-4 ring-blue-400 border-blue-300"
+                initial={{
+                  opacity: 0,
+                  scale: 0.8,
+                  y: 30,
+                  rotateY: 90,
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: 0,
+                  rotateY: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.8,
+                  y: -30,
+                  rotateY: -90,
+                }}
+                transition={{
+                  duration: 0.6,
+                  type: "spring",
+                  stiffness: 120,
+                }}
+              >
+                <div className="flex items-center mb-2">
+                  <div className="flex-shrink-0 mr-3">
+                    {getStepIcon(steps[currentMobileStep], currentMobileStep)}
+                  </div>
                   <motion.div
-                    key={step.id}
-                    className={`${
-                      isMobile
-                        ? "bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 shadow-xl border-2"
-                        : "bg-gray-50 rounded-xl p-4 shadow-sm"
-                    } transition-all duration-300 ${
-                      step.status === "active"
-                        ? isMobile
-                          ? "ring-4 ring-blue-400 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-300"
-                          : "ring-2 ring-blue-500 bg-blue-50"
-                        : step.status === "completed"
-                          ? isMobile
-                            ? "ring-4 ring-green-400 bg-gradient-to-br from-green-50 to-emerald-50 border-green-300"
-                            : "ring-2 ring-green-500 bg-green-50"
-                          : isMobile
-                            ? "ring-2 ring-gray-200 border-gray-200"
-                            : "ring-1 ring-gray-200"
-                    }`}
+                    className="flex space-x-1 ml-auto"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    {[0, 1, 2].map((dot) => (
+                      <motion.div
+                        key={dot}
+                        className="w-3 h-3 bg-blue-500 rounded-full"
+                        animate={{
+                          scale: [1, 1.4, 1],
+                          opacity: [0.5, 1, 0.5],
+                          y: [0, -8, 0],
+                        }}
+                        transition={{
+                          duration: 1.2,
+                          repeat: Infinity,
+                          delay: dot * 0.2,
+                        }}
+                      />
+                    ))}
+                  </motion.div>
+                </div>
+                <h3 className="text-2xl font-semibold mb-1 text-blue-900">
+                  {steps[currentMobileStep]?.title}
+                </h3>
+                <p className="text-base text-blue-600">
+                  {steps[currentMobileStep]?.description}
+                </p>
+                <motion.div
+                  className="mt-4 text-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-full inline-block">
+                    <span className="font-bold text-sm">
+                      Step {currentMobileStep + 1} of {steps.length}
+                    </span>
+                  </div>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            // Desktop: Show all cards
+            steps.map((step, index) => (
+              <motion.div
+                key={step.id}
+                className={`bg-gray-50 rounded-xl p-4 shadow-sm transition-all duration-300 ${
+                  step.status === "active"
+                    ? "ring-2 ring-blue-500 bg-blue-50"
+                    : step.status === "completed"
+                      ? "ring-2 ring-blue-500 bg-blue-50"
+                      : "ring-1 ring-gray-200"
+                }`}
                     initial={{
                       opacity: 0,
                       scale: isMobile ? 0.8 : 0.9,
