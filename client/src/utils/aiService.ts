@@ -1204,12 +1204,12 @@ Use only provided data. No invented details.`;
         previewData.keyInsights,
       );
 
-      // Convert to old format for backward compatibility
+      // Convert to old format for backward compatibility - REUSE CACHED PREVIEW CONTENT
       return {
-        personalizedSummary: previewData.previewInsights, // Reuse from preview
-        customRecommendations: fullReportInsights.personalizedRecommendations,
-        potentialChallenges: fullReportInsights.potentialChallenges,
-        successStrategies: previewData.keyInsights, // Reuse from preview (renamed)
+        personalizedSummary: previewData.previewInsights, // ✅ REUSED from preview
+        customRecommendations: previewData.keyInsights, // ✅ REUSED from preview (NOT fullReportInsights.keyInsights)
+        potentialChallenges: fullReportInsights.potentialChallenges, // ✅ Fresh content
+        successStrategies: previewData.successPredictors, // ✅ REUSED from preview
         personalizedActionPlan: this.getFallbackActionPlan(), // Hardcoded now
         motivationalMessage:
           "Your unique combination of skills and drive positions you perfectly for entrepreneurial success. Trust in your abilities and take that first step.",
