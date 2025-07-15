@@ -1258,7 +1258,10 @@ Use only provided data. No invented details.`;
       quizData.meaningfulContributionImportance >= 4
     )
       motivations.push("impact");
-    if (quizData.successIncomeGoal && parseInt(quizData.successIncomeGoal) >= 5)
+    if (
+      quizData.successIncomeGoal &&
+      parseInt(String(quizData.successIncomeGoal)) >= 5
+    )
       motivations.push("financial");
     if (motivations.length === 0) motivations.push("growth");
 
