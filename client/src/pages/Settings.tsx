@@ -14,7 +14,10 @@ import { useAuth } from "../contexts/AuthContext";
 
 const Settings: React.FC = () => {
   const { user, updateProfile, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("profile");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get("tab") || "profile";
+  });
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
