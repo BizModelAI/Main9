@@ -18,6 +18,12 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name"), // User's full name
   isUnsubscribed: boolean("is_unsubscribed").default(false).notNull(),
+  // New fields to consolidate paid/unpaid users
+  sessionId: text("session_id"), // Session ID for temporary/unpaid users
+  isPaid: boolean("is_paid").default(false).notNull(), // Whether user has made payment
+  isTemporary: boolean("is_temporary").default(false).notNull(), // Whether user is temporary (unpaid)
+  tempQuizData: jsonb("temp_quiz_data"), // Temporary quiz data for unpaid users
+  expiresAt: timestamp("expires_at"), // Expiration for temporary users (24 hours)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
