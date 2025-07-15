@@ -957,13 +957,7 @@ Return JSON format:
               .filter((step, index) => {
                 // On mobile, only show steps that are in the visible set
                 // On desktop, show all steps
-                const shouldShow = !isMobile || visibleMobileSteps.has(index);
-                if (isMobile) {
-                  console.log(
-                    `Mobile filter: Step ${index} (${step.title}) - visible: ${visibleMobileSteps.has(index)}, should show: ${shouldShow}`,
-                  );
-                }
-                return shouldShow;
+                return !isMobile || visibleMobileSteps.has(index);
               })
               .map((step, index) => {
                 // Find the original index for proper step handling
