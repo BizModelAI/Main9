@@ -875,12 +875,6 @@ Return JSON format:
     // Mark step as active
     setCurrentStep(stepIndex);
 
-    // On mobile, immediately show the current step
-    if (isMobile) {
-      console.log(`📱 Mobile: Showing step ${stepIndex}`);
-      setVisibleMobileSteps(new Set([stepIndex]));
-    }
-
     // Update step status to active
     setSteps((prev) =>
       prev.map((step, index) => ({
@@ -894,32 +888,8 @@ Return JSON format:
       })),
     );
 
-    // Calculate progress range for this step (each step gets equal portion)
-    const startProgress = (stepIndex / steps.length) * 100;
-    const endProgress = ((stepIndex + 1) / steps.length) * 100;
-    const progressRange = endProgress - startProgress;
-
-    // Start the async function
-    const resultPromise = asyncFunction();
-
-    // Animate progress smoothly during step execution
-    let currentProgress = startProgress;
-    const progressInterval = setInterval(
-      () => {
-        if (currentProgress < endProgress - 1) {
-          currentProgress += 1; // Increment by exactly 1%
-          setProgress(Math.round(currentProgress));
-        }
-      },
-      ((steps[stepIndex]?.estimatedTime || 3) * 1000) / progressRange,
-    ); // Distribute time evenly across the progress range
-
     try {
-      const result = await resultPromise;
-
-      // Clear the interval and ensure final progress for this step
-      clearInterval(progressInterval);
-      setProgress(Math.round(endProgress));
+      const result = await asyncFunction();
 
       // Store result
       setLoadingResults((prev: any) => ({ ...prev, ...result }));
@@ -935,25 +905,9 @@ Return JSON format:
         })),
       );
 
-      // Wait a moment to show completion, then move to next step on mobile
-      if (isMobile && stepIndex < steps.length - 1) {
-        console.log(
-          `📱 Mobile: Step ${stepIndex} completed, moving to step ${stepIndex + 1}`,
-        );
-        // Small delay to show the completed state
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        const nextStepIndex = stepIndex + 1;
-        console.log(`📱 Mobile: Now showing step ${nextStepIndex}`);
-        setVisibleMobileSteps(new Set([nextStepIndex]));
-      }
-
       return result;
     } catch (error) {
       console.error(`Error in step ${stepIndex}:`, error);
-
-      // Clear the interval and set final progress
-      clearInterval(progressInterval);
-      setProgress(Math.round(endProgress));
 
       // Continue with fallback - mark as completed despite error
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
@@ -965,19 +919,6 @@ Return JSON format:
           status: index <= stepIndex ? "completed" : "pending",
         })),
       );
-
-      // On mobile, still advance to next step even on error
-      if (isMobile && stepIndex < steps.length - 1) {
-        console.log(
-          `📱 Mobile: Step ${stepIndex} had error, still moving to step ${stepIndex + 1}`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        const nextStepIndex = stepIndex + 1;
-        console.log(
-          `📱 Mobile: Now showing step ${nextStepIndex} (after error)`,
-        );
-        setVisibleMobileSteps(new Set([nextStepIndex]));
-      }
 
       return {};
     }
