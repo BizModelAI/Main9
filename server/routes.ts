@@ -713,6 +713,74 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Save AI content for a specific quiz attempt
+  app.post("/api/quiz-attempts/:quizAttemptId/ai-content", async (req, res) => {
+    try {
+      const quizAttemptId = parseInt(req.params.quizAttemptId);
+      const { aiContent } = req.body;
+      const currentUserId = getUserIdFromRequest(req);
+
+      if (!currentUserId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      if (!aiContent) {
+        return res.status(400).json({ error: "AI content is required" });
+      }
+
+      // Verify the quiz attempt belongs to the current user
+      const attempts = await storage.getQuizAttempts(currentUserId);
+      const attempt = attempts.find((a) => a.id === quizAttemptId);
+
+      if (!attempt) {
+        return res
+          .status(404)
+          .json({ error: "Quiz attempt not found or unauthorized" });
+      }
+
+      await storage.saveAIContentToQuizAttempt(quizAttemptId, aiContent);
+
+      console.log(`AI content saved for quiz attempt ${quizAttemptId}`);
+      res.json({ success: true, message: "AI content saved successfully" });
+    } catch (error) {
+      console.error("Error saving AI content:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get AI content for a specific quiz attempt
+  app.get("/api/quiz-attempts/:quizAttemptId/ai-content", async (req, res) => {
+    try {
+      const quizAttemptId = parseInt(req.params.quizAttemptId);
+      const currentUserId = getUserIdFromRequest(req);
+
+      if (!currentUserId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Verify the quiz attempt belongs to the current user
+      const attempts = await storage.getQuizAttempts(currentUserId);
+      const attempt = attempts.find((a) => a.id === quizAttemptId);
+
+      if (!attempt) {
+        return res
+          .status(404)
+          .json({ error: "Quiz attempt not found or unauthorized" });
+      }
+
+      const aiContent = await storage.getAIContentForQuizAttempt(quizAttemptId);
+
+      console.log(
+        `AI content retrieved for quiz attempt ${quizAttemptId}:`,
+        !!aiContent,
+      );
+      res.json({ aiContent });
+    } catch (error) {
+      console.error("Error getting AI content:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Get latest quiz data for authenticated user (for business model pages)
   app.get("/api/auth/latest-quiz-data", async (req, res) => {
     console.log("LATEST QUIZ DATA: Endpoint called!");
