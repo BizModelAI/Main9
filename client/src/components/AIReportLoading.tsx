@@ -140,13 +140,19 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     }
   }, [isMobile]);
 
-  // Auto-cycle through mobile steps every 3 seconds
+  // Auto-cycle through mobile steps every 4 seconds, only once
   useEffect(() => {
     if (!isMobile) return;
 
     const interval = setInterval(() => {
-      setCurrentMobileStep((prev) => (prev + 1) % steps.length);
-    }, 3000);
+      setCurrentMobileStep((prev) => {
+        if (prev < steps.length - 1) {
+          return prev + 1;
+        }
+        // Stay on the last step (step 6)
+        return prev;
+      });
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [isMobile, steps.length]);
