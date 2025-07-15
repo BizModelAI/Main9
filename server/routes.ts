@@ -1198,7 +1198,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Check if report is unlocked for a specific quiz attempt
   app.get(
     "/api/report-unlock-status/:userId/:quizAttemptId",
-    async (req, res) => {
+    async (req: Request, res: Response) => {
       try {
         const { userId, quizAttemptId } = req.params;
 
