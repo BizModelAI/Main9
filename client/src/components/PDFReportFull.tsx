@@ -29,6 +29,8 @@ import {
 interface PDFReportFullProps {
   quizData: QuizData;
   userEmail?: string | null;
+  aiAnalysis?: any;
+  topBusinessPath?: any;
 }
 
 // Enhanced PDF-optimized version with complete report content
