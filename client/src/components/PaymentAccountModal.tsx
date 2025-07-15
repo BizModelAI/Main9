@@ -33,6 +33,9 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { signup, login, user, deleteAccount } = useAuth();
+  const { setHasUnlockedAnalysis, setHasCompletedQuiz } = usePaywall();
+
   const [error, setError] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [isRetakePayment, setIsRetakePayment] = useState(false);
@@ -47,9 +50,6 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
     password: "",
     confirmPassword: "",
   });
-
-  const { signup, login, user, deleteAccount } = useAuth();
-  const { setHasUnlockedAnalysis, setHasCompletedQuiz } = usePaywall();
 
   // Handle cleanup when user closes modal on payment step
   const handleClose = async () => {
