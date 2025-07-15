@@ -403,7 +403,7 @@ export function setupAuthRoutes(app: Express) {
   // Logout
   app.post("/api/auth/logout", async (req: Request, res: Response) => {
     try {
-      req.session.destroy((err) => {
+      req.session.destroy((err: any) => {
         if (err) {
           console.error("Error destroying session:", err);
           return res.status(500).json({ error: "Could not log out" });
@@ -471,7 +471,7 @@ export function setupAuthRoutes(app: Express) {
       await storage.deleteUser(userId);
 
       // Destroy session
-      req.session.destroy((err) => {
+      req.session.destroy((err: any) => {
         if (err) {
           console.error("Error destroying session:", err);
           return res
