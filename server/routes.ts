@@ -2264,12 +2264,12 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
       }
 
       // For unpaid users, check if email already exists for this session
-      const existingEmail = await storage.getUnpaidUserEmail(sessionId);
+      const existingUser = await storage.getTemporaryUser(sessionId);
 
-      if (existingEmail) {
+      if (existingUser) {
         // Email already stored, just send again
         const success = await emailService.sendQuizResults(
-          existingEmail.email,
+          existingUser.email,
           quizData,
         );
         if (success) {
