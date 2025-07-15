@@ -64,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           response = await new Promise<Response>((resolve, reject) => {
             xhr.onload = () => {
               const responseText = xhr.responseText;
+              console.log("Auth API response:", xhr.status, responseText);
               resolve({
                 ok: xhr.status >= 200 && xhr.status < 300,
                 status: xhr.status,
@@ -466,6 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           new Promise<Response>((resolve, reject) => {
             xhr.onload = () => {
               const responseText = xhr.responseText;
+              console.log("Auth API response:", xhr.status, responseText);
               resolve({
                 ok: xhr.status >= 200 && xhr.status < 300,
                 status: xhr.status,
