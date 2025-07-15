@@ -1551,11 +1551,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                 break;
               }
 
-              // Get signup data from tempData.quizData
-              const signupData = tempData.quizData as any;
-              const email = signupData.email || tempData.email;
-              const password = signupData.password;
-              const name = signupData.name;
+              // Get signup data from tempData.tempQuizData
+              const signupData = tempData.tempQuizData as any;
+              const email = signupData?.email || tempData.email;
+              const password = signupData?.password || tempData.password;
+              const name = signupData?.name || tempData.name;
 
               if (!password) {
                 console.error(
