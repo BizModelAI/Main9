@@ -967,20 +967,21 @@ Return JSON format:
           </div>
         </motion.div>
 
-        {/* Compact Loading Steps Grid */}
+                {/* Compact Loading Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-          {steps
-            .filter((step, index) => {
-              // On mobile, only show steps that are in the visible set
-              // On desktop, show all steps
-              const shouldShow = !isMobile || visibleMobileSteps.has(index);
-              if (isMobile) {
-                console.log(
-                  `Mobile filter: Step ${index} (${step.title}) - visible: ${visibleMobileSteps.has(index)}, should show: ${shouldShow}`,
-                );
-              }
-              return shouldShow;
-            })
+          <AnimatePresence mode="wait">
+            {steps
+              .filter((step, index) => {
+                // On mobile, only show steps that are in the visible set
+                // On desktop, show all steps
+                const shouldShow = !isMobile || visibleMobileSteps.has(index);
+                if (isMobile) {
+                  console.log(
+                    `Mobile filter: Step ${index} (${step.title}) - visible: ${visibleMobileSteps.has(index)}, should show: ${shouldShow}`,
+                  );
+                }
+                return shouldShow;
+              })
             .map((step, index) => {
               // Find the original index for proper step handling
               const originalIndex = steps.findIndex((s) => s.id === step.id);
