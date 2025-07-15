@@ -411,6 +411,20 @@ const Dashboard: React.FC = () => {
     }, 0);
   };
 
+  const handleQuizSelected = (quizData: QuizData, aiContent?: any) => {
+    console.log("Quiz selected in Dashboard:", { quizData, aiContent });
+    // Trigger a re-render of components that depend on localStorage data
+    setRefreshKey((prev) => prev + 1);
+    // Re-calculate business models with new quiz data
+    setIsLoadingScores(true);
+
+    // The business model calculation will be triggered by the useEffect
+    // that watches for authLoading, user, and getLatestQuizData changes
+    setTimeout(() => {
+      setIsLoadingScores(false);
+    }, 500);
+  };
+
   const quickActions = [
     {
       title: "Retake Quiz",
