@@ -107,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
   // CORS preflight handler for OpenAI chat endpoint
-  app.options("/api/openai-chat", (req, res) => {
+  app.options("/api/openai-chat", (req: Request, res: Response) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
@@ -1080,11 +1080,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         );
 
         if (existingPayment) {
-          return res
-            .status(400)
-            .json({
-              error: "Report is already unlocked for this quiz attempt",
-            });
+          return res.status(400).json({
+            error: "Report is already unlocked for this quiz attempt",
+          });
         }
 
         // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
@@ -2000,11 +1998,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         const { quizData, businessMatches } = req.body;
 
         if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
-          return res
-            .status(400)
-            .json({
-              error: "Missing or invalid quiz data or business matches",
-            });
+          return res.status(400).json({
+            error: "Missing or invalid quiz data or business matches",
+          });
         }
 
         const descriptions = [];
@@ -2126,11 +2122,9 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         const { quizData, businessMatches } = req.body;
 
         if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
-          return res
-            .status(400)
-            .json({
-              error: "Missing or invalid quiz data or business matches",
-            });
+          return res.status(400).json({
+            error: "Missing or invalid quiz data or business matches",
+          });
         }
 
         const descriptions = [];
