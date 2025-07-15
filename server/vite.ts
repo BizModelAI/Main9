@@ -1,4 +1,9 @@
-import express, { type Express } from "express";
+import express from "express";
+
+type Express = express.Express;
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
 import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
