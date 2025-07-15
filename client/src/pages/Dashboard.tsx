@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
                   timeToProfit: "2-8 weeks",
                   potentialIncome: "$1K-15K/month",
                   difficulty: "Easy",
-                  icon: "✍️",
+                  icon: "��️",
                 },
               };
 
@@ -513,7 +513,7 @@ const Dashboard: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className="relative bg-white rounded-3xl shadow-xl border-2 border-gray-200 w-full p-4 md:p-6 md:aspect-[4/3] h-48 md:h-auto flex items-center justify-center"
+                    className="relative bg-white rounded-3xl p-6 shadow-xl border-2 border-gray-200 w-full aspect-[4/3] flex items-center justify-center"
                   >
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </motion.div>
@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full p-4 md:p-6 min-h-[280px] md:min-h-0 md:aspect-[4/3]"
+                      className="relative bg-white rounded-3xl p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3]"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
                       <div className="absolute -top-4 left-6">
@@ -537,41 +537,37 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-4 md:mb-3">
-                        <div className="text-4xl md:text-3xl mr-4 md:mr-3 flex-shrink-0">
-                          {model.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-xl md:text-lg font-bold text-gray-900 mb-3 md:mb-2 leading-tight">
+                      <div className="flex items-start mb-3">
+                        <div className="text-3xl mr-3">{model.icon}</div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-gray-900 mb-2 leading-tight">
                             {model.name}
                           </h3>
-                          <p className="text-gray-600 text-base md:text-sm mb-4 md:mb-3 leading-relaxed">
+                          <p className="text-gray-600 text-sm mb-3 leading-tight">
                             {model.description}
                           </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 mb-6 md:mb-4">
-                        <div className="bg-gray-50 rounded-xl p-3 text-center">
-                          <div className="text-xs md:text-xs text-gray-500 font-medium mb-1">
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">
                             Time to Profit
                           </div>
-                          <div className="font-bold text-gray-900 text-sm md:text-sm">
+                          <div className="font-semibold text-gray-900 text-sm">
                             {model.timeToProfit}
                           </div>
                         </div>
-                        <div className="bg-gray-50 rounded-xl p-3 text-center">
-                          <div className="text-xs md:text-xs text-gray-500 font-medium mb-1">
-                            Income
-                          </div>
-                          <div className="font-bold text-gray-900 text-sm md:text-sm">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Income</div>
+                          <div className="font-semibold text-gray-900 text-sm">
                             {model.potentialIncome}
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center">
-                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-4 md:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-base md:text-sm shadow-lg hover:shadow-xl">
+                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm">
                           Select This Model
                         </button>
                       </div>
