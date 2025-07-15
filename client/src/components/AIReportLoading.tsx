@@ -168,7 +168,9 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     }
   }, [currentStep, isMobile, currentMobileStep, steps.length]);
 
-  // Progress bar updates based on step completion
+  // Calculate target progress based on step completion
+  const [targetProgress, setTargetProgress] = useState(0);
+
   useEffect(() => {
     const totalSteps = steps.length;
     const completedStepsCount = completedSteps.size;
@@ -179,15 +181,22 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     const stepProgress = (completedStepsCount * 100) / totalSteps;
     const activeProgress = activeStepProgress * (100 / totalSteps) * 0.3; // 30% of step value for active
 
-    const targetProgress = Math.min(stepProgress + activeProgress, 100);
-
-    // Smooth transition to target progress
-    setProgress((prev) => {
-      const diff = targetProgress - prev;
-      if (Math.abs(diff) < 0.1) return targetProgress;
-      return prev + diff * 0.1; // Smooth interpolation
-    });
+    const newTargetProgress = Math.min(stepProgress + activeProgress, 100);
+    setTargetProgress(newTargetProgress);
   }, [currentStep, completedSteps, steps.length]);
+
+  // Smooth progress bar animation toward target
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const diff = targetProgress - prev;
+        if (Math.abs(diff) < 0.1) return targetProgress;
+        return prev + diff * 0.05; // Smooth interpolation - slower for more realistic feel
+      });
+    }, 50); // Update every 50ms for smooth animation
+
+    return () => clearInterval(interval);
+  }, [targetProgress]);
 
   // Generate all 6 characteristics with OpenAI
   const generateAllCharacteristics = async (
