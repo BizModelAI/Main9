@@ -388,11 +388,14 @@ Rules: Use only provided data, no invented details.`;
       // Create a comprehensive user profile for the AI
       const userProfile = this.createUserProfile(quizData);
 
+      // Get preview insights for the full report generation
+      const previewData = await this.generateResultsPreview(quizData, topPaths);
+
       // Make streamlined OpenAI call for full report only
       const insights = await this.generateStreamlinedFullReportInsights(
         userProfile,
         topPaths,
-        insights,
+        previewData.insights,
         keySuccessIndicators,
       );
 
@@ -753,7 +756,7 @@ Generate a professional business analysis about ${topPath.name} for this user.`;
             if (attempt < retries) {
               const waitTime = Math.pow(2, attempt) * 3000; // 6s, 12s, 24s
               console.log(
-                `🚫 Rate limited. Waiting ${waitTime}ms before retry...`,
+                `��� Rate limited. Waiting ${waitTime}ms before retry...`,
               );
               await new Promise((resolve) => setTimeout(resolve, waitTime));
               continue; // Retry immediately after waiting
