@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl p-6 md:p-8 lg:p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[340px] lg:aspect-auto"
+                      className="relative bg-white rounded-3xl p-6 md:p-8 lg:p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[380px] lg:aspect-auto flex flex-col"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
                       <div className="absolute -top-3 left-6">
@@ -551,8 +551,8 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 mb-4 sm:mb-6 md:mb-6 lg:gap-3 lg:mb-4">
-                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-lg lg:p-2">
+                      <div className="grid grid-cols-2 gap-4 mb-6 sm:mb-6 md:mb-6 lg:gap-3 lg:mb-6">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
                           <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
                             Time to Profit
                           </div>
@@ -560,7 +560,7 @@ const Dashboard: React.FC = () => {
                             {model.timeToProfit}
                           </div>
                         </div>
-                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-lg lg:p-2">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
                           <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
                             Income
                           </div>
@@ -570,8 +570,11 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center">
-                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 sm:py-4 md:py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm sm:text-base md:text-base sm:shadow-lg md:shadow-lg hover:shadow-xl">
+                      {/* Spacer to push button to bottom */}
+                      <div className="flex-grow"></div>
+
+                      <div className="flex items-center mt-auto">
+                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 sm:py-4 md:py-4 lg:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm sm:text-base md:text-base lg:text-sm sm:shadow-lg md:shadow-lg hover:shadow-xl">
                           Select This Model
                         </button>
                       </div>
