@@ -256,9 +256,14 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
 
       {attempts.length > 3 && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button className="w-full flex items-center justify-center space-x-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-            <span>View All Attempts</span>
-            <ChevronRight className="w-4 h-4" />
+          <button
+            onClick={() => setShowAllAttempts(!showAllAttempts)}
+            className="w-full flex items-center justify-center space-x-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+          >
+            <span>{showAllAttempts ? "Show Less" : "View All Attempts"}</span>
+            <ChevronRight
+              className={`w-4 h-4 transition-transform ${showAllAttempts ? "rotate-90" : ""}`}
+            />
           </button>
         </div>
       )}
