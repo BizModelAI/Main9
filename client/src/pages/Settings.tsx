@@ -49,6 +49,7 @@ const Settings: React.FC = () => {
     confirm: false,
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
 
   // Sync form data when user data changes
   useEffect(() => {
