@@ -1068,10 +1068,22 @@ Return JSON format:
                     ))}
                   </motion.div>
                 </div>
-                <h3 className="text-2xl font-semibold mb-1 text-blue-900">
+                <h3
+                  className={`text-2xl font-semibold mb-1 ${
+                    steps[currentMobileStep]?.status === "completed"
+                      ? "text-green-900"
+                      : "text-blue-900"
+                  }`}
+                >
                   {steps[currentMobileStep]?.title}
                 </h3>
-                <p className="text-base text-blue-600">
+                <p
+                  className={`text-base ${
+                    steps[currentMobileStep]?.status === "completed"
+                      ? "text-green-600"
+                      : "text-blue-600"
+                  }`}
+                >
                   {steps[currentMobileStep]?.description}
                 </p>
                 <motion.div
