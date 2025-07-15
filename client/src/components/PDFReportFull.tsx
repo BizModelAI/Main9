@@ -56,6 +56,21 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
     aiAnalysis = cachedData.analysis;
   }
 
+  // Extract AI analysis components for comprehensive reporting
+  const {
+    fullAnalysis,
+    keyInsights,
+    personalizedRecommendations,
+    riskFactors,
+    successPredictors,
+    personalizedSummary,
+    customRecommendations,
+    potentialChallenges,
+    successStrategies,
+    personalizedActionPlan,
+    motivationalMessage,
+  } = aiAnalysis || {};
+
   // Calculate trait scores
   const traitScores = {
     socialComfort: calculateSocialComfort(quizData),
