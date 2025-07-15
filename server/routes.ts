@@ -926,6 +926,39 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Access pass concept removed - use report unlock payments instead
 
+  // Get pricing for user without creating payment intent
+  app.get("/api/user-pricing/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return res.status(400).json({ error: "Missing userId" });
+      }
+
+      const user = await storage.getUser(parseInt(userId));
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
+      const payments = await storage.getPaymentsByUser(parseInt(userId));
+      const completedPayments = payments.filter(
+        (p) => p.status === "completed",
+      );
+      const isFirstReport = completedPayments.length === 0;
+      const amountDollar = isFirstReport ? "9.99" : "4.99";
+
+      res.json({
+        success: true,
+        amount: amountDollar,
+        isFirstReport,
+      });
+    } catch (error) {
+      console.error("Error getting user pricing:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Create payment for unlocking full report ($9.99 first, $4.99 subsequent for logged users)
   app.post("/api/create-report-unlock-payment", async (req, res) => {
     try {
