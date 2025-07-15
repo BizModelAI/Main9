@@ -538,7 +538,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       } catch (error) {
         console.error("Error generating AI insights:", error);
         // Set fallback insights that use actual quiz data
-        const fallbackPreviewInsights = `Based on your quiz responses, you show strong alignment with ${paths[0]?.name || "online business"} with a ${paths[0]?.fitScore || 75}% compatibility score. Your income goal of ${getIncomeRangeLabel(quizData.successIncomeGoal)} and ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} per week commitment indicate ${quizData.successIncomeGoal >= 5000 ? "ambitious" : "realistic"} expectations.
+        const fallbackInsights = `Based on your quiz responses, you show strong alignment with ${paths[0]?.name || "online business"} with a ${paths[0]?.fitScore || 75}% compatibility score. Your income goal of ${getIncomeRangeLabel(quizData.successIncomeGoal)} and ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} per week commitment indicate ${quizData.successIncomeGoal >= 5000 ? "ambitious" : "realistic"} expectations.
 
 Your ${quizData.techSkillsRating}/5 tech skills rating combined with your ${quizData.learningPreference} learning preference suggests you're well-suited for ${quizData.techSkillsRating >= 4 ? "advanced" : "foundational"} business approaches. With ${quizData.riskComfortLevel}/5 risk tolerance, you're positioned to ${quizData.riskComfortLevel >= 4 ? "explore innovative strategies" : "build systematically"}.
 
@@ -553,7 +553,7 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
 
         setAiInsights({
           // New structure (priority)
-          insights: fallbackPreviewInsights,
+          insights: fallbackInsights,
           keySuccessIndicators: fallbackKeyIndicators,
           personalizedRecommendations: [
             `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
@@ -622,7 +622,7 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
           ],
 
           // Backward compatibility fields
-          personalizedSummary: fallbackPreviewInsights,
+          personalizedSummary: fallbackInsights,
           customRecommendations: [
             `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
             `Your ${quizData.learningPreference} learning preference suggests ${quizData.learningPreference === "hands_on" ? "jumping into projects quickly" : "studying comprehensive guides first"}`,
