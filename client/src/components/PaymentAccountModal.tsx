@@ -456,7 +456,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
 
   const fetchUserPricing = async () => {
     try {
-      const response = await fetch(`/api/user-pricing/${user.id}`, {
+      const response = await fetch(`/api/user-pricing/${user?.id}`, {
         credentials: "include",
       });
 
