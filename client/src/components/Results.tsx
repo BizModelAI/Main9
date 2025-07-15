@@ -424,8 +424,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Use cached AI data from loading page or set fallback content
   useEffect(() => {
     if (personalizedPaths.length > 0) {
-      // Start generating AI content immediately
-      generateAIContentForPreview();
+      // Load cached preview data (NO API calls!)
+      loadCachedPreviewData();
     }
   }, [personalizedPaths]);
 
