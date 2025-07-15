@@ -95,7 +95,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Test endpoint to set and check session
-  app.post("/api/auth/session-test", async (req, res) => {
+  app.post("/api/auth/session-test", async (req: Request, res: Response) => {
     try {
       const testValue = `test-${Date.now()}`;
       (req.session as any).testValue = testValue;
