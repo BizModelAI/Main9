@@ -170,84 +170,88 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         </span>
       </div>
 
-      <div className="space-y-4 max-h-96 overflow-y-auto">
-        {attempts.map((attempt: QuizAttempt, index: number) => {
-          const isSelected = selectedAttemptId === attempt.id;
-          return (
-            <div
-              key={attempt.id}
-              className={`flex items-center space-x-4 p-4 rounded-xl transition-all cursor-pointer ${
-                isSelected
-                  ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700"
-                  : "bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent"
-              }`}
-              onClick={() => handleSelectQuiz(attempt)}
-            >
-              {/* Attempt Number Icon */}
-              <div className="flex-shrink-0">
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold relative ${
-                    index === 0
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600"
-                      : "bg-gray-500"
-                  }`}
-                >
-                  {attempts.length - index}
-                  {isSelected && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <CheckCircle2 className="w-3 h-3 text-white" />
+      <div
+        className={`space-y-4 ${showAllAttempts ? "" : "max-h-96"} overflow-y-auto`}
+      >
+        {(showAllAttempts ? attempts : attempts.slice(0, 3)).map(
+          (attempt: QuizAttempt, index: number) => {
+            const isSelected = selectedAttemptId === attempt.id;
+            return (
+              <div
+                key={attempt.id}
+                className={`flex items-center space-x-4 p-4 rounded-xl transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700"
+                    : "bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent"
+                }`}
+                onClick={() => handleSelectQuiz(attempt)}
+              >
+                {/* Attempt Number Icon */}
+                <div className="flex-shrink-0">
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold relative ${
+                      index === 0
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600"
+                        : "bg-gray-500"
+                    }`}
+                  >
+                    {attempts.length - index}
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Attempt Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {getTopBusinessPath(attempt.quizData)}
+                    </p>
+                    {index === 0 && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Latest
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>
+                        {format(new Date(attempt.completedAt), "MMM d, yyyy")}
+                      </span>
                     </div>
+                    <div className="flex items-center space-x-1">
+                      <TrendingUp className="w-3 h-3" />
+                      <span>{getIncomeGoal(attempt.quizData)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Select Button */}
+                <div className="flex-shrink-0">
+                  {isSelected ? (
+                    <div className="p-2 text-blue-600 dark:text-blue-400">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                  ) : (
+                    <button className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                      <Eye className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </div>
-
-              {/* Attempt Details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {getTopBusinessPath(attempt.quizData)}
-                  </p>
-                  {index === 0 && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      Latest
-                    </span>
-                  )}
-                  {isSelected && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      Active
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-3 h-3" />
-                    <span>
-                      {format(new Date(attempt.completedAt), "MMM d, yyyy")}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>{getIncomeGoal(attempt.quizData)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Select Button */}
-              <div className="flex-shrink-0">
-                {isSelected ? (
-                  <div className="p-2 text-blue-600 dark:text-blue-400">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                ) : (
-                  <button className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    <Eye className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          },
+        )}
       </div>
 
       {attempts.length > 3 && (
