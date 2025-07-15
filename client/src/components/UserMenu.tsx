@@ -155,7 +155,66 @@ const UserMenu: React.FC = () => {
             <div className="py-1">
               {menuItems.map((item, index) => (
                 <div key={index}>
-                  {item.href ? (
+                  {item.hasSubmenu ? (
+                    <div>
+                      {/* Settings with submenu */}
+                      <button
+                        onClick={item.onClick}
+                        className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                          item.className ||
+                          "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <item.icon className="h-4 w-4 mr-3" />
+                          {item.label}
+                        </div>
+                        {item.isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </button>
+
+                      {/* Settings Submenu */}
+                      <AnimatePresence>
+                        {item.isExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden bg-gray-50 border-t border-gray-100"
+                          >
+                            {settingsSubmenuItems.map((subItem, subIndex) => (
+                              <Link
+                                key={subIndex}
+                                to={subItem.href}
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  setIsSettingsExpanded(false);
+                                }}
+                                className={`flex items-start px-8 py-3 text-sm transition-colors hover:bg-gray-100 ${
+                                  subItem.className ||
+                                  "text-gray-700 hover:text-blue-600"
+                                }`}
+                              >
+                                <subItem.icon className="h-4 w-4 mr-3 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {subItem.label}
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-0.5">
+                                    {subItem.description}
+                                  </div>
+                                </div>
+                              </Link>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : item.href ? (
                     <Link
                       to={item.href}
                       onClick={item.onClick}
