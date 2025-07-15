@@ -205,11 +205,31 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       console.log("✅ Quiz data safely stored in localStorage");
     }
 
-    // Force clear AI caches for fresh results (but not active AI generation data)
-    console.log("🧹 Clearing AI caches for fresh quiz results...");
+    // Check if AI generation is still in progress before clearing caches
+    const aiGenerationInProgress = localStorage.getItem(
+      "ai-generation-in-progress",
+    );
+    const aiGenerationTimestamp = localStorage.getItem(
+      "ai-generation-timestamp",
+    );
 
-    // Clear AI cache manager caches
-    aiCacheManager.clearAllCache();
+    // If AI generation started recently (within last 2 minutes), don't clear caches yet
+    const recentGenerationThreshold = 2 * 60 * 1000; // 2 minutes
+    const isRecentGeneration =
+      aiGenerationTimestamp &&
+      Date.now() - parseInt(aiGenerationTimestamp) < recentGenerationThreshold;
+
+    if (aiGenerationInProgress === "true" || isRecentGeneration) {
+      console.log(
+        "⏳ AI generation in progress, skipping cache clear to avoid interference",
+      );
+    } else {
+      // Force clear AI caches for fresh results (but not active AI generation data)
+      console.log("🧹 Clearing AI caches for fresh quiz results...");
+
+      // Clear AI cache manager caches
+      aiCacheManager.clearAllCache();
+    }
 
     // Clear specific localStorage items that might cause inconsistencies
     // NOTE: Don't clear quiz-completion-ai-insights as AIReportLoading may be writing to it
