@@ -22,7 +22,7 @@ import {
 console.log("Schema imported successfully");
 import { db } from "./db.js";
 console.log("Database imported successfully");
-import { eq, desc, count, sql, and } from "drizzle-orm";
+import { eq, desc, count, sql, and, or } from "drizzle-orm";
 console.log("Drizzle ORM imported successfully");
 
 export interface IStorage {
