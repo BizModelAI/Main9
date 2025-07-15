@@ -1,7 +1,0 @@
-// Generate AI content for the preview
-  useEffect(() => {
-    if (personalizedPaths.length > 0) {
-      // Start generating AI content immediately
-      generateAIContentForPreview();
-    }
-  }, [personalizedPaths]);
