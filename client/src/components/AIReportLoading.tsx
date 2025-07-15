@@ -421,8 +421,11 @@ Return JSON format:
       }
 
       const data = await response.json();
-      let cleanContent = data.content;
-      if (cleanContent.includes("```json")) {
+      let cleanContent = data.content || data || "";
+      if (
+        typeof cleanContent === "string" &&
+        cleanContent.includes("```json")
+      ) {
         cleanContent = cleanContent
           .replace(/```json\n?/g, "")
           .replace(/```/g, "");
