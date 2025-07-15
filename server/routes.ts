@@ -1859,7 +1859,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // PDF generation endpoint
-  app.post("/api/generate-pdf", async (req, res) => {
+  app.post("/api/generate-pdf", async (req: Request, res: Response) => {
     try {
       const { quizData, userEmail, aiAnalysis, topBusinessPath } = req.body;
 
@@ -1929,7 +1929,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Email endpoints
-  app.post("/api/send-quiz-results", async (req, res) => {
+  app.post("/api/send-quiz-results", async (req: Request, res: Response) => {
     try {
       const { email, quizData } = req.body;
 
@@ -1950,7 +1950,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post("/api/send-welcome-email", async (req, res) => {
+  app.post("/api/send-welcome-email", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
@@ -1971,7 +1971,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post("/api/send-full-report", async (req, res) => {
+  app.post("/api/send-full-report", async (req: Request, res: Response) => {
     try {
       const { email, quizData } = req.body;
 
@@ -1993,23 +1993,27 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Generate detailed "Why This Fits You" descriptions for top 3 business matches
-  app.post("/api/generate-business-fit-descriptions", async (req, res) => {
-    try {
-      const { quizData, businessMatches } = req.body;
+  app.post(
+    "/api/generate-business-fit-descriptions",
+    async (req: Request, res: Response) => {
+      try {
+        const { quizData, businessMatches } = req.body;
 
-      if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
-        return res
-          .status(400)
-          .json({ error: "Missing or invalid quiz data or business matches" });
-      }
+        if (!quizData || !businessMatches || !Array.isArray(businessMatches)) {
+          return res
+            .status(400)
+            .json({
+              error: "Missing or invalid quiz data or business matches",
+            });
+        }
 
-      const descriptions = [];
+        const descriptions = [];
 
-      for (let i = 0; i < businessMatches.length; i++) {
-        const match = businessMatches[i];
-        const rank = i + 1;
+        for (let i = 0; i < businessMatches.length; i++) {
+          const match = businessMatches[i];
+          const rank = i + 1;
 
-        const prompt = `Based on this user's quiz responses, generate a detailed "Why This Fits You" description for their ${rank === 1 ? "top" : rank === 2 ? "second" : "third"} business match.
+          const prompt = `Based on this user's quiz responses, generate a detailed "Why This Fits You" description for their ${rank === 1 ? "top" : rank === 2 ? "second" : "third"} business match.
 
 User Quiz Data:
 - Main Motivation: ${quizData.mainMotivation}
@@ -2053,65 +2057,66 @@ Reference specific quiz data points and explain the connections. Make it persona
 
 CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in the user profile. If the user selected a range, always refer to the full range, never specific numbers within it.`;
 
-        const openaiResponse = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          const openaiResponse = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models fit individual users based on their quiz responses.",
+                  },
+                  {
+                    role: "user",
+                    content: prompt,
+                  },
+                ],
+                temperature: 0.7,
+                max_tokens: 500,
+              }),
             },
-            body: JSON.stringify({
-              model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are an expert business consultant specializing in entrepreneurial personality matching. Generate personalized, specific explanations for why certain business models fit individual users based on their quiz responses.",
-                },
-                {
-                  role: "user",
-                  content: prompt,
-                },
-              ],
-              temperature: 0.7,
-              max_tokens: 500,
-            }),
-          },
-        );
+          );
 
-        if (!openaiResponse.ok) {
-          throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          if (!openaiResponse.ok) {
+            throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          }
+
+          const data = await openaiResponse.json();
+          const content = data.choices[0].message.content;
+
+          descriptions.push({
+            businessId: match.id,
+            description:
+              content ||
+              `This business model aligns well with your ${quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${quizData.weeklyTimeCommitment} hours/week availability. Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a suitable match for your entrepreneurial journey.`,
+          });
         }
 
-        const data = await openaiResponse.json();
-        const content = data.choices[0].message.content;
+        res.json({ descriptions });
+      } catch (error) {
+        console.error("Error generating business fit descriptions:", error);
 
-        descriptions.push({
-          businessId: match.id,
-          description:
-            content ||
-            `This business model aligns well with your ${quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${quizData.weeklyTimeCommitment} hours/week availability. Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a suitable match for your entrepreneurial journey.`,
-        });
-      }
-
-      res.json({ descriptions });
-    } catch (error) {
-      console.error("Error generating business fit descriptions:", error);
-
-      // Return fallback descriptions
-      const fallbackDescriptions = req.body.businessMatches.map(
-        (match: any, index: number) => ({
-          businessId: match.id,
-          description: `This business model aligns well with your ${req.body.quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${req.body.quizData.weeklyTimeCommitment} hours/week availability. Your ${req.body.quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${req.body.quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a ${index === 0 ? "perfect" : index === 1 ? "excellent" : "good"} match for your entrepreneurial journey.
+        // Return fallback descriptions
+        const fallbackDescriptions = req.body.businessMatches.map(
+          (match: any, index: number) => ({
+            businessId: match.id,
+            description: `This business model aligns well with your ${req.body.quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${req.body.quizData.weeklyTimeCommitment} hours/week availability. Your ${req.body.quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${req.body.quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a ${index === 0 ? "perfect" : index === 1 ? "excellent" : "good"} match for your entrepreneurial journey.
 
 ${index === 0 ? "As your top match, this path offers the best alignment with your goals and preferences." : index === 1 ? "This represents a strong secondary option that complements your primary strengths." : "This provides a solid alternative path that matches your core capabilities."} Your ${req.body.quizData.learningPreference?.replace("-", " ")} learning style and ${req.body.quizData.workStructurePreference?.replace("-", " ")} work preference make this business model particularly suitable for your success.`,
-        }),
-      );
+          }),
+        );
 
-      res.json({ descriptions: fallbackDescriptions });
-    }
-  });
+        res.json({ descriptions: fallbackDescriptions });
+      }
+    },
+  );
 
   // Generate detailed "Why This Doesn't Fit Your Current Profile" descriptions for bottom 3 business matches
   app.post("/api/generate-business-avoid-descriptions", async (req, res) => {
