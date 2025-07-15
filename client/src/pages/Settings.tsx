@@ -261,32 +261,6 @@ const Settings: React.FC = () => {
                     Profile Information
                   </h2>
 
-                  {/* Profile Photo Section */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Profile Photo
-                    </h3>
-                    <div className="flex items-center space-x-6">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden">
-                        <User className="h-12 w-12 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Upload a photo for your profile.
-                        </p>
-                        <label className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Photo
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Form Fields */}
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
