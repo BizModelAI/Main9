@@ -286,10 +286,10 @@ const Settings: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-colors ${
+                    className={`w-full flex items-center px-4 py-3 text-left transition-colors ${
                       activeTab === tab.id
-                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-r-lg"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-r-xl"
+                        : "text-gray-700 hover:bg-gray-50 rounded-xl"
                     }`}
                   >
                     <tab.icon className="h-5 w-5 mr-3" />
