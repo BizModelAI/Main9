@@ -30,11 +30,19 @@ app.use(
   }),
 );
 
-// Raw body parsing for Stripe webhooks
+// JSON parsing for all routes except Stripe webhooks
+app.use((req, res, next) => {
+  if (req.path === "/api/stripe/webhook") {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
+
+// Raw body parsing specifically for Stripe webhooks
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
 
-// JSON parsing for other routes
-app.use(express.json());
+// URL encoded parsing for form data
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
