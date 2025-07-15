@@ -937,8 +937,14 @@ Return JSON format:
 
       // On mobile, still advance to next step even on error
       if (isMobile && stepIndex < steps.length - 1) {
+        console.log(
+          `📱 Mobile: Step ${stepIndex} had error, still moving to step ${stepIndex + 1}`,
+        );
         await new Promise((resolve) => setTimeout(resolve, 800));
         const nextStepIndex = stepIndex + 1;
+        console.log(
+          `📱 Mobile: Now showing step ${nextStepIndex} (after error)`,
+        );
         setVisibleMobileSteps(new Set([nextStepIndex]));
       }
 
