@@ -731,13 +731,21 @@ export function setupAuthRoutes(app: Express) {
       const { emailService } = await import("./services/emailService.js");
 
       // Send notification to team@bizmodelai.com
-      const notificationSent = await emailService.sendContactFormNotification({
-        name,
-        email,
-        subject,
-        message,
-        category,
-      });
+      let notificationSent = false;
+      try {
+        notificationSent = await emailService.sendContactFormNotification({
+          name,
+          email,
+          subject,
+          message,
+          category,
+        });
+      } catch (emailError) {
+        console.error("Error sending contact form notification:", emailError);
+        return res.status(500).json({
+          error: "Failed to send notification email. Please try again later.",
+        });
+      }
 
       if (!notificationSent) {
         console.error("Failed to send contact form notification");
@@ -747,14 +755,23 @@ export function setupAuthRoutes(app: Express) {
       }
 
       // Send confirmation email to user
-      const confirmationSent = await emailService.sendContactFormConfirmation(
-        email,
-        name,
-      );
+      let confirmationSent = false;
+      try {
+        confirmationSent = await emailService.sendContactFormConfirmation(
+          email,
+          name,
+        );
+      } catch (emailError) {
+        console.log(
+          "Failed to send confirmation email to user, but notification was sent:",
+          emailError,
+        );
+        // Don't fail the request if confirmation email fails
+      }
 
       if (!confirmationSent) {
         console.log(
-          "Failed to send confirmation email to user, but notification was sent",
+          "Confirmation email failed to send, but notification was sent successfully",
         );
         // Don't fail the request if confirmation email fails
       }
