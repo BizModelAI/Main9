@@ -1,7 +1,11 @@
-import type { Express, Request, Response } from "express";
+import express from "express";
 import { storage } from "./storage.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+
+type Express = express.Express;
+type Request = express.Request;
+type Response = express.Response;
 
 // Temporary session cache as fallback for cookie issues
 const tempSessionCache = new Map<
