@@ -863,7 +863,11 @@ Return JSON format:
 
       // On mobile, switch to show next step even on error
       if (isMobile && stepIndex < steps.length - 1) {
-        setVisibleMobileSteps(new Set([stepIndex + 1]));
+        const nextStepIndex = stepIndex + 1;
+        console.log(
+          `Mobile: Step ${stepIndex} error, switching to step ${nextStepIndex}`,
+        );
+        setVisibleMobileSteps(new Set([nextStepIndex]));
       }
 
       setSteps((prev) =>
