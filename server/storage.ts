@@ -151,6 +151,11 @@ export class MemStorage implements IStorage {
       name: insertUser.name ?? null,
       id,
       isUnsubscribed: false,
+      sessionId: null,
+      isPaid: true, // Regular users are paid users
+      isTemporary: false,
+      tempQuizData: null,
+      expiresAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
