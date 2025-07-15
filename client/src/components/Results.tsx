@@ -354,7 +354,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // This function is no longer used - AI content comes from loading page
   const generateAIContent = async (paths: BusinessPath[]) => {
     console.log(
-      "��️ generateAIContent called but should not be used - AI content comes from loading page",
+      "⚠️ generateAIContent called but should not be used - AI content comes from loading page",
     );
   };
 
