@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
                   timeToProfit: "2-6 months",
                   potentialIncome: "$1K-50K/month",
                   difficulty: "Medium",
-                  icon: "��️",
+                  icon: "🛍️",
                 },
                 "virtual-assistant": {
                   id: "virtual-assistant",
@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl p-6 md:p-8 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[550px] lg:aspect-auto"
+                      className="relative bg-white rounded-3xl p-6 md:p-8 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[600px] lg:aspect-auto"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
                       <div className="absolute -top-3 left-6">
