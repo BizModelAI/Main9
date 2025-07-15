@@ -811,8 +811,8 @@ Return JSON format:
           await new Promise((resolve) => setTimeout(resolve, remainingTime));
         }
 
-        // Set progress to 100% only when everything is truly complete
-        setProgress(100);
+        // Set target progress to 100% only when everything is truly complete
+        setTargetProgress(100);
 
         // Clear the generation flag
         localStorage.removeItem("ai-generation-in-progress");
