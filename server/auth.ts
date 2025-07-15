@@ -83,7 +83,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Debug endpoint to check session state
-  app.get("/api/auth/session-debug", async (req, res) => {
+  app.get("/api/auth/session-debug", async (req: Request, res: Response) => {
     res.json({
       sessionId: req.sessionID,
       userId: req.session?.userId,
