@@ -464,6 +464,7 @@ const Dashboard: React.FC = () => {
       color: string;
     }>
   >([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   // Generate recent activity from user data
   useEffect(() => {
