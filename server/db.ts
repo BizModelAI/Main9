@@ -91,8 +91,11 @@ async function ensureAIContentColumn() {
       console.log("✅ AI content column already exists");
     }
   } catch (error) {
-    console.error("⚠️ AI content migration check failed:", error.message);
-    if (error.message.includes("already exists")) {
+    console.error(
+      "⚠️ AI content migration check failed:",
+      (error as Error).message,
+    );
+    if ((error as Error).message.includes("already exists")) {
       console.log("💡 Column already exists - migration not needed");
     }
   }
