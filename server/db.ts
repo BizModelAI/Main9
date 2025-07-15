@@ -108,17 +108,7 @@ if (pool) {
       });
     }, 2000);
 
-    // Run verification test after migration (for testing purposes)
-    setTimeout(async () => {
-      try {
-        const { verifySupabaseIntegration } = await import(
-          "../verify-supabase-ai-system.js"
-        );
-        await verifySupabaseIntegration();
-      } catch (error) {
-        console.log("Verification test skipped:", error.message);
-      }
-    }, 4000);
+    // Verification can be run manually if needed
   });
 }
 
