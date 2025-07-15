@@ -73,8 +73,8 @@ const UserMenu: React.FC = () => {
       icon: Trash2,
       label: "Account Management",
       href: "/settings?tab=account",
-      description: "Delete account and data",
-      className: "text-red-600 hover:text-red-700",
+      description: "Change password, delete account",
+      className: "text-gray-700 hover:text-blue-600",
     },
   ];
 
