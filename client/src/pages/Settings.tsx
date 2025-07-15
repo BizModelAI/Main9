@@ -490,6 +490,18 @@ const Settings: React.FC = () => {
                       strong password with at least 8 characters.
                     </p>
 
+                    {/* Password Error Display */}
+                    {passwordError && (
+                      <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-center">
+                          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                          <span className="text-sm font-medium text-red-700">
+                            {passwordError}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-4">
                       {/* Current Password */}
                       <div>
