@@ -27,6 +27,7 @@ import Settings from "./pages/Settings";
 import Quiz from "./components/Quiz";
 import Results from "./components/Results";
 import EmailCapture from "./components/EmailCapture";
+import LoggedInCongratulations from "./components/LoggedInCongratulations";
 import BusinessModelDetail from "./components/BusinessModelDetail";
 import BusinessGuide from "./components/BusinessGuide";
 import DownloadReportPage from "./pages/DownloadReportPage";
