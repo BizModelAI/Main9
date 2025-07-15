@@ -47,37 +47,38 @@ const UserMenu: React.FC = () => {
 
   const menuItems = user
     ? [
-      {
-        icon: LayoutDashboard,
-        label: "Dashboard",
-        href: "/dashboard",
-        onClick: () => { setIsOpen(false); setSettingsOpen(false); },
-      },
-      {
-        icon: Settings,
-        label: "Settings",
-        isSettings: true,
-      },
-      {
-        icon: LogOut,
-        label: "Log Out",
-        onClick: () => setShowLogoutConfirm(true),
-        className: "text-red-600 hover:text-red-700 hover:bg-red-50",
-      },
-    ]
+        {
+          icon: LayoutDashboard,
+          label: "Dashboard",
+          href: "/dashboard",
+          onClick: () => {
+            setIsOpen(false);
+            setSettingsOpen(false);
+          },
+        },
+        {
+          icon: Settings,
+          label: "Settings",
+          isSettings: true,
+        },
+        {
+          icon: LogOut,
+          label: "Log Out",
+          onClick: () => setShowLogoutConfirm(true),
+          className: "text-red-600 hover:text-red-700 hover:bg-red-50",
+        },
+      ]
     : [
-      {
-        icon: LogIn,
-        label: "Log In",
-        href: "/login",
-        onClick: () => { setIsOpen(false); setSettingsOpen(false); },
-      },
-      {
-        icon: Settings,
-        label: "Settings",
-        isSettings: true,
-      },
-    ];
+        {
+          icon: LogIn,
+          label: "Log In",
+          href: "/login",
+          onClick: () => {
+            setIsOpen(false);
+            setSettingsOpen(false);
+          },
+        },
+      ];
 
   const settingsMenu = [
     { label: "Profile", path: "/settings/profile" },
@@ -90,8 +91,9 @@ const UserMenu: React.FC = () => {
       {/* User Avatar Button - Just the icon, styled like nav items */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center space-x-1 text-sm font-medium transition-colors ${isOpen ? "text-blue-600" : "text-gray-700 hover:text-blue-600"
-          }`}
+        className={`flex items-center space-x-1 text-sm font-medium transition-colors ${
+          isOpen ? "text-blue-600" : "text-gray-700 hover:text-blue-600"
+        }`}
         aria-label="User menu"
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -129,7 +131,19 @@ const UserMenu: React.FC = () => {
                       >
                         <Settings className="h-4 w-4 mr-3" />
                         Settings
-                        <svg className={`ml-auto h-4 w-4 transition-transform ${settingsOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        <svg
+                          className={`ml-auto h-4 w-4 transition-transform ${settingsOpen ? "rotate-180" : ""}`}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
                       </button>
                       {settingsOpen && (
                         <div className="pl-8 py-1 space-y-1">
@@ -137,7 +151,10 @@ const UserMenu: React.FC = () => {
                             <Link
                               key={sub.path}
                               to={sub.path}
-                              onClick={() => { setIsOpen(false); setSettingsOpen(false); }}
+                              onClick={() => {
+                                setIsOpen(false);
+                                setSettingsOpen(false);
+                              }}
                               className="block px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl"
                             >
                               {sub.label}
@@ -150,9 +167,10 @@ const UserMenu: React.FC = () => {
                     <Link
                       to={item.href}
                       onClick={item.onClick}
-                      className={`flex items-center px-4 py-2 text-sm transition-colors ${item.className ||
+                      className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                        item.className ||
                         "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                        }`}
+                      }`}
                     >
                       <item.icon className="h-4 w-4 mr-3" />
                       {item.label}
@@ -160,9 +178,10 @@ const UserMenu: React.FC = () => {
                   ) : (
                     <button
                       onClick={item.onClick}
-                      className={`w-full flex items-center px-4 py-2 text-sm transition-colors ${item.className ||
+                      className={`w-full flex items-center px-4 py-2 text-sm transition-colors ${
+                        item.className ||
                         "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                        }`}
+                      }`}
                     >
                       <item.icon className="h-4 w-4 mr-3" />
                       {item.label}
