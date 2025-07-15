@@ -775,13 +775,12 @@ Return JSON format:
                   "You have the foundation to build a successful business. Stay consistent and trust the process.",
               };
 
-              // Store the topPaths array used for the OpenAI call along with the preview insights
+              // Store the topPaths array used for the OpenAI call along with the insights
               localStorage.setItem(
                 "quiz-completion-ai-insights",
                 JSON.stringify({
                   insights: formattedInsights,
                   topPaths: pathsForInsights, // <-- store the exact topPaths used
-                  previewInsights: formattedInsights.personalizedSummary,
                   analysis: null, // Will be generated on-demand if needed
                   timestamp: Date.now(),
                   complete: true,
@@ -855,9 +854,7 @@ Return JSON format:
 
               // Store in localStorage for Results component to use
               const aiData = {
-                insights: existingInsights.previewInsights || existingInsights,
-                previewInsights:
-                  existingInsights.previewInsights || existingInsights,
+                insights: existingInsights,
                 analysis: null, // Will be generated on-demand if needed
                 topPaths:
                   (currentAiResults as any).personalizedPaths?.slice(0, 3) ||
