@@ -63,6 +63,7 @@ export function setUserIdInRequest(req: any, userId: number): void {
 declare module "express-session" {
   interface SessionData {
     userId?: number;
+    testValue?: string;
   }
 }
 
