@@ -476,6 +476,170 @@ const Settings: React.FC = () => {
                     Account Management
                   </h2>
 
+                  {/* Password Change Section */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Lock className="h-5 w-5 mr-2" />
+                      Change Password
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Update your password to keep your account secure. Use a
+                      strong password with at least 8 characters.
+                    </p>
+
+                    <div className="space-y-4">
+                      {/* Current Password */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Current Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.current ? "text" : "password"}
+                            value={passwordData.currentPassword}
+                            onChange={(e) =>
+                              setPasswordData((prev) => ({
+                                ...prev,
+                                currentPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter your current password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPasswords((prev) => ({
+                                ...prev,
+                                current: !prev.current,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPasswords.current ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* New Password */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          New Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.new ? "text" : "password"}
+                            value={passwordData.newPassword}
+                            onChange={(e) =>
+                              setPasswordData((prev) => ({
+                                ...prev,
+                                newPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter your new password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPasswords((prev) => ({
+                                ...prev,
+                                new: !prev.new,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPasswords.new ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordData.newPassword &&
+                          passwordData.newPassword.length < 8 && (
+                            <p className="text-sm text-red-600 mt-1">
+                              Password must be at least 8 characters long
+                            </p>
+                          )}
+                      </div>
+
+                      {/* Confirm New Password */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Confirm New Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.confirm ? "text" : "password"}
+                            value={passwordData.confirmPassword}
+                            onChange={(e) =>
+                              setPasswordData((prev) => ({
+                                ...prev,
+                                confirmPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Confirm your new password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPasswords((prev) => ({
+                                ...prev,
+                                confirm: !prev.confirm,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPasswords.confirm ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordData.confirmPassword &&
+                          passwordData.newPassword !==
+                            passwordData.confirmPassword && (
+                            <p className="text-sm text-red-600 mt-1">
+                              Passwords do not match
+                            </p>
+                          )}
+                      </div>
+
+                      <button
+                        onClick={handlePasswordChange}
+                        disabled={
+                          isChangingPassword ||
+                          !passwordData.currentPassword ||
+                          !passwordData.newPassword ||
+                          !passwordData.confirmPassword ||
+                          passwordData.newPassword !==
+                            passwordData.confirmPassword ||
+                          passwordData.newPassword.length < 8
+                        }
+                        className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isChangingPassword ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Changing Password...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="h-5 w-5 mr-2" />
+                            Change Password
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Danger Zone */}
                   <div className="border-2 border-red-200 rounded-xl p-6 bg-red-50">
                     <h3 className="text-lg font-semibold text-red-800 mb-4 flex items-center">
