@@ -745,12 +745,12 @@ Return JSON format:
               );
               console.log(
                 "Generated preview summary:",
-                previewData.previewInsights?.substring(0, 100) + "...",
+                previewData.insights?.substring(0, 100) + "...",
               );
 
               // Convert preview data to expected format for backward compatibility
               const formattedInsights = {
-                personalizedSummary: previewData.previewInsights,
+                personalizedSummary: previewData.insights,
                 customRecommendations: previewData.keyInsights,
                 potentialChallenges: previewData.successPredictors,
                 successStrategies: [
