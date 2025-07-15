@@ -469,8 +469,12 @@ const Dashboard: React.FC = () => {
   // Generate recent activity from user data
   useEffect(() => {
     const generateRecentActivity = async () => {
-      if (!user || authLoading) return;
+      if (!user || authLoading) {
+        setActivityLoading(false);
+        return;
+      }
 
+      setActivityLoading(true);
       const activities = [];
 
       try {
@@ -489,35 +493,60 @@ const Dashboard: React.FC = () => {
             activities.push({
               action:
                 index === 0
-                  ? "Completed latest Business Path Quiz"
+                  ? "Completed Business Path Quiz"
                   : "Retook Business Path Quiz",
               time: timeAgo,
               icon: BookOpen,
               color: "blue",
             });
           });
+
+          // Add business model analysis activity if user has quiz data
+          if (attempts.length > 0) {
+            const latestAttempt = attempts[0];
+            const analysisTime = getTimeAgo(
+              new Date(latestAttempt.completedAt),
+            );
+            activities.push({
+              action: "Generated business model analysis",
+              time: analysisTime,
+              icon: BarChart3,
+              color: "purple",
+            });
+          }
         }
 
-        // Add business model viewing activity based on selected model
+        // Add business model selection activity
         if (selectedBusinessModel) {
           activities.push({
-            action: `Selected ${selectedBusinessModel.name}`,
-            time: "Recently",
+            action: `Exploring ${selectedBusinessModel.name}`,
+            time: "Current session",
             icon: Target,
             color: "green",
           });
         }
 
-        // Add login activity
+        // Add dashboard access activity
         activities.push({
-          action: "Logged into account",
-          time: "Today",
-          icon: Users,
-          color: "purple",
+          action: "Accessed Dashboard",
+          time: "Just now",
+          icon: Calendar,
+          color: "blue",
         });
 
-        // Limit to 3 most recent activities
-        setRecentActivity(activities.slice(0, 3));
+        // Sort by most recent and limit to 3
+        const sortedActivities = activities
+          .sort((a, b) => {
+            // Prioritize "just now" and recent activities
+            if (a.time === "Just now") return -1;
+            if (b.time === "Just now") return 1;
+            if (a.time === "Current session") return -1;
+            if (b.time === "Current session") return 1;
+            return 0;
+          })
+          .slice(0, 3);
+
+        setRecentActivity(sortedActivities);
       } catch (error) {
         console.error("Error generating recent activity:", error);
         // Fallback to basic activity
@@ -525,15 +554,23 @@ const Dashboard: React.FC = () => {
           {
             action: "Accessed Dashboard",
             time: "Just now",
-            icon: BookOpen,
+            icon: Calendar,
             color: "blue",
           },
+          {
+            action: "Account authenticated",
+            time: "Today",
+            icon: Users,
+            color: "green",
+          },
         ]);
+      } finally {
+        setActivityLoading(false);
       }
     };
 
     generateRecentActivity();
-  }, [user, authLoading, selectedBusinessModel]);
+  }, [user, authLoading, selectedBusinessModel, refreshKey]);
 
   // Helper function to calculate time ago
   const getTimeAgo = (date: Date) => {
