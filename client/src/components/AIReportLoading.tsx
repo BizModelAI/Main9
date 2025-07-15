@@ -884,18 +884,21 @@ Return JSON format:
       // Mark step as completed
       setCompletedSteps((prev) => new Set([...prev, stepIndex]));
 
-      // On mobile, switch to show next step when current step completes
-      if (isMobile && stepIndex < steps.length - 1) {
-        const nextStepIndex = stepIndex + 1;
-        setVisibleMobileSteps(new Set([nextStepIndex]));
-      }
-
+      // Update step status to completed first
       setSteps((prev) =>
         prev.map((step, index) => ({
           ...step,
           status: index <= stepIndex ? "completed" : "pending",
         })),
       );
+
+      // On mobile, switch to show next step AFTER a brief delay to show completion
+      if (isMobile && stepIndex < steps.length - 1) {
+        setTimeout(() => {
+          const nextStepIndex = stepIndex + 1;
+          setVisibleMobileSteps(new Set([nextStepIndex]));
+        }, 600); // Delay to show completed state
+      }
 
       return result;
     } catch (error) {
