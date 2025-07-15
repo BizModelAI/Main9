@@ -132,13 +132,11 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     localStorage.removeItem("ai-generation-in-progress");
     localStorage.removeItem("ai-generation-timestamp");
 
-    // Set initial visible steps based on mobile detection
+    // Mobile vs desktop detection
     if (isMobile) {
-      console.log("📱 Mobile detected - showing only step 0");
-      setVisibleMobileSteps(new Set([0]));
+      console.log("📱 Mobile detected - auto-cycling cards");
     } else {
-      console.log("💻 Desktop detected - showing all steps");
-      setVisibleMobileSteps(new Set([0, 1, 2, 3, 4, 5]));
+      console.log("💻 Desktop detected - showing all cards");
     }
   }, [isMobile]);
 
