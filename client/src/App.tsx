@@ -424,13 +424,43 @@ const AIReportLoadingWrapper: React.FC<{
 }> = ({ quizData, setShowCongratulations }) => {
   const navigate = useNavigate();
 
-  const handleAILoadingComplete = (data: any) => {
+  const handleAILoadingComplete = async (data: any) => {
     console.log(
       "AI loading complete after quiz, checking congratulations tracking",
     );
 
     // Store loaded report data in localStorage
     localStorage.setItem("loadedReportData", JSON.stringify(data));
+
+    // Save AI content to database if we have a quiz attempt ID
+    const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+    if (currentQuizAttemptId && data) {
+      try {
+        const response = await fetch(
+          `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ aiContent: data }),
+          },
+        );
+
+        if (response.ok) {
+          console.log(
+            `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
+          );
+        } else {
+          console.error(
+            "Failed to save AI content to database:",
+            response.status,
+          );
+        }
+      } catch (error) {
+        console.error("Error saving AI content to database:", error);
+      }
+    }
 
     // Check if congratulations was already shown
     const congratulationsShown = localStorage.getItem("congratulationsShown");
