@@ -279,7 +279,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
       });
 
       if (!response.ok) {
-        let errorMessage = "Login failed";
+        let errorMessage = "Incorrect username or password";
         try {
           const data = await response.json();
           errorMessage = data.error || errorMessage;
@@ -338,7 +338,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
       await fetchReportPricing(); // Get the correct pricing for this user
       setStep("payment");
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Incorrect username or password");
     } finally {
       setIsProcessing(false);
     }
