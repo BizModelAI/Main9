@@ -157,6 +157,17 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     return () => clearInterval(interval);
   }, [isMobile, steps.length]);
 
+  // Sync mobile step with current step execution for better coordination
+  useEffect(() => {
+    if (isMobile && currentStep >= 0) {
+      // Optionally sync with current executing step, but allow auto-cycling to continue
+      // This ensures mobile doesn't fall behind the actual execution
+      if (currentStep > currentMobileStep) {
+        setCurrentMobileStep(Math.min(currentStep, steps.length - 1));
+      }
+    }
+  }, [currentStep, isMobile, currentMobileStep, steps.length]);
+
   // Smooth progress bar updates
   useEffect(() => {
     const interval = setInterval(() => {
