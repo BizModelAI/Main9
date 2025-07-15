@@ -142,7 +142,7 @@ async function setupApiRoutes() {
 }
 
 // Basic health check endpoint
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (req: Request, res: Response) => {
   res.json({
     status: "Server is running!",
     environment: "local-development",
@@ -152,7 +152,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Comprehensive health check endpoint
-app.get("/api/health/detailed", async (req, res) => {
+app.get("/api/health/detailed", async (req: Request, res: Response) => {
   const health = {
     status: "healthy",
     timestamp: new Date().toISOString(),
@@ -221,7 +221,7 @@ app.get("/api/health/detailed", async (req, res) => {
 });
 
 // Database test endpoint for debugging signup issues
-app.get("/api/test/database", async (req, res) => {
+app.get("/api/test/database", async (req: Request, res: Response) => {
   res.header("Content-Type", "application/json");
 
   const results = {
@@ -523,7 +523,7 @@ Promise.race([
 
     // Try basic fallback server
     console.log("Starting fallback server...");
-    app.get("/api/health", (req, res) => {
+    app.get("/api/health", (req: Request, res: Response) => {
       res.json({ status: "Server is running (fallback mode)!" });
     });
 
