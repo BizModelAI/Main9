@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
                   timeToProfit: "2-8 weeks",
                   potentialIncome: "$1K-15K/month",
                   difficulty: "Easy",
-                  icon: "��️",
+                  icon: "✍️",
                 },
               };
 
@@ -529,7 +529,7 @@ const Dashboard: React.FC = () => {
                       className="relative bg-white rounded-3xl p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3]"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
-                      <div className="absolute -top-4 left-6">
+                      <div className="absolute -top-3 left-6">
                         <div
                           className={`${fitCategory.color} text-white px-4 py-1 rounded-full text-sm font-semibold`}
                         >
