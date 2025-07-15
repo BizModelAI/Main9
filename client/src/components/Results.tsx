@@ -446,6 +446,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         body: JSON.stringify({
           quizData: quizData,
           userEmail: userEmail,
+          aiAnalysis: combinedAIAnalysis,
+          topBusinessPath: personalizedPaths[0],
         }),
       });
 
