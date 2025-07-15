@@ -288,7 +288,7 @@ const Settings: React.FC = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center px-4 py-3 text-left transition-colors ${
                       activeTab === tab.id
-                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-r-xl"
+                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-xl"
                         : "text-gray-700 hover:bg-gray-50 rounded-xl"
                     }`}
                   >
