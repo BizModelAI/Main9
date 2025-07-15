@@ -706,4 +706,67 @@ export function setupAuthRoutes(app: Express) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // Contact form endpoint
+  app.post("/api/contact", async (req: Request, res: Response) => {
+    try {
+      const { name, email, subject, message, category } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !subject || !message || !category) {
+        return res.status(400).json({
+          error: "All fields are required",
+        });
+      }
+
+      // Basic email validation
+      if (!email.includes("@") || email.length < 5) {
+        return res.status(400).json({
+          error: "Please enter a valid email address",
+        });
+      }
+
+      console.log(`New contact form submission from: ${email}`);
+
+      const { emailService } = await import("./services/emailService.js");
+
+      // Send notification to team@bizmodelai.com
+      const notificationSent = await emailService.sendContactFormNotification({
+        name,
+        email,
+        subject,
+        message,
+        category,
+      });
+
+      if (!notificationSent) {
+        console.error("Failed to send contact form notification");
+        return res.status(500).json({
+          error: "Failed to send notification to team",
+        });
+      }
+
+      // Send confirmation email to user
+      const confirmationSent = await emailService.sendContactFormConfirmation(
+        email,
+        name,
+      );
+
+      if (!confirmationSent) {
+        console.log(
+          "Failed to send confirmation email to user, but notification was sent",
+        );
+        // Don't fail the request if confirmation email fails
+      }
+
+      console.log(`Contact form processed successfully for: ${email}`);
+      res.json({
+        success: true,
+        message: "Your message has been sent successfully!",
+      });
+    } catch (error) {
+      console.error("Error in /api/contact:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 }
