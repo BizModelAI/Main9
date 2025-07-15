@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
           const xhr = new XMLHttpRequest();
           console.log("Making XMLHttpRequest to /api/auth/me");
-          xhr.open("GET", "/api/auth/me", true);
+          xhr.open("GET", "/api/auth/me?t=" + Date.now(), true);
           xhr.withCredentials = true;
           xhr.setRequestHeader("Content-Type", "application/json");
 
@@ -410,7 +410,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // First verify the session is valid by checking auth status using XMLHttpRequest
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open("GET", "/api/auth/me", true);
+      xhr.open("GET", "/api/auth/me?t=" + Date.now(), true);
       xhr.withCredentials = true;
       xhr.setRequestHeader("Content-Type", "application/json");
 
