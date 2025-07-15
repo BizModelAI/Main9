@@ -354,7 +354,7 @@ Rules: Use only provided data, no invented details.`;
   async generateFullReportInsights(
     quizData: QuizData,
     topPaths: BusinessPath[],
-    previewInsights: string,
+    insights: string,
     keySuccessIndicators: string[],
   ): Promise<{
     personalizedRecommendations: string[];
@@ -392,7 +392,7 @@ Rules: Use only provided data, no invented details.`;
       const insights = await this.generateStreamlinedFullReportInsights(
         userProfile,
         topPaths,
-        previewInsights,
+        insights,
         keySuccessIndicators,
       );
 
@@ -764,7 +764,7 @@ Generate a professional business analysis about ${topPath.name} for this user.`;
         }
 
         const data = await response.json();
-        console.log(`✅ OpenAI request successful on attempt ${attempt}`);
+        console.log(`��� OpenAI request successful on attempt ${attempt}`);
         return data.content || "";
       } catch (error) {
         console.error(
@@ -929,7 +929,7 @@ CRITICAL: Use ONLY the actual data provided in the user profile. Do NOT make up 
   private async generateStreamlinedFullReportInsights(
     userProfile: string,
     topPaths: BusinessPath[],
-    previewInsights: string,
+    insights: string,
     keySuccessIndicators: string[],
   ): Promise<{
     personalizedRecommendations: string[];
@@ -1127,8 +1127,8 @@ Use only provided data. No invented details.`;
     return validAvoid;
   }
 
-  // Method for quiz loading phase - only generates preview insights
-  async generatePreviewInsightsOnly(
+  // Method for quiz loading phase - only generates insights
+  async generateInsightsOnly(
     quizData: QuizData,
     topPaths: BusinessPath[],
   ): Promise<{
@@ -1152,7 +1152,7 @@ Use only provided data. No invented details.`;
 
       // Return preview data with fallback values for full report fields
       return {
-        personalizedSummary: previewData.previewInsights,
+        personalizedSummary: previewData.insights,
         customRecommendations: previewData.keyInsights,
         potentialChallenges: previewData.successPredictors,
         successStrategies: this.getFallbackStrategies(),
@@ -1195,13 +1195,13 @@ Use only provided data. No invented details.`;
       const fullReportInsights = await this.generateFullReportInsights(
         quizData,
         topPaths,
-        previewData.previewInsights,
+        previewData.insights,
         previewData.keyInsights,
       );
 
       // Convert to old format for backward compatibility - REUSE CACHED PREVIEW CONTENT
       return {
-        personalizedSummary: previewData.previewInsights, // ✅ REUSED from preview
+        personalizedSummary: previewData.insights, // ✅ REUSED from preview
         customRecommendations: previewData.keyInsights, // ✅ REUSED from preview (NOT fullReportInsights.keyInsights)
         potentialChallenges: fullReportInsights.potentialChallenges, // ✅ Fresh content
         successStrategies: previewData.successPredictors, // ✅ REUSED from preview
