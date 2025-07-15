@@ -59,7 +59,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             {
               content: (
                 <>
-                  <strong>Step-by-Step Launch Plans</strong> ��� no fluff, just
+                  <strong>Step-by-Step Launch Plans</strong> 🎯 no fluff, just
                   execution
                 </>
               ),
