@@ -1168,11 +1168,12 @@ Use only provided data. No invented details.`;
         potentialChallenges: previewData.successPredictors,
         successStrategies: this.getFallbackStrategies(),
         personalizedActionPlan: this.getFallbackActionPlan(),
-        motivationalMessage: this.getFallbackMotivationalMessage(),
+        motivationalMessage:
+          "Your entrepreneurial journey starts with understanding your unique strengths and applying them strategically.",
       };
     } catch (error) {
       console.error("❌ Error generating preview insights:", error);
-      return this.getFallbackInsights();
+      return this.generateFallbackInsights(quizData, topPaths);
     }
   }
 
