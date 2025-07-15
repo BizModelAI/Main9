@@ -139,26 +139,26 @@ const Settings: React.FC = () => {
   };
 
   const handlePasswordChange = async () => {
+    // Clear previous errors
+    setPasswordError("");
+
     // Validation
     if (
       !passwordData.currentPassword ||
       !passwordData.newPassword ||
       !passwordData.confirmPassword
     ) {
-      setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      setPasswordError("All password fields are required");
       return;
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      setPasswordError("New passwords do not match");
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      setPasswordError("New password must be at least 8 characters long");
       return;
     }
 
@@ -189,10 +189,12 @@ const Settings: React.FC = () => {
         setTimeout(() => setSaveStatus("idle"), 3000);
       } else {
         const data = await response.json();
+        setPasswordError(data.error || "Failed to change password");
         setSaveStatus("error");
         setTimeout(() => setSaveStatus("idle"), 3000);
       }
     } catch (error) {
+      setPasswordError("Network error. Please try again.");
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
