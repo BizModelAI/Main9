@@ -360,7 +360,7 @@ async function setupApp() {
         app.use(express.static(distPath));
       }
 
-      app.get("*", (req, res) => {
+      app.get("*", (req: Request, res: Response) => {
         try {
           const clientTemplate = path.resolve(
             import.meta.dirname,
