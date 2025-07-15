@@ -68,9 +68,6 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
   const [loadingResults, setLoadingResults] = useState<any>({});
   const isMobile = useIsMobile();
   const [currentMobileStep, setCurrentMobileStep] = useState(0);
-  const [visibleMobileSteps, setVisibleMobileSteps] = useState<Set<number>>(
-    () => new Set(isMobile ? [0] : [0, 1, 2, 3, 4, 5]),
-  ); // Start with first step on mobile, all steps on desktop
 
   const loadingSteps: LoadingStep[] = [
     {
@@ -1185,7 +1182,7 @@ Return JSON format:
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="flex items-start">
-              <div className="text-xl mr-3">���</div>
+              <div className="text-xl mr-3">🧠</div>
               <div>
                 <p className="text-sm text-gray-600">
                   Our AI analyzes over 50 different personality traits and
