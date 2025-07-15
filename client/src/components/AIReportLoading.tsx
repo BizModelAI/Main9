@@ -180,10 +180,21 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate characteristics");
+        console.error(
+          `API request failed with status ${response.status}: ${response.statusText}`,
+        );
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
+
+      // Check if we have content to work with
+      if (!data.content) {
+        console.error("No content in API response:", data);
+        throw new Error("No content in API response");
+      }
 
       // Clean up the response content (remove markdown code blocks if present)
       let cleanContent = data.content;
@@ -202,7 +213,10 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       ) {
         return parsed.characteristics;
       } else {
-        throw new Error("Invalid response format");
+        console.error("Invalid response format:", parsed);
+        throw new Error(
+          `Invalid response format - expected 6 characteristics, got: ${parsed?.characteristics?.length || "none"}`,
+        );
       }
     } catch (error) {
       console.error("Error generating all characteristics:", error);
