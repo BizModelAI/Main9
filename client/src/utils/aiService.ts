@@ -52,7 +52,7 @@ export class AIService {
       }
 
       console.log(
-        `�� Generating fresh model insights for ${modelName} (${fitType})`,
+        `🔄 Generating fresh model insights for ${modelName} (${fitType})`,
       );
 
       const userProfile = this.createUserProfile(quizData);
