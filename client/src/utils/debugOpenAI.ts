@@ -42,7 +42,10 @@ export const debugOpenAI = {
       return { success: true, data };
     } catch (error) {
       console.error("❌ Test request failed:", error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   },
 
@@ -120,7 +123,10 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       return { success: false, error: "No content in response" };
     } catch (error) {
       console.error("❌ Characteristics test failed:", error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   },
 };
