@@ -800,10 +800,10 @@ Return JSON format:
         if (elapsedTime < minimumDuration) {
           const remainingTime = minimumDuration - elapsedTime;
           await new Promise((resolve) => setTimeout(resolve, remainingTime));
-
-          // Update progress to 100% during final wait
-          setProgress(100);
         }
+
+        // Set progress to 100% only when everything is truly complete
+        setProgress(100);
 
         // Clear the generation flag
         localStorage.removeItem("ai-generation-in-progress");
