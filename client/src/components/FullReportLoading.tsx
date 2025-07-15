@@ -11,7 +11,7 @@ import {
 
 interface FullReportLoadingProps {
   quizData: QuizData;
-  userEmail?: string;
+  userEmail?: string | null;
   onComplete: (data: any) => void;
   onExit?: () => void;
 }
