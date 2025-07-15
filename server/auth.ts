@@ -122,7 +122,7 @@ export function setupAuthRoutes(app: Express) {
   app.get("/api/auth/session-test", async (req: Request, res: Response) => {
     res.json({
       sessionId: req.sessionID,
-      testValue: (req.session as any)?.testValue || null,
+      testValue: req.session?.testValue || null,
       sessionExists: !!req.session,
       cookieHeader: req.headers.cookie?.substring(0, 100) + "..." || "none",
     });
