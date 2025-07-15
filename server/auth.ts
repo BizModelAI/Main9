@@ -580,7 +580,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Unsubscribe from emails
-  app.post("/api/auth/unsubscribe", async (req, res) => {
+  app.post("/api/auth/unsubscribe", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
