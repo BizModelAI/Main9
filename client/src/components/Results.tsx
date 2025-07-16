@@ -195,9 +195,20 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Check for showFullReport query parameter and navigate to full report
   useEffect(() => {
     const shouldShowFullReport = searchParams.get("showFullReport");
-    if (shouldShowFullReport === "true" && canViewFullReport) {
-      console.log("🔗 Query parameter detected: showing full report directly");
-      setShowFullReport(true);
+    if (shouldShowFullReport === "true") {
+      console.log("🔗 Query parameter detected: user requesting full report");
+
+      if (canViewFullReport) {
+        console.log("✅ User has access - showing full report directly");
+        setShowFullReport(true);
+      } else {
+        console.log(
+          "⏳ User access check pending - showing full report loading",
+        );
+        // For paid users, show the full report loading which will generate the content
+        setShowFullReportLoading(true);
+      }
+
       // Clear the query parameter to clean up the URL
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete("showFullReport");
