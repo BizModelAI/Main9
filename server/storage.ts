@@ -714,24 +714,40 @@ export class DatabaseStorage implements IStorage {
       return existing;
     }
 
-    // Insert or update the content
-    const [result] = await this.ensureDb()
-      .insert(aiContent)
-      .values({
-        quizAttemptId,
-        contentType,
-        content,
-        contentHash,
-      })
-      .onConflictDoUpdate({
-        target: [aiContent.quizAttemptId, aiContent.contentType],
-        set: {
+    // Try to insert, if conflict then update
+    try {
+      const [result] = await this.ensureDb()
+        .insert(aiContent)
+        .values({
+          quizAttemptId,
+          contentType,
           content,
           contentHash,
-          generatedAt: new Date(),
-        },
-      })
-      .returning();
+        })
+        .returning();
+      return result;
+    } catch (error: any) {
+      // If unique constraint violation, update existing record
+      if (error.code === "23505") {
+        // PostgreSQL unique violation
+        const [result] = await this.ensureDb()
+          .update(aiContent)
+          .set({
+            content,
+            contentHash,
+            generatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(aiContent.quizAttemptId, quizAttemptId),
+              eq(aiContent.contentType, contentType),
+            ),
+          )
+          .returning();
+        return result;
+      }
+      throw error;
+    }
 
     console.log(
       `✅ AI content saved: ${contentType} for quiz attempt ${quizAttemptId}`,
