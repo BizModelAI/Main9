@@ -426,10 +426,14 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
         }
       } catch (dbError) {
-        console.warn(
-          "⚠️ Failed to store skills analysis in database:",
-          dbError,
-        );
+        // Import error handler dynamically to avoid circular dependencies
+        const { ErrorHandler } = await import("./utils/errorHandler.js");
+        await ErrorHandler.handleStorageError(dbError as Error, {
+          operation: "store_skills_analysis",
+          context: { quizAttemptId, businessModel, userId },
+          isCritical: false, // Non-critical as the main result is still returned
+          shouldThrow: false,
+        });
       }
 
       res.json(result);
