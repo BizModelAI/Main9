@@ -1240,7 +1240,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   Key Insights
                                 </h4>
                                 <ul className="space-y-2">
-                                  {aiAnalysis.keyInsights.map(
+                                  {aiAnalysis?.keyInsights?.map(
                                     (insight, index) => (
                                       <li
                                         key={index}
