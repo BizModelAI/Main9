@@ -28,6 +28,120 @@ export class AIService {
     }
   }
 
+  // OPTIMIZED: Lean user profile compression with only essential fields
+  private createUserProfile(
+    quizData: QuizData,
+    topMatch?: BusinessPath,
+  ): string {
+    return `
+User Profile Summary:
+${topMatch ? `- Top Business Match: ${topMatch.name} (${topMatch.fitScore}% match)` : ""}
+- Motivation: ${quizData.mainMotivation}
+- First Income Goal: ${quizData.firstIncomeTimeline}
+- Monthly Income Goal: $${quizData.successIncomeGoal}
+- Upfront Investment: $${quizData.upfrontInvestment}
+- Passion Alignment: ${quizData.passionIdentityAlignment}/5
+
+Work Preferences:
+- Time Availability: ${quizData.weeklyTimeCommitment}
+- Learning Style: ${quizData.learningStyle}
+- Work Structure: ${quizData.workStructure}
+- Collaboration Style: ${quizData.collaborationStyle}
+- Decision-Making Style: ${quizData.decisionMakingStyle}
+
+Personality Traits (0–5 scale):
+- Social Comfort: ${quizData.socialComfort || 3}
+- Discipline: ${quizData.disciplineLevel || 3}
+- Risk Tolerance: ${quizData.riskComfortLevel || 3}
+- Tech Comfort: ${quizData.techSkillsRating || 3}
+- Structure Preference: ${quizData.structurePreference || 3}
+- Motivation: ${quizData.selfMotivation || 3}
+- Feedback Resilience: ${quizData.feedbackResilience || 3}
+- Creativity: ${quizData.creativityImportance || 3}
+- Confidence: ${quizData.leadershipInterest || 3}
+- Adaptability: ${quizData.adaptabilityRating || 3}
+- Focus Preference: ${quizData.focusPreference || 3}
+- Communication: ${quizData.directCommunicationEnjoyment || 3}
+`.trim();
+  }
+
+  // Call 1: Results Preview (quiz-loading page) - FREE PREVIEW
+  async generateResultsPreview(
+    quizData: QuizData,
+    topPaths: BusinessPath[],
+  ): Promise<{
+    previewInsights: string;
+    keyInsights: string[];
+    successPredictors: string[];
+  }> {
+    try {
+      const cacheKey = `preview_${this.createCacheKey(quizData, topPaths)}`;
+      const cached = this.getCachedInsights(cacheKey);
+      if (cached) {
+        console.log("✅ Using cached preview insights");
+        return cached;
+      }
+
+      const userProfile = this.createUserProfile(quizData, topPaths[0]);
+
+      const response = await this.makeOpenAIRequest({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an AI business coach. Use JSON output. Use a professional and direct tone. Do not invent data.",
+          },
+          {
+            role: "user",
+            content: `Based on this user's quiz data and their top business model, generate the following in JSON format:
+
+1. "previewInsights": Write 3 concise paragraphs analyzing why this user is a strong fit for ${topPaths[0].name}, based on their quiz results.
+   - Paragraph 1: Explain why this business model aligns with the user's goals, constraints, and personality traits.
+   - Paragraph 2: Describe the user's natural advantages in executing this model (skills, traits, or behaviors).
+   - Paragraph 3: Identify one potential challenge the user may face based on their profile, and how to overcome it.
+   Use specific references to user traits. Avoid generic phrases. Keep the tone analytical and professional.
+
+2. "keyInsights": 4 bullet points summarizing the most important findings about the user's business style, risk tolerance, or strategic fit.
+
+3. "successPredictors": 4 bullet points explaining which traits or behaviors from the quiz predict a high chance of success. These should be personal, specific, and based on actual quiz data.
+
+Format your entire output as:
+{
+  "previewInsights": "...",
+  "keyInsights": ["...", "...", "...", "..."],
+  "successPredictors": ["...", "...", "...", "..."]
+}
+
+CRITICAL RULES:
+- Use only the data from this user profile.
+- Do NOT invent data or use generic filler.
+- Use clear, concise language.
+- Do NOT include any headers or formatting outside the JSON.
+- Ban phrases like "powerful foundation", "natural strengths", "unique combination of traits".
+- Every paragraph must reference specific traits.
+- Max 550 characters per paragraph.
+
+USER PROFILE:
+${userProfile}`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 800,
+      });
+
+      if (response && response.content) {
+        const insights = JSON.parse(response.content);
+        this.cacheInsights(cacheKey, insights);
+        return insights;
+      }
+
+      throw new Error("No valid response from AI service");
+    } catch (error) {
+      console.error("Error generating results preview:", error);
+      throw error;
+    }
+  }
+
   async generateModelInsights(
     quizData: QuizData,
     modelName: string,
@@ -52,7 +166,7 @@ export class AIService {
       }
 
       console.log(
-        `🔄 Generating fresh model insights for ${modelName} (${fitType})`,
+        `���� Generating fresh model insights for ${modelName} (${fitType})`,
       );
 
       const userProfile = this.createUserProfile(quizData);
