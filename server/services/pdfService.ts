@@ -192,7 +192,7 @@ export class PDFService {
                             <div class="flex items-center justify-center mb-2">
                                 <span class="font-semibold">Income Goal</span>
                             </div>
-                            <p class="text-2xl font-bold">$${quizData.successIncomeGoal?.toLocaleString()}/month</p>
+                                                        <p class="text-2xl font-bold">$${formatCurrency(quizData.successIncomeGoal)}/month</p>
                         </div>
                         
                         <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
