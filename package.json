@@ -13,7 +13,8 @@
     "migrate-users": "tsx scripts/migrate-users.js",
     "finalize-schema": "tsx scripts/finalize-schema.js",
     "verify-migration": "tsx scripts/verify-migration.js",
-    "fix-production-db": "tsx scripts/fix-production-db.js"
+    "fix-production-db": "tsx scripts/fix-production-db.js",
+    "cleanup-expired-data": "tsx scripts/cleanup-expired-data.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
