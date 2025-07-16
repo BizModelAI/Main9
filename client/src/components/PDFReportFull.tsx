@@ -1,6 +1,7 @@
 import React from "react";
 import { QuizData } from "../types";
 import { businessModelService } from "../utils/businessModelService";
+import { businessPaths } from "../data/businessPaths";
 import { AICacheManager } from "../utils/aiCacheManager";
 import { renderMarkdownContent } from "../utils/markdownUtils";
 import {
