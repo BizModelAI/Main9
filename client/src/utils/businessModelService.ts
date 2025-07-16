@@ -16,7 +16,6 @@ export interface BusinessModelMatch {
  */
 export class BusinessModelService {
   private static instance: BusinessModelService;
-  private cachedResults: Map<string, BusinessModelMatch[]> = new Map();
 
   static getInstance(): BusinessModelService {
     if (!BusinessModelService.instance) {
@@ -27,20 +26,11 @@ export class BusinessModelService {
 
   /**
    * Get business model matches for quiz data
-   * Calculates once and caches results for performance
+   * Always calculates fresh - no caching
    */
   getBusinessModelMatches(quizData: QuizData): BusinessModelMatch[] {
-    const cacheKey = this.createCacheKey(quizData);
-
-    // Check cache first
-    const cached = this.cachedResults.get(cacheKey);
-    if (cached) {
-      console.log("✅ Using cached business model matches");
-      return cached;
-    }
-
-    // Calculate new matches
-    console.log("🔄 Calculating business model matches");
+    // Always calculate fresh matches - no caching
+    console.log("🔄 Calculating fresh business model matches (no cache)");
     const rawMatches = calculateAdvancedBusinessModelMatches(quizData);
 
     // Transform to consistent format
@@ -52,10 +42,8 @@ export class BusinessModelService {
       fitScore: match.score, // For backward compatibility
     }));
 
-    // Cache results
-    this.cachedResults.set(cacheKey, matches);
     console.log(
-      `✅ Calculated and cached matches for ${matches.length} business models`,
+      `✅ Calculated fresh matches for ${matches.length} business models`,
     );
 
     return matches;
