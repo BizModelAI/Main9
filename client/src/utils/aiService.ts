@@ -718,47 +718,81 @@ ${userProfile}`,
     contentType: string,
   ): Promise<any | null> {
     try {
-      // Check if we should retrieve from database (same logic as saving)
+      // Check if we should retrieve from database (authenticated users or users who provided email)
       const shouldUseDatabase = await this.shouldSaveToDatabase();
 
-      if (!shouldUseDatabase) {
-        console.log(
-          `⏭️ Skipping ${contentType} database retrieval - unpaid user hasn't provided email yet`,
-        );
-        return null;
-      }
-
-      const response = await fetch(
-        `/api/quiz-attempts/${quizAttemptId}/ai-content?type=${contentType}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
+      if (shouldUseDatabase) {
+        // TIER 1 & 2: Try to get from database
+        const response = await fetch(
+          `/api/quiz-attempts/${quizAttemptId}/ai-content?type=${contentType}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
           },
-          credentials: "include",
-        },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.content) {
-          console.log(`📖 Retrieved ${contentType} AI content from database`);
-          return data.content;
-        }
-      } else if (response.status !== 404) {
-        console.error(
-          `❌ Failed to get ${contentType} AI content from database:`,
-          response.status,
         );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.content) {
+            console.log(`📖 Retrieved ${contentType} AI content from database`);
+            return data.content;
+          }
+        } else if (response.status !== 404) {
+          console.error(
+            `❌ Failed to get ${contentType} AI content from database:`,
+            response.status,
+          );
+        }
+      } else {
+        // TIER 3: Try to get from localStorage for anonymous users
+        console.log(
+          `📖 Retrieving ${contentType} AI content from localStorage (anonymous user)`,
+        );
+        return this.getAIContentFromLocalStorage(contentType);
       }
     } catch (error) {
-      console.error(
-        `❌ Error getting ${contentType} AI content from database:`,
-        error,
-      );
+      console.error(`❌ Error getting ${contentType} AI content:`, error);
+      // Fallback to localStorage
+      return this.getAIContentFromLocalStorage(contentType);
     }
 
     return null;
+  }
+
+  private getAIContentFromLocalStorage(contentType: string): any | null {
+    try {
+      const storageKey = `ai_content_${contentType}`;
+      const storedData = localStorage.getItem(storageKey);
+
+      if (!storedData) {
+        return null;
+      }
+
+      const parsedData = JSON.parse(storedData);
+      const now = Date.now();
+
+      // Check if content has expired (1 hour for anonymous users)
+      if (parsedData.expiresAt && now > parsedData.expiresAt) {
+        console.log(
+          `⏰ ${contentType} AI content expired, cleaning up localStorage`,
+        );
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(`${storageKey}_expires`);
+        return null;
+      }
+
+      console.log(`📖 Retrieved ${contentType} AI content from localStorage`);
+      return parsedData.content;
+    } catch (error) {
+      console.error(
+        `❌ Failed to retrieve ${contentType} AI content from localStorage:`,
+        error,
+      );
+      return null;
+    }
   }
 
   // BACKWARD COMPATIBILITY WRAPPER METHODS
