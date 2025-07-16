@@ -81,9 +81,9 @@ const UserMenu: React.FC = () => {
       ];
 
   const settingsMenu = [
-    { label: "Profile", path: "/settings/profile" },
-    { label: "Notifications", path: "/settings/notifications" },
-    { label: "Account Management", path: "/settings/account" },
+    { label: "Profile", path: "/settings?tab=profile" },
+    { label: "Notifications", path: "/settings?tab=notifications" },
+    { label: "Account Management", path: "/settings?tab=account" },
   ];
 
   return (
