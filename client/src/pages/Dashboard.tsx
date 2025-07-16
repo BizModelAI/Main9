@@ -77,8 +77,9 @@ const Dashboard: React.FC = () => {
         }
 
         if (quizData) {
-          // Calculate real business model matches using the scoring algorithm
-          const calculatedMatches = calculateAllBusinessModelMatches(quizData);
+          // Calculate real business model matches using the BusinessModelService
+          const calculatedMatches =
+            businessModelService.getBusinessModelMatches(quizData);
 
           // Map the calculated results to the format expected by the UI
           const formattedBusinessModels = calculatedMatches.map((match) => {
@@ -190,7 +191,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-6 months",
                 potentialIncome: "$2K-25K/month",
                 difficulty: "Medium",
-                icon: "📱",
+                icon: "��",
               },
               copywriting: {
                 id: "copywriting",
