@@ -2280,10 +2280,17 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
             }
           }
         } catch (dbError) {
-          console.warn(
-            "⚠️ Failed to store fallback business fit descriptions in database:",
-            dbError,
-          );
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_fallback_business_fit_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              fallbackDescriptionsCount: fallbackDescriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
         }
 
         res.json({ descriptions: fallbackDescriptions });
@@ -2415,10 +2422,17 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
             }
           }
         } catch (dbError) {
-          console.warn(
-            "⚠��� Failed to store business avoid descriptions in database:",
-            dbError,
-          );
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_business_avoid_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              descriptionsCount: descriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
         }
 
         res.json({ descriptions });
@@ -2454,10 +2468,17 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
             }
           }
         } catch (dbError) {
-          console.warn(
-            "⚠️ Failed to store fallback business avoid descriptions in database:",
-            dbError,
-          );
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_fallback_business_avoid_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              fallbackDescriptionsCount: fallbackDescriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
         }
 
         res.json({ descriptions: fallbackDescriptions });
