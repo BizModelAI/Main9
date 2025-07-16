@@ -23,7 +23,7 @@ export const users = pgTable("users", {
   isPaid: boolean("is_paid").default(false).notNull(), // Whether user has made payment
   isTemporary: boolean("is_temporary").default(false).notNull(), // Whether user is temporary (unpaid)
   tempQuizData: jsonb("temp_quiz_data"), // Temporary quiz data for unpaid users
-  expiresAt: timestamp("expires_at"), // Expiration for temporary users (24 hours)
+  expiresAt: timestamp("expires_at"), // Expiration for temporary users (3 months for email-provided, 24 hours for session-only)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
