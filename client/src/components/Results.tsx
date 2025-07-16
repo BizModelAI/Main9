@@ -166,8 +166,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     return false;
   })();
 
-  // Always start with false to prevent API calls in production
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  // Enable AI generation for dynamic content
+  const [isGeneratingAI, setIsGeneratingAI] = useState(true);
   const [showAIInsights, setShowAIInsights] = useState(false);
 
   const [showPreview, setShowPreview] = useState(true);
