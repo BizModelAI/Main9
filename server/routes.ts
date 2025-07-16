@@ -1244,32 +1244,24 @@ export async function registerRoutes(app: Express): Promise<void> {
           return res.status(400).json({ error: "Missing userId or sessionId" });
         }
 
-        // Determine payment amount and type
-        let amount, retakesGranted, paymentType, description;
-
-        if (!isTemporaryUser && userId) {
-          const user = await storage.getUser(parseInt(userId));
-          if (false) {
-            // Access pass logic removed
-            // Old logic removed
-            amount = "4.99";
-            retakesGranted = "2";
-            paymentType = "retakes";
-            description = "BizModelAI Quiz Retakes - 2 additional attempts";
-          } else {
-            // New user needs full access - $9.99
-            amount = "9.99";
-            retakesGranted = "3";
-            paymentType = "access_pass";
-            description = "BizModelAI Access Pass - Unlock all features";
-          }
-        } else {
-          // Temporary user always gets full access - $9.99
-          amount = "9.99";
-          retakesGranted = "3";
-          paymentType = "access_pass";
-          description = "BizModelAI Access Pass - Unlock all features";
+        // Pay-per-report model: Users pay for each report unlock
+        const user = await storage.getUser(parseInt(userId));
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
         }
+
+        // Check if this is their first report or subsequent report
+        const existingPayments = await storage.getUserPayments(user.id);
+        const hasSuccessfulPayments = existingPayments.some(
+          (p) => p.status === "succeeded",
+        );
+
+        // Pricing: $9.99 for first report, $4.99 for subsequent reports
+        const amount = hasSuccessfulPayments ? "4.99" : "9.99";
+        const paymentType = "report_unlock";
+        const description = hasSuccessfulPayments
+          ? "BizModelAI Report Unlock - Subsequent report $4.99"
+          : "BizModelAI Report Unlock - First report $9.99";
 
         // Create PayPal order
         const request = {
