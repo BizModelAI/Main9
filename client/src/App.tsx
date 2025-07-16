@@ -533,14 +533,7 @@ const clearQuizRelatedCache = async () => {
   aiCacheManager.forceResetCache();
 
   // Clear business model matches cache
-  try {
-    const { businessModelService } = await import(
-      "./utils/businessModelService"
-    );
-    businessModelService.clearCache();
-  } catch (error) {
-    console.error("Error clearing business model cache:", error);
-  }
+  businessModelService.clearCache();
 
   // Clear any legacy AI cache keys
   // Note: AI content is now stored in database per user/quiz attempt
