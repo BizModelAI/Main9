@@ -1704,9 +1704,9 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </button>
                       )}
 
-                      {/* Secondary CTAs - Single line with black text and arrows */}
+                      {/* Secondary CTAs - Two separate lines with black text and arrows */}
                       {!(index > 0 && !canViewFullReport) && (
-                        <div className="flex items-center justify-center space-x-4 text-xs">
+                        <div className="flex flex-col items-center space-y-2 text-xs">
                           <button
                             onClick={() => handleLearnMore(path)}
                             className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
@@ -1714,7 +1714,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                             Learn more about {path.name} for you
                             <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                           </button>
-                          <span className="text-gray-300">|</span>
                           <button
                             onClick={() => handleStartBusinessModel(path)}
                             className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
