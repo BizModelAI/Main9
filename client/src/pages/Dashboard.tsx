@@ -923,7 +923,7 @@ const Dashboard: React.FC = () => {
                   >
                     <Edit className="h-3 w-3 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-1" />
                     <span className="text-center">
-                      Change
+                      Change<span className="hidden sm:inline"> </span>
                       <br className="sm:hidden" />
                       Model
                     </span>
