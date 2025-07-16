@@ -683,27 +683,26 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl p-4 sm:p-6 md:p-8 lg:p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full min-h-[280px] sm:min-h-[320px] md:min-h-[380px] lg:min-h-[380px] flex flex-col"
+                      className="relative bg-white rounded-3xl p-6 md:p-8 lg:p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[380px] lg:aspect-auto flex flex-col"
                       onClick={() => handleBusinessModelSelect(model)}
                     >
-                      <div className="absolute -top-3 left-4 sm:left-6">
+                      <div className="absolute -top-3 left-6">
                         <div
-                          className={`${fitCategory.color} text-white px-3 py-1 sm:px-4 sm:py-1 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap`}
+                          className={`${fitCategory.color} text-white px-4 py-1 rounded-full text-sm font-semibold`}
                         >
-                          {model.fitScore}% Match
+                          {fitCategory.label} • {model.fitScore}%
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-3 sm:mb-4 md:mb-4 lg:mb-3 pt-2">
-                        {/* Hide emoji on mobile, show on larger screens */}
-                        <div className="hidden sm:block text-3xl sm:text-4xl md:text-4xl lg:text-3xl mr-3 sm:mr-4 md:mr-4 lg:mr-3 flex-shrink-0">
+                      <div className="flex items-start mb-3 sm:mb-4 md:mb-4 lg:mb-3">
+                        <div className="text-3xl sm:text-4xl md:text-4xl lg:text-3xl mr-3 sm:mr-4 md:mr-4 lg:mr-3 flex-shrink-0">
                           {model.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base sm:text-lg md:text-xl lg:text-lg font-bold text-gray-900 mb-2 sm:mb-3 md:mb-3 lg:mb-2 leading-tight">
+                          <h3 className="text-lg sm:text-xl md:text-xl lg:text-lg font-bold text-gray-900 mb-2 sm:mb-3 md:mb-3 lg:mb-2 leading-tight">
                             {model.name}
                           </h3>
-                          <p className="text-gray-600 text-xs sm:text-sm md:text-base lg:text-sm mb-3 sm:mb-4 md:mb-4 lg:mb-3 leading-relaxed">
+                          <p className="text-gray-600 text-sm sm:text-base md:text-base lg:text-sm mb-3 sm:mb-4 md:mb-4 lg:mb-3 leading-tight sm:leading-relaxed md:leading-relaxed lg:leading-normal">
                             {model.description}
                           </p>
                         </div>
