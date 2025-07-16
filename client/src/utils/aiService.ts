@@ -366,7 +366,16 @@ ${userProfile}`,
 
       if (response && response.content) {
         const insights = JSON.parse(response.content);
-        this.cacheInsights(cacheKey, insights);
+
+        // Save to database instead of localStorage cache
+        if (quizAttemptId) {
+          await this.saveAIContentToDatabase(
+            quizAttemptId,
+            `model_${modelName}`,
+            insights,
+          );
+        }
+
         return insights;
       }
 
