@@ -680,6 +680,7 @@ const QuizWithNavigation: React.FC<{
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { calculateAndStoreScores } = useBusinessModelScores();
 
   const handleQuizComplete = async (data: QuizData) => {
     console.log("Quiz completed with 3-tier caching system");
