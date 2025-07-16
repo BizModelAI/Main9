@@ -663,14 +663,9 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
     };
 
     // Generate detailed business fit descriptions
-    const generateBusinessFitDescriptions = async (retryCount = 0) => {
+    const generateBusinessFitDescriptions = async () => {
       try {
         const top3Paths = topThreeAdvanced.slice(0, 3);
-
-        // Add timeout to prevent hanging requests
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
         const response = await fetch(
           "/api/generate-business-fit-descriptions",
           {
@@ -682,16 +677,11 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
               quizData,
               businessMatches: top3Paths,
             }),
-            signal: controller.signal,
           },
         );
 
-        clearTimeout(timeoutId);
-
         if (!response.ok) {
-          throw new Error(
-            `HTTP ${response.status}: Failed to generate business fit descriptions`,
-          );
+          throw new Error("Failed to generate business fit descriptions");
         }
 
         const data = await response.json();
@@ -706,17 +696,6 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
         setBusinessFitDescriptions(descriptionsMap);
       } catch (error) {
         console.error("Error generating business fit descriptions:", error);
-
-        // Retry once on network errors
-        if (
-          retryCount === 0 &&
-          (error.name === "AbortError" ||
-            error.message.includes("Failed to fetch"))
-        ) {
-          console.log("Retrying business fit descriptions request...");
-          setTimeout(() => generateBusinessFitDescriptions(1), 2000);
-          return;
-        }
         // Set fallback descriptions
         const fallbackDescriptions: { [key: string]: string } = {};
         topThreeAdvanced.slice(0, 3).forEach((match, index) => {
@@ -736,7 +715,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
     };
 
     // Generate detailed business avoid descriptions
-    const generateBusinessAvoidDescriptions = async (retryCount = 0) => {
+    const generateBusinessAvoidDescriptions = async () => {
       try {
         setIsLoadingDescriptions(true);
 
@@ -766,10 +745,6 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           };
         });
 
-        // Add timeout to prevent hanging requests
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
         const response = await fetch(
           "/api/generate-business-avoid-descriptions",
           {
@@ -781,16 +756,11 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
               quizData: quizData,
               businessMatches: businessMatches,
             }),
-            signal: controller.signal,
           },
         );
 
-        clearTimeout(timeoutId);
-
         if (!response.ok) {
-          throw new Error(
-            `HTTP ${response.status}: Failed to generate business avoid descriptions`,
-          );
+          throw new Error("Failed to generate business avoid descriptions");
         }
 
         const data = await response.json();
@@ -807,18 +777,6 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         setBusinessAvoidDescriptions(descriptionsMap);
       } catch (error) {
         console.error("Error generating business avoid descriptions:", error);
-
-        // Retry once on network errors
-        if (
-          retryCount === 0 &&
-          (error.name === "AbortError" ||
-            error.message.includes("Failed to fetch"))
-        ) {
-          console.log("Retrying business avoid descriptions request...");
-          setTimeout(() => generateBusinessAvoidDescriptions(1), 2000);
-          return;
-        }
-
         // Set fallback descriptions
         const fallbackDescriptions: { [key: string]: string } = {};
         const { businessModelService } = await import(

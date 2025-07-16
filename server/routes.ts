@@ -2936,12 +2936,6 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP
       `);
 
-        // Add missing PayPal column to payments table
-        await storage.ensureDb().execute(sql`
-        ALTER TABLE payments
-        ADD COLUMN IF NOT EXISTS paypal_order_id VARCHAR UNIQUE
-      `);
-
         // Create ai_content table if it doesn't exist
         await storage.ensureDb().execute(sql`
         CREATE TABLE IF NOT EXISTS ai_content (
