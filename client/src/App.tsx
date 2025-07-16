@@ -813,7 +813,7 @@ const QuizWithNavigation: React.FC<{
     }, 100);
   };
 
-  const handleReturnToQuiz = async () => {
+  const handleReturnToQuiz = () => {
     console.log("Returning to quiz - clearing all quiz-related cache");
 
     // Clear all quiz-related state
@@ -826,7 +826,7 @@ const QuizWithNavigation: React.FC<{
     setLoadedReportData(null);
 
     // Clear all localStorage cache
-    await clearQuizRelatedCache();
+    clearQuizRelatedCache();
 
     // Stay on current page (quiz)
   };
