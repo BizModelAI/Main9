@@ -2333,6 +2333,33 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           }),
         );
 
+        // Store fallback business avoid descriptions in database if user is authenticated
+        try {
+          const userId = await getUserIdFromRequest(req);
+          if (userId) {
+            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            if (quizAttemptId) {
+              const descriptionsMap: { [key: string]: string } = {};
+              fallbackDescriptions.forEach((desc: any) => {
+                descriptionsMap[desc.businessId] = desc.description;
+              });
+              await storage.saveAIContentToQuizAttempt(
+                quizAttemptId,
+                "businessAvoidDescriptions",
+                descriptionsMap,
+              );
+              console.log(
+                "✅ Fallback business avoid descriptions stored in database",
+              );
+            }
+          }
+        } catch (dbError) {
+          console.warn(
+            "⚠️ Failed to store fallback business avoid descriptions in database:",
+            dbError,
+          );
+        }
+
         res.json({ descriptions: fallbackDescriptions });
       }
     },
