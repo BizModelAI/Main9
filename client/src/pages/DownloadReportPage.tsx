@@ -7,7 +7,7 @@ import { QuizData, AIAnalysis, BusinessPath } from "../types";
 import { AIService } from "../utils/aiService";
 import { AICacheManager } from "../utils/aiCacheManager";
 import { businessPaths } from "../data/businessPaths";
-import { generatePersonalizedPaths } from "../utils/quizLogic";
+import { businessModelService } from "../utils/businessModelService";
 
 const DownloadReportPage: React.FC = () => {
   const location = useLocation();
