@@ -59,7 +59,8 @@ export interface IStorage {
   // DEPRECATED AI content operations (for backward compatibility)
   saveAIContentToQuizAttempt(
     quizAttemptId: number,
-    aiContent: any,
+    contentType: string,
+    content: any,
   ): Promise<void>;
   getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null>;
   decrementQuizRetakes(userId: number): Promise<void>;
