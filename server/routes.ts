@@ -157,7 +157,7 @@ function getIncomeGoalRange(value: number): string {
 function getTimeCommitmentRange(value: number): string {
   if (value <= 3) return "Less than 5 hours/week";
   if (value <= 7) return "5–10 hours/week";
-  if (value <= 17) return "10��25 hours/week";
+  if (value <= 17) return "10-25 hours/week";
   return "25+ hours/week";
 }
 
