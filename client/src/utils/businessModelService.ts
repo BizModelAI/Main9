@@ -49,7 +49,6 @@ export class BusinessModelService {
       name: match.name,
       score: match.score,
       category: match.category,
-      description: match.description,
       fitScore: match.score, // For backward compatibility
     }));
 
