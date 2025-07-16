@@ -14,6 +14,7 @@ import { PaywallProvider } from "./contexts/PaywallContext";
 import "./utils/debugOpenAI";
 import "./utils/debugAIContent";
 import "./utils/clearAllCaches";
+import "./utils/debugBusinessModels";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
