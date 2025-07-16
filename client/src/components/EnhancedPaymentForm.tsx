@@ -367,8 +367,23 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
           throw new Error("User must create an account before making payments");
         }
 
+        // Get quiz attempt ID from prop or localStorage
+        const currentQuizAttemptId =
+          quizAttemptId ||
+          (() => {
+            const stored = localStorage.getItem("currentQuizAttemptId");
+            return stored ? parseInt(stored) : null;
+          })();
+
+        if (!currentQuizAttemptId) {
+          throw new Error(
+            "Quiz attempt ID is required for report unlock payment",
+          );
+        }
+
         const requestBody = {
           userId: parseInt(user.id),
+          quizAttemptId: currentQuizAttemptId,
         };
 
         // Use report unlock payment endpoint
