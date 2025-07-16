@@ -40,7 +40,7 @@ import {
 } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
 import { AIService } from "../utils/aiService";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 import FullReport from "./FullReport";
 import AIReportLoading from "./AIReportLoading";
 import FullReportLoading from "./FullReportLoading";
