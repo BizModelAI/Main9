@@ -906,7 +906,24 @@ export async function registerRoutes(app: Express): Promise<void> {
         res.json({ success: true, message: "AI content saved successfully" });
       } catch (error) {
         console.error("Error saving AI content:", error);
-        res.status(500).json({ error: "Internal server error" });
+
+        // Provide more specific error messages
+        if (
+          error instanceof Error &&
+          error.message.includes("ai_content table is missing")
+        ) {
+          res.status(500).json({
+            error: "Database migration required",
+            details:
+              "The ai_content table is missing. Please run database migration.",
+            migration_endpoint: "/api/admin/fix-database-schema",
+          });
+        } else {
+          res.status(500).json({
+            error: "Failed to save AI content",
+            details: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
       }
     },
   );
