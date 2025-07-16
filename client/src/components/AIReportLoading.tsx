@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { QuizData, BusinessPath } from "../types";
 import { reportViewManager } from "../utils/reportViewManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 
 // Hook to detect mobile devices
 const useIsMobile = () => {
