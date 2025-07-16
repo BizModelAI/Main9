@@ -137,6 +137,7 @@ export const insertPasswordResetTokenSchema =
   createInsertSchema(passwordResetTokens);
 export const insertRefundSchema = createInsertSchema(refunds);
 export const insertReportViewSchema = createInsertSchema(reportViews);
+export const insertAiContentSchema = createInsertSchema(aiContent);
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
