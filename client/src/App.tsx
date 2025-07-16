@@ -929,20 +929,51 @@ const ResultsWrapperWithReset: React.FC<{
   } else {
     console.error("No quiz data available - showing fallback message");
     console.log("Current localStorage keys:", Object.keys(localStorage));
+    console.log("localStorage quizData:", localStorage.getItem("quizData"));
+    console.log(
+      "localStorage currentQuizAttemptId:",
+      localStorage.getItem("currentQuizAttemptId"),
+    );
+
+    // Try to get quiz data from the API as a last resort
+    React.useEffect(() => {
+      const fetchQuizData = async () => {
+        try {
+          console.log("Attempting to fetch quiz data from API as fallback...");
+          const response = await fetch("/api/auth/latest-quiz-data", {
+            credentials: "include",
+          });
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Fallback API response:", data);
+            if (data.quizData) {
+              console.log("Found quiz data via API, storing in localStorage");
+              localStorage.setItem("quizData", JSON.stringify(data.quizData));
+              // Force a re-render by navigating to same page
+              window.location.reload();
+            }
+          } else {
+            console.log("API fallback failed:", response.status);
+          }
+        } catch (error) {
+          console.log("API fallback error:", error);
+        }
+      };
+
+      fetchQuizData();
+    }, []);
+
     return (
-      <div className="py-20 text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          No Results Found
-        </h1>
-        <p className="text-xl text-gray-600 mb-8">
-          Please take the quiz first to see your personalized results.
-        </p>
-        <a
-          href="/quiz"
-          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-        >
-          Take the Quiz
-        </a>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Loading Results...
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Retrieving your quiz data...
+          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
       </div>
     );
   }
