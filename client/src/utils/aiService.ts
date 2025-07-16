@@ -41,9 +41,9 @@ ${topMatch ? `- Top Business Match: ${topMatch.name} (${topMatch.fitScore}% matc
 
 Work Preferences:
 - Time Availability: ${quizData.weeklyTimeCommitment}
-- Learning Style: ${quizData.learningPreference || quizData.learningStyle || 'self_directed'}
-- Work Structure: ${quizData.workStructurePreference || 'flexible'}
-- Collaboration Style: ${quizData.workCollaborationPreference || 'independent'}
+- Learning Style: ${quizData.learningPreference || quizData.learningStyle || "self_directed"}
+- Work Structure: ${quizData.workStructurePreference || "flexible"}
+- Collaboration Style: ${quizData.workCollaborationPreference || "independent"}
 - Decision-Making Style: ${quizData.decisionMakingStyle}
 
 Personality Traits (0–5 scale):
@@ -616,7 +616,6 @@ ${userProfile}`,
 
     return null;
   }
-}
 
   // BACKWARD COMPATIBILITY WRAPPER METHODS
   // These methods are still used by some components
