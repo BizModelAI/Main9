@@ -23,10 +23,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { QuizData, BusinessPath } from "../types";
-import {
-  generatePersonalizedPaths,
-  generateAIPersonalizedPaths,
-} from "../utils/quizLogic";
+import { generateAIPersonalizedPaths } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
 import { AIService } from "../utils/aiService";
 import { AICacheManager } from "../utils/aiCacheManager";
