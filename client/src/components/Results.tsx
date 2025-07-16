@@ -38,7 +38,7 @@ import {
   generatePersonalizedPaths,
   generateAIPersonalizedPaths,
 } from "../utils/quizLogic";
-import { calculateAdvancedBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { businessModelService } from "../utils/businessModelService";
 import { AIService } from "../utils/aiService";
 import { aiCacheManager } from "../utils/aiCacheManager";
 import FullReport from "./FullReport";
