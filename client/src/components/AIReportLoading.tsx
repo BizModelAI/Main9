@@ -399,12 +399,12 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       console.error("Error generating business fit descriptions:", error);
       // Set fallback descriptions
       const fallbackDescriptions: { [key: string]: string } = {};
-      const { calculateAdvancedBusinessModelMatches } = await import(
-        "../utils/advancedScoringAlgorithm"
+      const { businessModelService } = await import(
+        "../utils/businessModelService"
       );
-      const topThreeAdvanced = calculateAdvancedBusinessModelMatches(quizData);
+      const topThreeAdvanced = businessModelService.getTopMatches(quizData, 3);
 
-      topThreeAdvanced.slice(0, 3).forEach((match, index) => {
+      topThreeAdvanced.forEach((match, index) => {
         fallbackDescriptions[match.id] =
           `This business model aligns well with your ${quizData.selfMotivationLevel >= 4 ? "high self-motivation" : "self-driven nature"} and ${quizData.weeklyTimeCommitment} hours/week availability. Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance make this a ${index === 0 ? "perfect" : index === 1 ? "excellent" : "good"} match for your entrepreneurial journey.`;
       });
@@ -665,7 +665,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
           // Step 3: Generate AI insights (SINGLE API CALL)
           const step3Result = await executeStep(2, async () => {
-            console.log("🔄 Starting AI insights generation (single call)");
+            console.log("��� Starting AI insights generation (single call)");
             console.log("Quiz data being used:", {
               mainMotivation: activeQuizData.mainMotivation,
               successIncomeGoal: activeQuizData.successIncomeGoal,
