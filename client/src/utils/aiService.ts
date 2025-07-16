@@ -72,11 +72,17 @@ Personality Traits (0–5 scale):
     successPredictors: string[];
   }> {
     try {
-      const cacheKey = `preview_${this.createCacheKey(quizData, topPaths)}`;
-      const cached = this.getCachedInsights(cacheKey);
-      if (cached) {
-        console.log("✅ Using cached preview insights");
-        return cached;
+      // First check if we have existing AI content in database
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      if (quizAttemptId) {
+        const existingContent = await this.getAIContentFromDatabase(
+          quizAttemptId,
+          "preview",
+        );
+        if (existingContent) {
+          console.log("✅ Using existing preview insights from database");
+          return existingContent;
+        }
       }
 
       console.log("🔄 Generating fresh preview insights");
