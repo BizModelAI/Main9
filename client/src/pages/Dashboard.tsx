@@ -837,6 +837,49 @@ const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* Historical Quiz Banner */}
+        {historicalQuizDate && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center space-x-3">
+              <Calendar className="w-5 h-5 text-amber-600" />
+              <span className="text-amber-800 font-medium">
+                Viewing Quiz from {historicalQuizDate}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setHistoricalQuizDate(null);
+                localStorage.removeItem("currentQuizAttemptId");
+                setRefreshKey((prev) => prev + 1);
+              }}
+              className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+            >
+              Return to Current Quiz
+            </button>
+          </motion.div>
+        )}
+
+        {/* Success Notification */}
+        {showSuccessNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3"
+          >
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="text-green-800 font-medium">
+              Quiz data loaded successfully!
+            </span>
+          </motion.div>
+        )}
+
         {/* Start Your Journey - Main CTA */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
