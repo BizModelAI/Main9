@@ -97,27 +97,59 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Store email for unpaid users and send quiz results email
+      // Use new 3-tier caching system to save quiz data and create temporary account
       if (quizData) {
-        const sessionId = getSessionId();
-        const response = await fetch("/api/email-results", {
+        console.log(
+          "EmailCapture: Saving quiz data with email to create temporary account",
+        );
+
+        const response = await fetch("/api/save-quiz-data", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            sessionId,
-            email: email.trim(),
             quizData: quizData,
-            isPaidUser: false, // EmailCapture is only for unpaid users
+            email: email.trim(),
           }),
         });
 
         if (response.ok) {
+          const result = await response.json();
+          console.log("EmailCapture: Quiz data saved successfully", result);
+
           setEmailSent(true);
 
           // Store email in localStorage so AI service knows user provided email
           localStorage.setItem("userEmail", email.trim());
+
+          // Store the quiz attempt ID for future reference
+          if (result.attemptId) {
+            localStorage.setItem("quizAttemptId", result.attemptId.toString());
+          }
+
+          // Also send preview email to user
+          try {
+            const emailResponse = await fetch("/api/email-results", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                sessionId: result.attemptId || Date.now(), // Use attempt ID or fallback
+                email: email.trim(),
+                quizData: quizData,
+                isPaidUser: false,
+              }),
+            });
+
+            if (!emailResponse.ok) {
+              console.warn("Failed to send preview email, but continuing...");
+            }
+          } catch (emailError) {
+            console.warn("Error sending preview email:", emailError);
+            // Don't block the flow for email issues
+          }
 
           // Retroactively save any existing AI content to database
           try {
@@ -136,17 +168,20 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
             onStartAIGeneration(email);
           }, 1500);
         } else {
-          console.error("Failed to send email");
-          // Still proceed even if email fails
+          console.error("Failed to save quiz data with email");
+          const errorData = await response.json();
+          console.error("Error details:", errorData);
+          // Still proceed even if save fails
           onStartAIGeneration(email);
         }
       } else {
         // No quiz data, just proceed
+        localStorage.setItem("userEmail", email.trim());
         onStartAIGeneration(email);
       }
     } catch (error) {
-      console.error("Error sending email:", error);
-      // Still proceed even if email fails
+      console.error("Error in email capture:", error);
+      // Still proceed even if there's an error
       onStartAIGeneration(email);
     } finally {
       setIsSubmitting(false);
