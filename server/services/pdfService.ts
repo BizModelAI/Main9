@@ -206,7 +206,7 @@ export class PDFService {
                             <div class="flex items-center justify-center mb-2">
                                 <span class="font-semibold">Investment</span>
                             </div>
-                            <p class="text-2xl font-bold">$${quizData.upfrontInvestment?.toLocaleString()}</p>
+                                                        <p class="text-2xl font-bold">$${formatCurrency(quizData.upfrontInvestment)}</p>
                         </div>
                     </div>
                 </div>
