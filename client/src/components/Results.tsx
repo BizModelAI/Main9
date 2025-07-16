@@ -150,20 +150,13 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Check if we have complete pre-generated AI content to set initial loading state
   const hasCompleteAIContent = (() => {
     try {
-      const preGeneratedData = localStorage.getItem(
-        "quiz-completion-ai-insights",
-      );
-      if (preGeneratedData) {
-        const { insights, complete, error, timestamp } =
-          JSON.parse(preGeneratedData);
-        const isRecent = Date.now() - timestamp < 5 * 60 * 1000;
-        // Only require insights and complete flag (analysis can be generated as fallback)
-        return isRecent && insights && complete && !error;
-      }
+      const aiCacheManager = AICacheManager.getInstance();
+      const cachedContent = aiCacheManager.getCachedAIContent(quizData);
+      // Check if we have both insights and analysis cached (within 1 hour)
+      return cachedContent.insights !== null && cachedContent.analysis !== null;
     } catch {
       return false;
     }
-    return false;
   })();
 
   // Enable AI generation for dynamic content
