@@ -36,6 +36,7 @@ import confetti from "canvas-confetti";
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
 import { generateAIPersonalizedPaths } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
+import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
 import { AIService } from "../utils/aiService";
 import { AICacheManager } from "../utils/aiCacheManager";
 import FullReport from "./FullReport";
