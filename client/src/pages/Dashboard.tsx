@@ -731,8 +731,8 @@ const Dashboard: React.FC = () => {
                       {/* Spacer to push button to bottom */}
                       <div className="flex-grow"></div>
 
-                      <div className="flex items-center mt-auto">
-                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 sm:py-4 md:py-4 lg:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm sm:text-base md:text-base lg:text-sm sm:shadow-lg md:shadow-lg hover:shadow-xl">
+                      <div className="flex items-center mt-auto pt-2">
+                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 sm:py-3 md:py-4 lg:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-xs sm:text-sm md:text-base lg:text-sm shadow-lg hover:shadow-xl">
                           Select This Model
                         </button>
                       </div>
