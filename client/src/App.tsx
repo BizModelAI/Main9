@@ -50,6 +50,7 @@ const LoadingPage = AIReportLoading;
 import { QuizData } from "./types";
 
 function App() {
+  const { user } = useAuth();
   const [quizData, setQuizData] = React.useState<QuizData | null>(null);
   const [showEmailCapture, setShowEmailCapture] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
