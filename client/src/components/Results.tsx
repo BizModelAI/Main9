@@ -355,7 +355,17 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       }
 
       // Fallback if no cached data available
-      console.log("⚠️ No cached preview data found, using fallback content");
+      if (
+        cachedContent.analysis &&
+        !validateAIAnalysis(cachedContent.analysis)
+      ) {
+        console.warn(
+          "⚠️ Cached analysis failed validation, using fallback:",
+          cachedContent.analysis,
+        );
+      } else {
+        console.log("⚠️ No cached preview data found, using fallback content");
+      }
       const topPath = personalizedPaths[0];
       const fallbackInsights = generateFallbackInsights(topPath);
       const fallbackAnalysis = generateFallbackAnalysis();
