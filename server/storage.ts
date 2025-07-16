@@ -638,6 +638,40 @@ export class DatabaseStorage implements IStorage {
     return db;
   }
 
+  // Auto-migration method to ensure ai_content table exists
+  async ensureAiContentTable(): Promise<void> {
+    try {
+      // Check if ai_content table exists by trying to select from it
+      await this.ensureDb().select().from(aiContent).limit(1);
+      console.log("AI content table exists");
+    } catch (error: any) {
+      if (error.message.includes('relation "ai_content" does not exist')) {
+        console.log("AI content table missing, creating it...");
+        try {
+          await this.ensureDb().execute(sql`
+            CREATE TABLE IF NOT EXISTS ai_content (
+              id SERIAL PRIMARY KEY,
+              quiz_attempt_id INTEGER NOT NULL REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+              content_type VARCHAR(100) NOT NULL,
+              content JSONB NOT NULL,
+              content_hash VARCHAR(64),
+              generated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+              created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+              UNIQUE(quiz_attempt_id, content_type)
+            )
+          `);
+          console.log("AI content table created successfully");
+        } catch (createError) {
+          console.error("Failed to create ai_content table:", createError);
+          throw createError;
+        }
+      } else {
+        // Some other error, let it propagate
+        throw error;
+      }
+    }
+  }
+
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await this.ensureDb()
       .select()
