@@ -595,7 +595,7 @@ ${userProfile}`,
   }
 
   // Database helper methods for AI content storage
-  private async saveAIContentToDatabase(
+  async saveAIContentToDatabase(
     quizAttemptId: string,
     contentType: string,
     content: any,
