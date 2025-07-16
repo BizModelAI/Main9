@@ -21,7 +21,7 @@ const db = drizzle(client);
  * - Deletes expired quiz attempts for unpaid users
  */
 async function cleanupExpiredData() {
-  console.log("🧹 Starting cleanup of expired unpaid user data...");
+  console.log("� Starting cleanup of expired unpaid user data...");
 
   const now = new Date();
   console.log(`Current time: ${now.toISOString()}`);
@@ -39,13 +39,12 @@ async function cleanupExpiredData() {
         ),
       );
 
-    console.log(`📊 Found ${expiredUsers.length} expired temporary users`);
+    console.log("� Found ${expiredUsers.length} expired temporary users");
 
     if (expiredUsers.length > 0) {
       // Log details of users being deleted (for audit purposes)
       expiredUsers.forEach((user) => {
-        console.log(
-          `🗑️  Deleting expired user: ${user.email} (ID: ${user.id}, expired: ${user.expiresAt})`,
+        console.log("�️  Deleting expired user: ${user.email} (ID: ${user.id}, expired: ${user.expiresAt})",
         );
       });
 
@@ -67,8 +66,7 @@ async function cleanupExpiredData() {
     // 3. Summary
     const totalDeleted = expiredUsers.length;
     if (totalDeleted > 0) {
-      console.log(
-        `🎉 Cleanup complete! Deleted ${totalDeleted} expired users (quiz attempts deleted via CASCADE)`,
+      console.log("� Cleanup complete! Deleted ${totalDeleted} expired users (quiz attempts deleted via CASCADE)",
       );
     } else {
       console.log(`✨ No expired data found - database is clean!`);
@@ -82,7 +80,7 @@ async function cleanupExpiredData() {
 
     const activeQuizAttempts = await db.select().from(quizAttempts);
 
-    console.log(`📈 Current database state:`);
+    console.log("� Current database state:");
     console.log(`   - Active temporary users: ${activeTemporaryUsers.length}`);
     console.log(`   - Total quiz attempts: ${activeQuizAttempts.length}`);
 
@@ -95,8 +93,7 @@ async function cleanupExpiredData() {
     );
 
     if (soonToExpire.length > 0) {
-      console.log(
-        `⚠️  ${soonToExpire.length} users will expire within 7 days:`,
+      console.log("️  ${soonToExpire.length} users will expire within 7 days:",
       );
       soonToExpire.forEach((user) => {
         const daysLeft = Math.ceil(
@@ -118,11 +115,11 @@ async function cleanupExpiredData() {
 if (require.main === module) {
   cleanupExpiredData()
     .then(() => {
-      console.log("👋 Cleanup script completed successfully");
+      console.log("� Cleanup script completed successfully");
       process.exit(0);
     })
     .catch((error) => {
-      console.error("💥 Cleanup script failed:", error);
+      console.error("� Cleanup script failed:", error);
       process.exit(1);
     });
 }

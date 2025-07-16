@@ -90,7 +90,7 @@ export const BusinessModelScoresProvider: React.FC<
           const expiresAt = parseInt(storedExpires);
           if (now > expiresAt) {
             console.log(
-              "📅 Business model scores expired, clearing localStorage",
+              "� Business model scores expired, clearing localStorage",
             );
             clearStoredScores();
             return;
@@ -102,7 +102,7 @@ export const BusinessModelScoresProvider: React.FC<
         setLastUpdated(timestamp);
         setQuizAttemptId(scoresData.quizAttemptId || null);
 
-        console.log("📊 Business model scores loaded from localStorage", {
+        console.log("� Business model scores loaded from localStorage", {
           count: scoresData.scores.length,
           timestamp: new Date(timestamp),
           quizAttemptId: scoresData.quizAttemptId,
@@ -133,7 +133,7 @@ export const BusinessModelScoresProvider: React.FC<
     setError(null);
 
     try {
-      console.log("🔢 Calculating business model scores for quiz data...");
+      console.log("� Calculating business model scores for quiz data...");
 
       // Calculate scores using the sophisticated algorithm
       const calculatedScores =
@@ -199,7 +199,7 @@ export const BusinessModelScoresProvider: React.FC<
         authResponse.ok || (userEmail && userEmail !== "null");
 
       if (shouldSaveToDatabase && attemptId) {
-        console.log("💾 Saving business model scores to database...");
+        console.log("� Saving business model scores to database...");
 
         // Save scores as AI content
         const response = await fetch(
@@ -230,7 +230,7 @@ export const BusinessModelScoresProvider: React.FC<
         }
       } else {
         console.log(
-          "📱 Anonymous user - business model scores stored in localStorage only",
+          "� Anonymous user - business model scores stored in localStorage only",
         );
       }
     } catch (error) {
@@ -248,7 +248,7 @@ export const BusinessModelScoresProvider: React.FC<
     setQuizAttemptId(null);
     setError(null);
     clearStoredScores();
-    console.log("🧹 Business model scores cleared");
+    console.log("� Business model scores cleared");
   };
 
   // Get top N matches
@@ -309,7 +309,7 @@ export const cleanupExpiredBusinessModelScores = () => {
       const now = Date.now();
 
       if (now > expiresAt) {
-        console.log("🧹 Cleaning up expired business model scores");
+        console.log("� Cleaning up expired business model scores");
         localStorage.removeItem(STORAGE_KEYS.SCORES);
         localStorage.removeItem(STORAGE_KEYS.SCORES_TIMESTAMP);
         localStorage.removeItem(STORAGE_KEYS.SCORES_EXPIRES);

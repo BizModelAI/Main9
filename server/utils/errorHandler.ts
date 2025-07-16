@@ -116,7 +116,7 @@ export class ErrorHandler {
     try {
       // TODO: Implement actual alerting (e.g., Slack, email, monitoring service)
       // For now, just enhanced logging
-      console.error("🚨 ALERT:", {
+      console.error("� ALERT:", {
         ...alertData,
         timestamp: new Date().toISOString(),
       });

@@ -1809,7 +1809,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
 
               <div className="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <h3 className="font-semibold text-yellow-900 mb-2">
-                  💡 Pro Tip
+                  � Pro Tip
                 </h3>
                 <p className="text-yellow-800">
                   Start with the free tools first. You can always upgrade to
@@ -1972,7 +1972,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
 
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <h3 className="font-semibold text-blue-900 mb-2">
-                  💡 Success Tip
+                  � Success Tip
                 </h3>
                 <p className="text-blue-800">
                   Most successful entrepreneurs make mistakes early on. The key

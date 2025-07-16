@@ -934,7 +934,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           "Analytics tools",
         ],
         skills: ["Basic business skills", "Communication", "Organization"],
-        icon: "💼",
+        icon: "�",
         marketSize: "Large",
         averageIncome: {
           beginner: "$1K-3K",
@@ -1079,7 +1079,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
             transition={{ duration: 0.8 }}
           >
             <div className="mx-auto mb-8">
-              <span className="text-6xl">🎉</span>
+              <span className="text-6xl">�</span>
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
@@ -1603,7 +1603,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
 
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                   <h3 className="font-semibold text-blue-900 mb-2">
-                    💡 Future Consideration
+                    � Future Consideration
                   </h3>
                   <p className="text-blue-800 text-sm">
                     As you develop your skills and gain experience, some of

@@ -389,7 +389,7 @@ CRITICAL RULES:
       }
 
       console.log(
-        `🔄 Generating fresh model insights for ${modelName} (${fitType})`,
+        `� Generating fresh model insights for ${modelName} (${fitType})`,
       );
       const userProfile = this.createUserProfile(quizData);
 
@@ -545,7 +545,7 @@ ${userProfile}`,
       }
 
       console.log(
-        "🔄 Retroactively saving existing AI content to database after email provided",
+        "� Retroactively saving existing AI content to database after email provided",
       );
 
       // Check for existing AI content in localStorage that needs to be saved
@@ -557,7 +557,7 @@ ${userProfile}`,
         try {
           const aiData = JSON.parse(quizCompletionInsights);
           if (aiData && aiData.insights) {
-            console.log("💾 Saving quiz completion insights to database");
+            console.log("� Saving quiz completion insights to database");
             await this.saveAIContentToDatabase(
               quizAttemptId,
               "preview",
@@ -575,7 +575,7 @@ ${userProfile}`,
         try {
           const reportData = JSON.parse(loadedReportData);
           if (reportData && reportData.aiInsights) {
-            console.log("💾 Saving loaded report data to database");
+            console.log("� Saving loaded report data to database");
             await this.saveAIContentToDatabase(
               quizAttemptId,
               "fullReport",
@@ -600,7 +600,7 @@ ${userProfile}`,
               const contentType = key.replace("ai_content_", "");
 
               console.log(
-                `💾 Saving ${contentType} AI content from localStorage to database`,
+                `� Saving ${contentType} AI content from localStorage to database`,
               );
               await this.saveAIContentToDatabase(
                 quizAttemptId,
@@ -637,7 +637,7 @@ ${userProfile}`,
       if (shouldSaveToDatabase) {
         // TIER 1 & 2: Save to database for authenticated users and email-provided users
         console.log(
-          `💾 Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
+          `� Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
         );
 
         const response = await fetch(
@@ -668,7 +668,7 @@ ${userProfile}`,
       } else {
         // TIER 3: Save to localStorage for anonymous users (no email provided)
         console.log(
-          `���� Saving ${contentType} AI content to localStorage (anonymous user)`,
+          ` Saving ${contentType} AI content to localStorage (anonymous user)`,
         );
         this.saveAIContentToLocalStorage(contentType, content);
       }
@@ -768,7 +768,7 @@ ${userProfile}`,
         if (response.ok) {
           const data = await response.json();
           if (data && data.content) {
-            console.log(`📖 Retrieved ${contentType} AI content from database`);
+            console.log(`� Retrieved ${contentType} AI content from database`);
             return data.content;
           }
         } else if (response.status !== 404) {
@@ -780,7 +780,7 @@ ${userProfile}`,
       } else {
         // TIER 3: Try to get from localStorage for anonymous users
         console.log(
-          `📖 Retrieving ${contentType} AI content from localStorage (anonymous user)`,
+          `� Retrieving ${contentType} AI content from localStorage (anonymous user)`,
         );
         return this.getAIContentFromLocalStorage(contentType);
       }
@@ -815,7 +815,7 @@ ${userProfile}`,
         return null;
       }
 
-      console.log(`📖 Retrieved ${contentType} AI content from localStorage`);
+      console.log(`� Retrieved ${contentType} AI content from localStorage`);
       return parsedData.content;
     } catch (error) {
       console.error(
@@ -1014,7 +1014,7 @@ ${userProfile}`,
       // Remove expired content
       if (keysToRemove.length > 0) {
         console.log(
-          `🧹 Cleaning up ${keysToRemove.length} expired AI content items from localStorage`,
+          `� Cleaning up ${keysToRemove.length} expired AI content items from localStorage`,
         );
         keysToRemove.forEach((key) => localStorage.removeItem(key));
       }

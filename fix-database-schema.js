@@ -11,7 +11,7 @@ const sqlClient = neon(dbUrl);
 const db = drizzle(sqlClient);
 
 async function fixDatabaseSchema() {
-  console.log("🔧 Fixing missing database columns for login...");
+  console.log("� Fixing missing database columns for login...");
 
   try {
     // Add the missing columns to users table
@@ -44,7 +44,7 @@ async function fixDatabaseSchema() {
       console.log("✅ Found user caseyedunham@gmail.com:", user[0]);
     } else {
       console.log("❌ User caseyedunham@gmail.com not found in database");
-      console.log("🔍 Checking all users in database...");
+      console.log("� Checking all users in database...");
       const allUsers = await db.execute(
         sql`SELECT id, email, name FROM users LIMIT 10`,
       );
@@ -63,6 +63,6 @@ fixDatabaseSchema()
     process.exit(0);
   })
   .catch((error) => {
-    console.error("💥 Database fix failed:", error);
+    console.error("� Database fix failed:", error);
     process.exit(1);
   });

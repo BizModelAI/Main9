@@ -54,7 +54,7 @@ class OpenAIRateLimiter {
 
     if (totalCleaned > 0) {
       console.log(
-        `🧹 Rate limiter cleanup: removed ${totalCleaned} expired entries`,
+        `� Rate limiter cleanup: removed ${totalCleaned} expired entries`,
       );
     }
   }
@@ -79,7 +79,7 @@ class OpenAIRateLimiter {
 
     if (recentRequests.length >= maxRequests) {
       console.warn(
-        `🚫 Rate limit exceeded for ${identifier}: ${recentRequests.length}/${maxRequests} requests`,
+        `� Rate limit exceeded for ${identifier}: ${recentRequests.length}/${maxRequests} requests`,
       );
       return false;
     }
@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.header("Access-Control-Allow-Headers", "Content-Type");
 
     try {
-      console.log("🔍 OpenAI API request received:", {
+      console.log("� OpenAI API request received:", {
         hasBody: !!req.body,
         promptLength: req.body?.prompt?.length || 0,
         maxTokens: req.body?.maxTokens,
@@ -319,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Handle rate limit errors specifically
       if (error instanceof Error && error.message.includes("429")) {
-        console.warn("🚫 Rate limited by OpenAI");
+        console.warn("� Rate limited by OpenAI");
         res.status(429).json({
           error: "Rate limited by OpenAI",
           details: "Please try again in a few seconds",
@@ -505,7 +505,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post(
     "/api/ai-business-fit-analysis",
     async (req: Request, res: Response) => {
-      console.log("📥 AI business fit analysis request received");
+      console.log("� AI business fit analysis request received");
 
       try {
         // Rate limiting for concurrent quiz takers
@@ -2529,7 +2529,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
     "/api/admin/migrate-ai-content",
     async (req: Request, res: Response) => {
       try {
-        console.log("🔄 Starting AI content migration...");
+        console.log("� Starting AI content migration...");
 
         const result = await storage.migrateAIContentToNewTable();
 
@@ -2945,7 +2945,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
     "/api/admin/fix-database-schema",
     async (req: Request, res: Response) => {
       try {
-        console.log("🔧 Emergency database schema fix requested...");
+        console.log("� Emergency database schema fix requested...");
 
         // Add missing columns to users table
         await storage.ensureDb().execute(sql`

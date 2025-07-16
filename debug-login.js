@@ -39,7 +39,7 @@ async function debugLogin() {
       "password",
     ];
 
-    console.log("\n🔍 Testing common passwords...");
+    console.log("\n� Testing common passwords...");
     for (const testPassword of testPasswords) {
       try {
         const isValid = await bcrypt.compare(testPassword, user.password);
@@ -57,7 +57,7 @@ async function debugLogin() {
 
     console.log("❌ None of the test passwords worked");
     console.log(
-      "\n💡 Try to remember the password you used, or use the forgot password feature",
+      "\n� Try to remember the password you used, or use the forgot password feature",
     );
   } catch (error) {
     console.error("Error testing login:", error);

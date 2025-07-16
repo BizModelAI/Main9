@@ -215,7 +215,7 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-center mb-6"
             >
-              <div className="text-5xl mb-4">🎉</div>
+              <div className="text-5xl mb-4">�</div>
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -360,7 +360,7 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
                 className="text-center space-y-3"
               >
                 <p className="text-xs text-gray-500">
-                  🔒 We respect your privacy. Your results will be stored for 3
+                  � We respect your privacy. Your results will be stored for 3
                   months, then automatically deleted unless you upgrade to
                   permanent storage.
                 </p>

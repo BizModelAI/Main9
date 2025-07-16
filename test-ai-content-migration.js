@@ -4,10 +4,10 @@ import { sql } from "drizzle-orm";
 
 async function testAIContentMigration() {
   try {
-    console.log("🧪 Testing AI content table and migration...");
+    console.log("� Testing AI content table and migration...");
 
     // Step 1: Create the table if it doesn't exist
-    console.log("📝 Creating ai_content table if it doesn't exist...");
+    console.log("� Creating ai_content table if it doesn't exist...");
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS ai_content (
         id SERIAL PRIMARY KEY,
@@ -22,7 +22,7 @@ async function testAIContentMigration() {
     `);
 
     // Step 2: Create indexes
-    console.log("🏗️ Creating indexes...");
+    console.log("�️ Creating indexes...");
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_ai_content_quiz_attempt 
       ON ai_content(quiz_attempt_id);
@@ -36,7 +36,7 @@ async function testAIContentMigration() {
     console.log("✅ AI content table created successfully");
 
     // Step 3: Test the new AI content methods
-    console.log("🧪 Testing new AI content storage methods...");
+    console.log("� Testing new AI content storage methods...");
 
     // Get an existing quiz attempt to test with
     const attempts = await db.execute(
@@ -49,7 +49,7 @@ async function testAIContentMigration() {
     }
 
     const testQuizAttemptId = attempts[0].id;
-    console.log(`📋 Using quiz attempt ${testQuizAttemptId} for testing`);
+    console.log(`� Using quiz attempt ${testQuizAttemptId} for testing`);
 
     // Test saving AI content
     const testContent = {
@@ -76,10 +76,10 @@ async function testAIContentMigration() {
     }
 
     // Step 4: Run the migration to move existing JSONB data
-    console.log("🔄 Running migration to move existing AI content...");
+    console.log("� Running migration to move existing AI content...");
     const migrationResult = await storage.migrateAIContentToNewTable();
 
-    console.log("📊 Migration Results:");
+    console.log("� Migration Results:");
     console.log(
       `  - Total attempts processed: ${migrationResult.totalAttempts}`,
     );
@@ -94,14 +94,14 @@ async function testAIContentMigration() {
     }
 
     // Step 5: Clean up test data
-    console.log("🧹 Cleaning up test data...");
+    console.log("� Cleaning up test data...");
     await db.execute(sql`
       DELETE FROM ai_content 
       WHERE quiz_attempt_id = ${testQuizAttemptId} 
       AND content_type = 'test_preview'
     `);
 
-    console.log("🎉 AI content migration test completed successfully!");
+    console.log("� AI content migration test completed successfully!");
   } catch (error) {
     console.error("❌ AI content migration test failed:", error);
     process.exit(1);

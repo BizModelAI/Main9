@@ -614,7 +614,7 @@ const ExitWarningModal: React.FC<ExitWarningModalProps> = ({
             className="text-center mt-8"
           >
             <p className="text-sm text-gray-500">
-              💡 Tip: Your results will be personalized based on all your
+              � Tip: Your results will be personalized based on all your
               answers
             </p>
           </motion.div>
@@ -644,12 +644,12 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
 
     if (cacheCleared && Date.now() - parseInt(cacheCleared) < 5000) {
       console.log(
-        "🔄 Quiz component re-mounted (React StrictMode), skipping cache clear",
+        "� Quiz component re-mounted (React StrictMode), skipping cache clear",
       );
       return;
     }
 
-    console.log("🧹 Quiz component mounted - clearing previous quiz cache");
+    console.log("� Quiz component mounted - clearing previous quiz cache");
 
     // Mark that we've cleared cache for this session
     sessionStorage.setItem("quiz-cache-cleared", currentSession);
@@ -695,7 +695,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
   // Debug logging for exit modal state (reduced verbosity for StrictMode)
   useEffect(() => {
     if (showExitModal) {
-      console.log("📋 Exit modal opened");
+      console.log("� Exit modal opened");
     }
   }, [showExitModal]);
 
@@ -1454,7 +1454,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
           style={{ zIndex: 9999 }}
           hidden
         >
-          🚀 SKIP TO RESULTS (DEV)
+          � SKIP TO RESULTS (DEV)
         </button>
       </div>
 

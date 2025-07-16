@@ -4,7 +4,7 @@
 const baseUrl = "http://localhost:5000";
 
 async function testQuizFlow() {
-  console.log("🧪 Testing quiz flow...\n");
+  console.log("� Testing quiz flow...\n");
 
   // Test 1: Health check
   console.log("1. Testing health check...");
@@ -12,9 +12,9 @@ async function testQuizFlow() {
     const response = await fetch(`${baseUrl}/api/health/detailed`);
     const health = await response.json();
     console.log(`   ✅ Health: ${health.status}`);
-    console.log(`   📊 Database: ${health.checks.database.status}`);
-    console.log(`   🤖 OpenAI: ${health.checks.openai.status}`);
-    console.log(`   🔧 Environment: ${health.checks.environment.status}\n`);
+    console.log(`   � Database: ${health.checks.database.status}`);
+    console.log(`   � OpenAI: ${health.checks.openai.status}`);
+    console.log(`   � Environment: ${health.checks.environment.status}\n`);
   } catch (error) {
     console.log(`   ❌ Health check failed: ${error.message}\n`);
     return;
@@ -121,8 +121,8 @@ async function testQuizFlow() {
     console.log(`   ❌ Description test failed: ${error.message}\n`);
   }
 
-  console.log("🎉 Quiz flow testing complete!");
-  console.log("\n📝 Summary:");
+  console.log("� Quiz flow testing complete!");
+  console.log("\n� Summary:");
   console.log("   - All core endpoints are accessible");
   console.log("   - Error handling is improved with detailed logging");
   console.log("   - Fallback mechanisms are in place for AI services");

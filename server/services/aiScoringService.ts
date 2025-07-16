@@ -38,7 +38,7 @@ class RateLimiter {
 
     if (oldSize > this.requests.length) {
       console.log(
-        `🧹 AI Rate limiter cleanup: removed ${oldSize - this.requests.length} expired entries`,
+        `� AI Rate limiter cleanup: removed ${oldSize - this.requests.length} expired entries`,
       );
     }
   }
@@ -188,7 +188,7 @@ export class AIScoringService {
           error.message.includes("rate limit")
         ) {
           console.warn(
-            "🚫 Rate limited by OpenAI - falling back to algorithmic analysis",
+            "� Rate limited by OpenAI - falling back to algorithmic analysis",
           );
         } else if (
           error.message.includes("timeout") ||
@@ -199,14 +199,14 @@ export class AIScoringService {
           );
         } else {
           console.warn(
-            "🔥 OpenAI request failed - falling back to algorithmic analysis",
+            "� OpenAI request failed - falling back to algorithmic analysis",
           );
         }
       }
 
       // Fallback to enhanced algorithmic scoring
       console.log(
-        "🔄 Falling back to algorithmic analysis due to OpenAI error",
+        "� Falling back to algorithmic analysis due to OpenAI error",
       );
       const fallbackResult = this.fallbackAnalysis(quizData);
       console.log("Fallback analysis completed successfully");

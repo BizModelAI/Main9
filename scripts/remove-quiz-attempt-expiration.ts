@@ -18,8 +18,7 @@ const db = drizzle(client);
  * (Quiz attempts should expire via user CASCADE delete, not independently)
  */
 async function removeQuizAttemptExpiration() {
-  console.log(
-    "🔧 Removing unnecessary expires_at column from quiz_attempts table...",
+  console.log("� Removing unnecessary expires_at column from quiz_attempts table...",
   );
 
   try {
@@ -42,8 +41,7 @@ async function removeQuizAttemptExpiration() {
       console.log(
         "✅ Successfully removed expires_at column from quiz_attempts table",
       );
-      console.log(
-        "📝 Quiz attempts now expire via CASCADE delete when user expires",
+      console.log("� Quiz attempts now expire via CASCADE delete when user expires",
       );
     } else {
       console.log(
@@ -55,7 +53,7 @@ async function removeQuizAttemptExpiration() {
     const totalAttempts =
       await client`SELECT COUNT(*) as count FROM quiz_attempts`;
 
-    console.log(`📊 Summary:`);
+    console.log("� Summary:");
     console.log(`   - Total quiz attempts: ${totalAttempts[0].count}`);
     console.log(`   - Expiration: Via user CASCADE delete only`);
   } catch (error) {
@@ -70,11 +68,11 @@ async function removeQuizAttemptExpiration() {
 if (require.main === module) {
   removeQuizAttemptExpiration()
     .then(() => {
-      console.log("👋 Migration completed successfully");
+      console.log("� Migration completed successfully");
       process.exit(0);
     })
     .catch((error) => {
-      console.error("💥 Migration failed:", error);
+      console.error("� Migration failed:", error);
       process.exit(1);
     });
 }

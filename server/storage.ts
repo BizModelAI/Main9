@@ -910,7 +910,7 @@ export class DatabaseStorage implements IStorage {
     migratedAttempts: number;
     errors: string[];
   }> {
-    console.log("🔄 Starting AI content migration from JSONB to new table...");
+    console.log("� Starting AI content migration from JSONB to new table...");
 
     const errors: string[] = [];
     let migratedAttempts = 0;
@@ -927,7 +927,7 @@ export class DatabaseStorage implements IStorage {
       );
 
     console.log(
-      `📊 Found ${attempts.length} quiz attempts with AI content to migrate`,
+      `� Found ${attempts.length} quiz attempts with AI content to migrate`,
     );
 
     for (const attempt of attempts) {
@@ -981,7 +981,7 @@ export class DatabaseStorage implements IStorage {
 
         if (migratedAttempts % 10 === 0) {
           console.log(
-            `📈 Migration progress: ${migratedAttempts}/${attempts.length} quiz attempts`,
+            `� Migration progress: ${migratedAttempts}/${attempts.length} quiz attempts`,
           );
         }
       } catch (error: any) {
@@ -1015,7 +1015,7 @@ export class DatabaseStorage implements IStorage {
   ): Promise<void> {
     // NEW BEHAVIOR: Use the new AI content table
     console.log(
-      `📦 Saving AI content via new table: ${contentType} for quiz attempt ${quizAttemptId}`,
+      `� Saving AI content via new table: ${contentType} for quiz attempt ${quizAttemptId}`,
     );
     await this.saveAIContent(quizAttemptId, contentType, content);
 

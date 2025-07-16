@@ -1,10 +1,10 @@
-console.log("🔧 Starting AI content table migration...");
+console.log("� Starting AI content table migration...");
 
 import { db } from "../server/db.js";
 import { sql } from "drizzle-orm";
 
 export async function up() {
-  console.log("📝 Creating ai_content table...");
+  console.log("� Creating ai_content table...");
 
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS ai_content (
@@ -19,7 +19,7 @@ export async function up() {
     );
   `);
 
-  console.log("🏗️ Creating indexes for ai_content table...");
+  console.log("�️ Creating indexes for ai_content table...");
 
   await db.execute(sql`
     CREATE INDEX IF NOT EXISTS idx_ai_content_quiz_attempt 
@@ -40,7 +40,7 @@ export async function up() {
 }
 
 export async function down() {
-  console.log("🗑️ Dropping ai_content table...");
+  console.log("�️ Dropping ai_content table...");
 
   await db.execute(sql`DROP TABLE IF EXISTS ai_content CASCADE;`);
 

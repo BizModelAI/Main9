@@ -93,7 +93,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-4 weeks",
                 potentialIncome: "$2K-15K/month",
                 difficulty: "Beginner",
-                icon: "📱",
+                icon: "�",
               },
               "affiliate-marketing": {
                 id: "affiliate-marketing",
@@ -103,7 +103,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "3-6 months",
                 potentialIncome: "$100-10K+/month",
                 difficulty: "Easy",
-                icon: "💰",
+                icon: "�",
               },
               freelancing: {
                 id: "freelancing",
@@ -113,7 +113,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "1-2 weeks",
                 potentialIncome: "$500-8K/month",
                 difficulty: "Easy",
-                icon: "💼",
+                icon: "�",
               },
               "e-commerce": {
                 id: "e-commerce-dropshipping",
@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-6 months",
                 potentialIncome: "$1K-50K/month",
                 difficulty: "Medium",
-                icon: "🛍️",
+                icon: "�️",
               },
               "virtual-assistant": {
                 id: "virtual-assistant",
@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "1-3 weeks",
                 potentialIncome: "$300-5K/month",
                 difficulty: "Easy",
-                icon: "💻",
+                icon: "�",
               },
               "online-tutoring": {
                 id: "online-coaching-consulting",
@@ -142,7 +142,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "4-8 weeks",
                 potentialIncome: "$1K-20K/month",
                 difficulty: "Medium",
-                icon: "🎯",
+                icon: "�",
               },
               "handmade-goods": {
                 id: "print-on-demand",
@@ -152,7 +152,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "6-12 weeks",
                 potentialIncome: "$200-8K/month",
                 difficulty: "Easy",
-                icon: "🎨",
+                icon: "�",
               },
               "youtube-automation": {
                 id: "youtube-automation",
@@ -162,7 +162,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "3-9 months",
                 potentialIncome: "$500-15K/month",
                 difficulty: "Medium",
-                icon: "📹",
+                icon: "�",
               },
               "local-service": {
                 id: "local-service-arbitrage",
@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-8 weeks",
                 potentialIncome: "$1K-12K/month",
                 difficulty: "Medium",
-                icon: "🏠",
+                icon: "�",
               },
               "saas-development": {
                 id: "app-saas-development",
@@ -181,7 +181,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "6-18 months",
                 potentialIncome: "$5K-100K+/month",
                 difficulty: "Hard",
-                icon: "💻",
+                icon: "�",
               },
               "social-media-agency": {
                 id: "social-media-agency",
@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-6 months",
                 potentialIncome: "$2K-25K/month",
                 difficulty: "Medium",
-                icon: "📚",
+                icon: "�",
               },
               copywriting: {
                 id: "copywriting",
@@ -211,7 +211,7 @@ const Dashboard: React.FC = () => {
               timeToProfit: "2-6 months",
               potentialIncome: "$1K-10K/month",
               difficulty: "Medium",
-              icon: "🚀",
+              icon: "�",
             };
 
             return {
@@ -292,7 +292,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "2-4 weeks",
       potentialIncome: "$2K-15K/month",
       difficulty: "Beginner",
-      icon: "📱",
+      icon: "�",
     },
     {
       id: "affiliate-marketing",
@@ -303,7 +303,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-6 months",
       potentialIncome: "$100-10K+/month",
       difficulty: "Easy",
-      icon: "🔗",
+      icon: "�",
     },
     {
       id: "freelancing",
@@ -314,7 +314,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "1-2 weeks",
       potentialIncome: "$500-8K/month",
       difficulty: "Easy",
-      icon: "💼",
+      icon: "�",
     },
     {
       id: "e-commerce-dropshipping",
@@ -324,7 +324,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "2-6 months",
       potentialIncome: "$1K-50K/month",
       difficulty: "Medium",
-      icon: "🛒",
+      icon: "�",
     },
     {
       id: "virtual-assistant",
@@ -334,7 +334,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "1-3 weeks",
       potentialIncome: "$300-5K/month",
       difficulty: "Easy",
-      icon: "💻",
+      icon: "�",
     },
     {
       id: "online-coaching-consulting",
@@ -344,7 +344,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "4-8 weeks",
       potentialIncome: "$1K-20K/month",
       difficulty: "Medium",
-      icon: "🎯",
+      icon: "�",
     },
     {
       id: "print-on-demand",
@@ -354,7 +354,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "6-12 weeks",
       potentialIncome: "$200-8K/month",
       difficulty: "Easy",
-      icon: "🎨",
+      icon: "�",
     },
     {
       id: "youtube-automation",
@@ -365,7 +365,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-9 months",
       potentialIncome: "$500-15K/month",
       difficulty: "Medium",
-      icon: "🎨",
+      icon: "�",
     },
     {
       id: "local-service-arbitrage",
@@ -375,7 +375,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "2-8 weeks",
       potentialIncome: "$1K-12K/month",
       difficulty: "Medium",
-      icon: "🏠",
+      icon: "�",
     },
   ];
 
@@ -824,7 +824,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-                Welcome back, {user?.name?.split(" ")[0]}! 👋
+                Welcome back, {user?.name?.split(" ")[0]}! �
               </h1>
               <p className="text-xl text-gray-600">
                 Ready to take the next step in your entrepreneurial journey?

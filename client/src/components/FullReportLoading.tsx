@@ -33,7 +33,7 @@ export default function FullReportLoading({
   const generateFullReportData = async () => {
     try {
       console.log(
-        "🚀 Generating full report data with consolidated AI (1 call instead of 4)",
+        "� Generating full report data with consolidated AI (1 call instead of 4)",
       );
 
       // Dynamic import to avoid bundle issues

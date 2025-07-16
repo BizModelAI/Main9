@@ -1,5 +1,5 @@
 export const clearAllCaches = () => {
-  console.log("🧹 Clearing all caches...");
+  console.log("� Clearing all caches...");
 
   // Clear localStorage items
   localStorage.removeItem("quiz-completion-ai-insights");
@@ -40,5 +40,5 @@ export const clearAllCaches = () => {
 // Auto-clear caches in development
 if (import.meta.env.DEV) {
   (window as any).clearAllCaches = clearAllCaches;
-  console.log("🔧 Development mode: Run clearAllCaches() to clear all caches");
+  console.log("� Development mode: Run clearAllCaches() to clear all caches");
 }

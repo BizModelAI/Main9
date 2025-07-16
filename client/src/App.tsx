@@ -795,7 +795,7 @@ const QuizWithNavigation: React.FC<{
       const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
       const attemptId = quizAttemptId ? parseInt(quizAttemptId) : undefined;
 
-      console.log("🔢 Calculating business model scores for completed quiz...");
+      console.log("� Calculating business model scores for completed quiz...");
       await calculateAndStoreScores(data, attemptId);
       console.log(
         "✅ Business model scores calculated and stored successfully",
@@ -903,7 +903,7 @@ const QuizWithNavigation: React.FC<{
           style={{ zIndex: 9999 }}
           hidden
         >
-          🚀 SKIP TO RESULTS (DEV)
+          � SKIP TO RESULTS (DEV)
         </button>
       </div>
 

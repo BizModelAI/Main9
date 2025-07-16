@@ -30,7 +30,7 @@ export class BusinessModelService {
   }
 
   clearCache(): void {
-    console.log("🧹 Clearing business model cache");
+    console.log("� Clearing business model cache");
     this.cache.clear();
   }
 
@@ -61,7 +61,7 @@ export class BusinessModelService {
       return cached.matches;
     }
 
-    console.log("🔄 Calculating fresh business model matches");
+    console.log("� Calculating fresh business model matches");
     const rawMatches = calculateAdvancedBusinessModelMatches(quizData);
 
     // Transform to consistent format

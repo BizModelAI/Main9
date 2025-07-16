@@ -3,10 +3,10 @@ import { sql } from "drizzle-orm";
 
 async function applyMigration() {
   try {
-    console.log("🚀 Applying AI content migration...");
+    console.log("� Applying AI content migration...");
 
     // Check if the column already exists
-    console.log("📋 Checking if ai_content column exists...");
+    console.log("� Checking if ai_content column exists...");
     const checkResult = await db.execute(sql`
       SELECT column_name 
       FROM information_schema.columns 
@@ -28,10 +28,10 @@ async function applyMigration() {
     );
 
     console.log("✅ Migration applied successfully!");
-    console.log("🎉 AI content functionality is now fully enabled");
+    console.log("� AI content functionality is now fully enabled");
 
     // Verify the migration worked
-    console.log("🔍 Verifying migration...");
+    console.log("� Verifying migration...");
     const verifyResult = await db.execute(sql`
       SELECT column_name, data_type, is_nullable
       FROM information_schema.columns 
@@ -50,7 +50,7 @@ async function applyMigration() {
     console.error("Error details:", error.message);
 
     if (error.message.includes("already exists")) {
-      console.log("💡 Column might already exist - this is not an error");
+      console.log("� Column might already exist - this is not an error");
     }
   }
 }

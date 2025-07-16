@@ -820,7 +820,7 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
 
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <h3 className="font-semibold text-blue-900 mb-2">
-              💡 Future Consideration
+              � Future Consideration
             </h3>
             <p className="text-blue-800 text-sm">
               As you develop your skills and gain experience, some of these

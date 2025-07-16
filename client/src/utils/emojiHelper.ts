@@ -6,28 +6,28 @@
  */
 export const SAFE_EMOJIS = {
   // Common business/UI emojis
-  money: "💰",
-  chart: "📈",
-  target: "🎯",
-  rocket: "🚀",
+  money: "�",
+  chart: "�",
+  target: "�",
+  rocket: "�",
   check: "✅",
   warning: "⚠️",
-  lightbulb: "💡",
-  tools: "🛠️",
-  muscle: "💪",
-  brain: "🧠",
+  lightbulb: "�",
+  tools: "�️",
+  muscle: "�",
+  brain: "�",
   star: "⭐",
-  trophy: "🏆",
+  trophy: "�",
 
   // Business model emojis
-  laptop: "💻",
-  mobile: "📱",
-  briefcase: "💼",
-  link: "🔗",
-  video: "📹",
-  home: "🏠",
-  art: "🎨",
-  package: "📦",
+  laptop: "�",
+  mobile: "�",
+  briefcase: "�",
+  link: "�",
+  video: "�",
+  home: "�",
+  art: "�",
+  package: "�",
 
   // Status emojis
   success: "✅",
@@ -72,8 +72,8 @@ export function safeDecodeEmoji(encoded: string): string {
 export function validateEmojis(text: string): boolean {
   // Check for common corruption patterns
   const corruptionPatterns = [
-    /��+/g, // Replacement characters
-    /�/g, // Single replacement character
+    /+/g, // Replacement characters
+    //g, // Single replacement character
     /\uFFFD/g, // Unicode replacement character
     /\u00EF\u00BF\u00BD/g, // UTF-8 replacement character sequence
     /[\uD800-\uDFFF](?![\uD800-\uDFFF])/g, // Unpaired surrogates
@@ -90,8 +90,8 @@ export function validateEmojis(text: string): boolean {
  */
 export function cleanCorruptedEmojis(text: string): string {
   return text
-    .replace(/��+/g, "") // Remove replacement character sequences
-    .replace(/�/g, "") // Remove single replacement characters
+    .replace(/+/g, "") // Remove replacement character sequences
+    .replace(//g, "") // Remove single replacement characters
     .replace(/\uFFFD/g, "") // Remove unicode replacement characters
     .replace(/\u00EF\u00BF\u00BD/g, "") // Remove UTF-8 replacement sequence
     .replace(/[\uD800-\uDFFF](?![\uD800-\uDFFF])/g, "") // Remove unpaired surrogates
@@ -141,7 +141,7 @@ export function autoFixCorruptedEmojis(
 export function checkEmojiSupport(): boolean {
   try {
     // Test basic emoji encoding/decoding
-    const testEmoji = "🔥";
+    const testEmoji = "�";
     const encoded = JSON.stringify(testEmoji);
     const decoded = JSON.parse(encoded);
 
@@ -196,7 +196,7 @@ export function initializeEmojiSafeguards(): void {
     const originalConsoleWarn = console.warn;
     console.warn = function (...args) {
       const message = args.join(" ");
-      if (message.includes("�") || message.includes("\uFFFD")) {
+      if (message.includes("") || message.includes("\uFFFD")) {
         originalConsoleWarn("[EMOJI CORRUPTION DETECTED]", ...args);
         originalConsoleWarn(
           "Consider using SAFE_EMOJIS constants or autoFixCorruptedEmojis()",

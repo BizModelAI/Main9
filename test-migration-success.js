@@ -2,7 +2,7 @@
 import { storage } from "./server/storage.js";
 
 async function testMigrationSuccess() {
-  console.log("🧪 Testing AI content functionality after migration...");
+  console.log("� Testing AI content functionality after migration...");
 
   try {
     const testQuizAttemptId = 4; // Using a known attempt ID
@@ -38,7 +38,7 @@ async function testMigrationSuccess() {
     console.log("✅ Test data cleaned up");
 
     console.log(
-      "🎉 MIGRATION VERIFICATION COMPLETE - AI CONTENT SYSTEM FULLY FUNCTIONAL!",
+      "� MIGRATION VERIFICATION COMPLETE - AI CONTENT SYSTEM FULLY FUNCTIONAL!",
     );
 
     return true;
