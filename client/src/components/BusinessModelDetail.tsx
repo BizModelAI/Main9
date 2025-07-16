@@ -261,6 +261,7 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
           model.title || businessId,
         );
 
+        const aiCacheManager = AICacheManager.getInstance();
         aiCacheManager.cacheSkillsAnalysis(businessId, skills);
         setSkillsAnalysis(skills);
       } catch (error) {
