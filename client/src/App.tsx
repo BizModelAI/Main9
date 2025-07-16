@@ -242,6 +242,10 @@ function MainAppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  console.log("MainAppContent - Current location:", location.pathname);
+  console.log("MainAppContent - quizData:", !!quizData);
+  console.log("MainAppContent - userEmail:", userEmail);
+
   if (location.pathname === "/quiz") {
     return (
       <QuizWithNavigation
