@@ -65,22 +65,40 @@ export const aiContent = pgTable(
 );
 
 // Payments table to track individual quiz payments
-export const payments = pgTable("payments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  currency: varchar("currency").default("usd").notNull(),
-  type: varchar("type").notNull(), // "access_pass" or "quiz_payment"
-  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
-  status: varchar("status").default("pending").notNull(), // "pending", "completed", "failed"
-  quizAttemptId: integer("quiz_attempt_id").references(() => quizAttempts.id, {
-    onDelete: "cascade",
-  }), // Links payment to specific quiz
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  completedAt: timestamp("completed_at"),
-});
+export const payments = pgTable(
+  "payments",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+    currency: varchar("currency").default("usd").notNull(),
+    type: varchar("type").notNull(), // "access_pass" or "quiz_payment"
+    stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(), // Prevent duplicate Stripe payments
+    paypalOrderId: varchar("paypal_order_id").unique(), // Prevent duplicate PayPal payments
+    status: varchar("status").default("pending").notNull(), // "pending", "completed", "failed"
+    quizAttemptId: integer("quiz_attempt_id").references(
+      () => quizAttempts.id,
+      {
+        onDelete: "cascade",
+      },
+    ), // Links payment to specific quiz
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+    // Version field for optimistic locking to prevent race conditions
+    version: integer("version").default(1).notNull(),
+  },
+  (table) => ({
+    // Ensure only one payment per quiz attempt can be completed
+    uniqueCompletedPaymentPerQuiz: unique()
+      .on(table.quizAttemptId, table.status)
+      .where(sql`${table.status} = 'completed'`),
+    // Index for faster payment lookups
+    paymentStatusIndex: index("idx_payment_status").on(table.status),
+    paymentUserIndex: index("idx_payment_user").on(table.userId),
+  }),
+);
 
 // DEPRECATED: Temporary email tracking for unpaid users (expires after 24 hours)
 // This table is now consolidated into the users table - keeping for migration purposes only
