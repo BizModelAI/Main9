@@ -910,7 +910,8 @@ export class DatabaseStorage implements IStorage {
 
     try {
       return await this.ensureDb().transaction(async (tx) => {
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+        // Set 3-month expiration for users who provide email (90 days)
+        const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
 
         // Delete any existing temporary user for this session or email
         await tx
