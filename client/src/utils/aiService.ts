@@ -288,15 +288,19 @@ CRITICAL RULES:
     successPredictors: string[];
   }> {
     try {
-      const quizKey = this.createCacheKey(quizData, []);
-      const cacheKey = `model_${modelName}_${quizKey}`;
-      const cached = this.getCachedInsights(cacheKey);
-
-      if (cached) {
-        console.log(
-          `✅ Using cached model insights for ${modelName} (${fitType})`,
+      // First check if we have existing AI content in database
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      if (quizAttemptId) {
+        const existingContent = await this.getAIContentFromDatabase(
+          quizAttemptId,
+          `model_${modelName}`,
         );
-        return cached;
+        if (existingContent) {
+          console.log(
+            `✅ Using existing model insights for ${modelName} from database`,
+          );
+          return existingContent;
+        }
       }
 
       console.log(
