@@ -118,6 +118,8 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
   }
 
   const handleSelectQuiz = async (attempt: QuizAttempt) => {
+    setLoadingAttemptId(attempt.id);
+
     try {
       // Store the selected quiz data in localStorage
       localStorage.setItem("quizData", JSON.stringify(attempt.quizData));
@@ -171,13 +173,26 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         onQuizSelected(attempt.quizData, aiContent);
       }
 
+      // Show success notification
+      const attemptDate = format(new Date(attempt.completedAt), "MMM d, yyyy");
+      // You can customize this notification system as needed
+      console.log(`✅ Successfully loaded quiz from ${attemptDate}`);
+
       // Instead of page reload, trigger a React state update
-      // This will be handled by the parent component
       console.log("Quiz attempt switched successfully without page reload");
     } catch (error) {
       console.error("Error switching quiz attempt:", error);
-      // Fallback to page reload if API fails
-      window.location.reload();
+
+      // Show error message
+      alert("Failed to load quiz data. Falling back to current quiz.");
+
+      // Reset loading state
+      setLoadingAttemptId(null);
+
+      // Don't reload on error - just show message and keep current state
+      return;
+    } finally {
+      setLoadingAttemptId(null);
     }
   };
 
