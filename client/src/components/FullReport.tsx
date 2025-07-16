@@ -266,9 +266,9 @@ const FullReport: React.FC<FullReportProps> = ({
 
   const navigate = useNavigate();
 
-  // Calculate trait scores using advanced algorithm
-  const advancedScores = calculateAdvancedBusinessModelMatches(quizData);
-  const topThreeAdvanced = advancedScores.slice(0, 3);
+  // Calculate trait scores using centralized business model service
+  const advancedScores = businessModelService.getBusinessModelMatches(quizData);
+  const topThreeAdvanced = businessModelService.getTopMatches(quizData, 3);
 
   // Calculate trait scores using new comprehensive personality algorithm
   const personalityScores = calculatePersonalityScores(quizData);
