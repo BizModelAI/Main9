@@ -600,46 +600,76 @@ ${userProfile}`,
     content: any,
   ): Promise<void> {
     try {
-      // Check if we should save to database (only for paid users or unpaid users who provided email)
+      // Check if we should save to database (authenticated users or users who provided email)
       const shouldSaveToDatabase = await this.shouldSaveToDatabase();
 
-      if (!shouldSaveToDatabase) {
+      if (shouldSaveToDatabase) {
+        // TIER 1 & 2: Save to database for authenticated users and email-provided users
         console.log(
-          `⏭️ Skipping ${contentType} database save - unpaid user hasn't provided email yet`,
+          `💾 Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
         );
-        return;
-      }
 
-      console.log(
-        `💾 Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
-      );
-
-      const response = await fetch(
-        `/api/quiz-attempts/${quizAttemptId}/ai-content`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          `/api/quiz-attempts/${quizAttemptId}/ai-content`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              contentType,
+              content,
+            }),
           },
-          credentials: "include",
-          body: JSON.stringify({
-            contentType,
-            content,
-          }),
-        },
-      );
-
-      if (response.ok) {
-        console.log(`${contentType} AI content saved to database`);
-      } else {
-        console.error(
-          `❌ Failed to save ${contentType} AI content to database:`,
-          response.status,
         );
+
+        if (response.ok) {
+          console.log(`✅ ${contentType} AI content saved to database`);
+        } else {
+          console.error(
+            `❌ Failed to save ${contentType} AI content to database:`,
+            response.status,
+          );
+          // Fallback to localStorage if database save fails
+          this.saveAIContentToLocalStorage(contentType, content);
+        }
+      } else {
+        // TIER 3: Save to localStorage for anonymous users (no email provided)
+        console.log(
+          `💾 Saving ${contentType} AI content to localStorage (anonymous user)`,
+        );
+        this.saveAIContentToLocalStorage(contentType, content);
       }
     } catch (error) {
+      console.error(`❌ Error saving ${contentType} AI content:`, error);
+      // Fallback to localStorage on any error
+      this.saveAIContentToLocalStorage(contentType, content);
+    }
+  }
+
+  private saveAIContentToLocalStorage(contentType: string, content: any): void {
+    try {
+      const storageKey = `ai_content_${contentType}`;
+      const timestamp = Date.now();
+      const expiresAt = timestamp + 60 * 60 * 1000; // 1 hour expiration for anonymous users
+
+      const storageData = {
+        content,
+        timestamp,
+        expiresAt,
+        userType: "anonymous",
+      };
+
+      localStorage.setItem(storageKey, JSON.stringify(storageData));
+      localStorage.setItem(`${storageKey}_expires`, expiresAt.toString());
+
+      console.log(
+        `✅ ${contentType} AI content saved to localStorage, expires at: ${new Date(expiresAt)}`,
+      );
+    } catch (error) {
       console.error(
-        `❌ Error saving ${contentType} AI content to database:`,
+        `❌ Failed to save ${contentType} AI content to localStorage:`,
         error,
       );
     }
