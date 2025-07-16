@@ -1992,7 +1992,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     </div>
 
                     {/* Mobile CTAs at Bottom */}
-                    <div className="md:hidden space-y-2 mt-auto">
+                    <div className="md:hidden space-y-2 mt-auto pb-2">
                       {/* Primary CTA - Only show if card is not locked */}
                       {!(index > 0 && !canViewFullReport) && (
                         <button
