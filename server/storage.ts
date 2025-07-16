@@ -621,11 +621,13 @@ export class MemStorage implements IStorage {
   }
 
   async cleanupExpiredData(): Promise<void> {
-    // Clean up expired unpaid email data
+    // Clean up expired unpaid email data (legacy 24h storage)
     await this.cleanupExpiredUnpaidEmails();
 
-    // Note: For paid users, we never delete their data
-    // For unpaid users, data is only stored in unpaidUserEmails table with 24h expiry
+    // Clean up expired temporary users (3-month storage for email-provided users)
+    await this.cleanupExpiredTemporaryUsers();
+
+    console.log("✅ Successfully cleaned up all expired data (MemStorage)");
   }
 }
 
