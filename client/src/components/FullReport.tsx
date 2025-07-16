@@ -29,7 +29,7 @@ import {
 } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
 import { AIService } from "../utils/aiService";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 import { useNavigate } from "react-router-dom";
 import {
   calculatePersonalityScores,
