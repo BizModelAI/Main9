@@ -490,16 +490,6 @@ ${userProfile}`,
           // Return fallback insights for model
           return {
             modelFitReason: `Unable to generate detailed analysis for ${modelName} at this time. This business model may still be a good fit based on your quiz responses.`,
-            keyInsights: [
-              "Technical analysis temporarily unavailable",
-              "Model compatibility being assessed",
-              "Retry recommended for detailed insights",
-            ],
-            successPredictors: [
-              "Your profile shows potential for this business model",
-              "Further analysis needed for detailed recommendations",
-              "Consider trying again or exploring other options",
-            ],
           };
         }
       }
