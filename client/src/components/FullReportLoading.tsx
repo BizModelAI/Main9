@@ -1,16 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { QuizData } from "../types";
 import { motion } from "framer-motion";
-import {
-  CheckCircle,
-  Clock,
-  ArrowRight,
-  BarChart3,
-  Target,
-  Lightbulb,
-  FileText,
-  Zap,
-} from "lucide-react";
+import { Brain, CheckCircle } from "lucide-react";
 
 interface FullReportLoadingProps {
   quizData: QuizData;
@@ -25,78 +16,20 @@ export default function FullReportLoading({
   onComplete,
   onExit,
 }: FullReportLoadingProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [currentStage, setCurrentStage] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [fullReportData, setFullReportData] = useState<any>(null);
-  const [progress, setProgress] = useState(0);
+  const [apiCallComplete, setApiCallComplete] = useState(false);
 
-  const steps = [
-    {
-      id: "preparing",
-      title: "Preparing Your Full Report",
-      description: "Analyzing your quiz responses for detailed insights",
-      icon: Clock,
-      duration: 2000,
-    },
-    {
-      id: "generating",
-      title: "Generating Advanced AI Insights",
-      description: "Creating personalized recommendations and strategies",
-      icon: BarChart3,
-      duration: 8000,
-    },
-    {
-      id: "finalizing",
-      title: "Finalizing Your Report",
-      description: "Compiling your comprehensive business analysis",
-      icon: Target,
-      duration: 3000,
-    },
+  const stages = [
+    { text: "Analyzing your entrepreneurial profile...", target: 25 },
+    { text: "Generating business fit descriptions...", target: 50 },
+    { text: "Creating personalized recommendations...", target: 75 },
+    { text: "Finalizing your comprehensive report...", target: 100 },
   ];
 
-  useEffect(() => {
-    let timeouts: NodeJS.Timeout[] = [];
-    let totalTime = 0;
-    let progressInterval: NodeJS.Timeout;
-
-    // Start smooth progress animation
-    const startTime = Date.now();
-    const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
-
-    progressInterval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const newProgress = Math.min((elapsed / totalDuration) * 100, 100);
-      setProgress(newProgress);
-    }, 50);
-
-    // Start the step progression
-    steps.forEach((step, index) => {
-      const timeout = setTimeout(() => {
-        setCurrentStep(index);
-
-        // If this is the generation step, start the actual AI generation
-        if (step.id === "generating") {
-          generateFullReportData();
-        }
-      }, totalTime);
-
-      timeouts.push(timeout);
-      totalTime += step.duration;
-    });
-
-    // Complete the loading after all steps
-    const completeTimeout = setTimeout(() => {
-      setIsComplete(true);
-      setProgress(100);
-    }, totalTime);
-    timeouts.push(completeTimeout);
-
-    return () => {
-      timeouts.forEach(clearTimeout);
-      clearInterval(progressInterval);
-    };
-  }, []);
-
+  // Generate full report data immediately when component mounts
   const generateFullReportData = async () => {
     try {
       console.log(
@@ -171,6 +104,7 @@ export default function FullReportLoading({
       console.log(
         "✅ Full report data generated successfully (1 AI call + hardcoded content)",
       );
+
       setFullReportData({
         insights,
         paths: businessMatches.slice(0, 7).map((match) => ({
@@ -197,306 +131,176 @@ export default function FullReportLoading({
         businessFitDescriptions: consolidatedContent.businessFitDescriptions,
         businessAvoidDescriptions,
       });
+
+      setApiCallComplete(true);
     } catch (error) {
       console.error("❌ Error generating full report data:", error);
+
       // Create fallback data
       const fallbackData = {
         insights: {
           personalizedSummary:
             "Based on your quiz responses, you have strong entrepreneurial potential.",
           customRecommendations: [
-            "Focus on building your core skills",
-            "Start with a proven business model",
-            "Develop a consistent routine",
+            "Focus on developing your core business skills",
+            "Start with a minimum viable product to test the market",
+            "Build a strong online presence and network",
+            "Track your progress and adjust strategies as needed",
           ],
           potentialChallenges: [
-            "Time management may require attention",
-            "Building initial momentum takes patience",
-            "Market research is essential",
+            "Time management while building your business",
+            "Learning new skills and technologies",
+            "Finding and retaining customers",
+            "Managing finances and cash flow",
           ],
           successStrategies: [
-            "Leverage your existing strengths",
-            "Build systems for scalability",
-            "Focus on customer value",
+            "Leverage your strong skills identified in the quiz",
+            "Start small and scale gradually",
+            "Focus on your top business model match",
+            "Build consistent daily habits",
           ],
           personalizedActionPlan: {
-            week1: ["Set up your workspace", "Research your market"],
-            month1: ["Launch MVP", "Gather feedback"],
-            month3: ["Optimize processes", "Scale operations"],
-            month6: ["Expand offerings", "Build team"],
+            week1: [
+              "Research your target market",
+              "Set up basic business structure",
+            ],
+            month1: [
+              "Launch minimum viable product",
+              "Establish online presence",
+            ],
+            month3: [
+              "Refine offerings based on feedback",
+              "Build customer base",
+            ],
+            month6: ["Scale successful strategies", "Plan for growth"],
           },
           motivationalMessage:
-            "You have the foundation to build a successful business.",
+            "Starting a business is hard, but it's one of the best ways to take control of your future. Every successful entrepreneur began with an idea and the courage to try. Stay focused, learn fast, and keep going—progress comes from consistent action. You don't need to be perfect. You just need to start.",
         },
         paths: [],
+        businessFitDescriptions: {},
+        businessAvoidDescriptions: {},
       };
+
       setFullReportData(fallbackData);
+      setApiCallComplete(true);
     }
   };
 
+  // Progress animation with smooth stage transitions
+  useEffect(() => {
+    const startTime = Date.now();
+    const minDuration = 10000; // 10 seconds minimum
+
+    const animateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      const baseProgress = Math.min((elapsed / minDuration) * 100, 100);
+
+      // Determine current stage based on progress
+      let newStage = 0;
+      for (let i = 0; i < stages.length; i++) {
+        if (baseProgress >= stages[i].target - 20) {
+          newStage = i;
+        }
+      }
+      setCurrentStage(newStage);
+
+      // Smooth progress animation - don't jump between stages
+      const currentStageProgress = stages[newStage].target;
+      const smoothProgress = Math.min(baseProgress, currentStageProgress);
+
+      setProgress(smoothProgress);
+
+      // Complete when both API is done and minimum time has passed
+      if (apiCallComplete && elapsed >= minDuration) {
+        setProgress(100);
+        setIsComplete(true);
+      } else {
+        requestAnimationFrame(animateProgress);
+      }
+    };
+
+    // Start API call immediately
+    generateFullReportData();
+
+    // Start progress animation
+    animateProgress();
+  }, []);
+
+  // Complete loading and navigate to full report
   useEffect(() => {
     if (isComplete && fullReportData) {
       const timer = setTimeout(() => {
         onComplete(fullReportData);
-      }, 1000);
+      }, 500); // Small delay for smooth transition
+
       return () => clearTimeout(timer);
     }
   }, [isComplete, fullReportData, onComplete]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Subtle background animation */}
-      <div className="absolute inset-0">
-        {[...Array(3)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-64 h-64 bg-gradient-to-r from-blue-100/20 to-purple-100/20 rounded-full blur-3xl"
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
-            }}
-            animate={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
-            }}
-            transition={{
-              duration: 20 + Math.random() * 10,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative z-10 w-full max-w-lg">
-        {/* Main content container */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        {/* Purple Brain Loading UI */}
         <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 text-white relative overflow-hidden"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Header icon with subtle animation */}
-          <motion.div
-            className="mb-8"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <div className="relative">
-              <motion.div
-                className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-lg"
-                animate={{
-                  boxShadow: [
-                    "0 10px 25px -5px rgba(59, 130, 246, 0.3)",
-                    "0 15px 35px -5px rgba(59, 130, 246, 0.4)",
-                    "0 10px 25px -5px rgba(59, 130, 246, 0.3)",
-                  ],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                <FileText className="w-12 h-12 text-white" />
-              </motion.div>
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="relative text-center">
+            {/* Spinning Brain */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6"
+            >
+              <Brain className="h-8 w-8 text-white" />
+            </motion.div>
 
-              {/* Floating accent dots */}
-              <motion.div
-                className="absolute -top-2 -right-2 w-4 h-4 bg-green-400 rounded-full"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.7, 1, 0.7],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-              <motion.div
-                className="absolute -bottom-1 -left-3 w-3 h-3 bg-purple-400 rounded-full"
-                animate={{
-                  scale: [1, 1.3, 1],
-                  opacity: [0.6, 1, 0.6],
-                }}
-                transition={{
-                  duration: 2.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0.5,
-                }}
-              />
-            </div>
-          </motion.div>
+            {/* Title */}
+            <h2 className="text-3xl font-bold mb-4">
+              Generating Your Full Report...
+            </h2>
 
-          {/* Title and description */}
-          <motion.div
-            className="mb-12"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Preparing Your Full Report
-            </h1>
-            <p className="text-lg text-gray-600 leading-relaxed max-w-md mx-auto">
-              Our AI is crafting detailed insights and personalized
-              recommendations just for you
+            {/* Current Stage Text */}
+            <p className="text-xl text-blue-100 mb-8">
+              {stages[currentStage].text}
             </p>
-          </motion.div>
 
-          {/* Current step indicator */}
-          <motion.div
-            className="mb-10"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/40">
-              {!isComplete ? (
+            {/* Progress Bar */}
+            <div className="mb-8">
+              <div className="bg-white/20 rounded-full h-3 overflow-hidden">
                 <motion.div
-                  key={currentStep}
-                  className="flex items-center justify-center space-x-4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <motion.div
-                    className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center"
-                    animate={{ rotate: [0, 5, -5, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    {React.createElement(steps[currentStep]?.icon || Clock, {
-                      className: "w-6 h-6 text-white",
-                    })}
-                  </motion.div>
-                  <div className="text-left">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {steps[currentStep]?.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      {steps[currentStep]?.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  className="flex items-center justify-center space-x-4 text-green-600"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-lg font-semibold">Report Complete!</h3>
-                    <p className="text-green-700 text-sm">
-                      Redirecting to your personalized insights...
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+                  className="bg-white h-full rounded-full"
+                  style={{
+                    width: `${progress}%`,
+                  }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                />
+              </div>
+              <div className="mt-3 text-white/80 text-lg font-medium">
+                {Math.round(progress)}%
+              </div>
             </div>
-          </motion.div>
 
-          {/* Progress bar */}
-          <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
-            <div className="bg-white/50 rounded-full h-3 overflow-hidden backdrop-blur-sm border border-white/40">
-              <motion.div
-                className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full relative"
-                initial={{ width: "0%" }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-              >
-                {/* Shimmer effect */}
+            {/* Animated Dots */}
+            <div className="flex justify-center space-x-2">
+              {[0, 1, 2].map((i) => (
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                  initial={{ x: "-100%" }}
-                  animate={{ x: "200%" }}
+                  key={i}
+                  className="w-3 h-3 bg-white/60 rounded-full"
+                  animate={{ scale: [1, 1.2, 1] }}
                   transition={{
-                    duration: 2,
+                    duration: 1,
                     repeat: Infinity,
-                    ease: "easeInOut",
+                    delay: i * 0.2,
                   }}
                 />
-              </motion.div>
+              ))}
             </div>
-            <div className="flex justify-between items-center mt-3 text-sm text-gray-600">
-              <span>Processing...</span>
-              <span className="font-medium">{Math.round(progress)}%</span>
-            </div>
-          </motion.div>
-
-          {/* Step indicators */}
-          <motion.div
-            className="flex justify-center space-x-4 mb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-          >
-            {steps.map((step, index) => (
-              <div
-                key={step.id}
-                className="flex flex-col items-center space-y-2"
-              >
-                <motion.div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-500 ${
-                    index < currentStep
-                      ? "bg-green-100 text-green-600"
-                      : index === currentStep
-                        ? "bg-blue-100 text-blue-600"
-                        : "bg-gray-100 text-gray-400"
-                  }`}
-                  animate={
-                    index === currentStep
-                      ? { scale: [1, 1.1, 1] }
-                      : { scale: 1 }
-                  }
-                  transition={{ duration: 1, repeat: Infinity }}
-                >
-                  {index < currentStep ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <span>{index + 1}</span>
-                  )}
-                </motion.div>
-                <span className="text-xs text-gray-500 max-w-20 text-center leading-tight">
-                  {step.title.split(" ").slice(0, 2).join(" ")}
-                </span>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Footer message */}
-          <motion.div
-            className="text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-          >
-            <p className="text-sm text-gray-500 mb-4">
-              This personalized analysis is being generated specifically for
-              your entrepreneurial profile
-            </p>
-
-            {/* Cancel button */}
-            {onExit && !isComplete && (
-              <button
-                onClick={onExit}
-                className="text-sm text-gray-400 hover:text-gray-600 transition-colors underline"
-              >
-                Cancel and go back
-              </button>
-            )}
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     </div>
