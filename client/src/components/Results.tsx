@@ -401,11 +401,26 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     try {
       const aiService = AIService.getInstance();
 
-      // Generate detailed AI analysis using the centralized method
-      const analysis = await aiService.generateDetailedAnalysis(
+      // Generate detailed AI analysis using the current method
+      const analysisData = await aiService.generatePersonalizedInsights(
         quizData,
-        paths[0],
+        [paths[0]],
       );
+
+      // Extract the analysis portion from the insights
+      const analysis = {
+        fullAnalysis:
+          analysisData.personalizedSummary || analysisData.analysis || "",
+        keyInsights: analysisData.customRecommendations || [],
+        successPredictors: analysisData.successStrategies || [],
+        potentialChallenges: analysisData.potentialChallenges || [],
+        personalizedActionPlan: analysisData.personalizedActionPlan || {
+          week1: [],
+          month1: [],
+          month3: [],
+          month6: [],
+        },
+      };
       setAiAnalysis(analysis);
     } catch (error) {
       console.error("Error generating detailed AI analysis:", error);
