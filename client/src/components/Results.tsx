@@ -225,14 +225,24 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       localStorage.setItem(confettiKey, "true");
     }
 
+    // Debug: Log quiz data to see if it's varying
+    console.log("Quiz Data used for scoring:", {
+      mainMotivation: quizData.mainMotivation,
+      weeklyTimeCommitment: quizData.weeklyTimeCommitment,
+      techSkillsRating: quizData.techSkillsRating,
+      riskComfortLevel: quizData.riskComfortLevel,
+      directCommunicationEnjoyment: quizData.directCommunicationEnjoyment,
+      socialMediaInterest: quizData.socialMediaInterest,
+    });
+
     // Use centralized business model service
     const advancedScores =
       businessModelService.getBusinessModelMatches(quizData);
-    console.log("Advanced algorithm scores:", advancedScores);
+    console.log("All business model scores:", advancedScores);
     console.log(
-      "Top 3 business models:",
+      "Top 5 business models:",
       advancedScores
-        .slice(0, 3)
+        .slice(0, 5)
         .map((s) => `${s.name} (${s.score}%)`)
         .join(", "),
     );
