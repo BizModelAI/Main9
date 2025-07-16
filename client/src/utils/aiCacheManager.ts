@@ -69,35 +69,13 @@ export class AICacheManager {
   /**
    * Get cached AI insights and analysis
    */
-  getCachedAIContent(quizData: QuizData): {
+    getCachedAIContent(quizData: QuizData): {
     insights: AIInsights | null;
     analysis: AIAnalysis | null;
     topPath: BusinessPath | null;
   } {
-    try {
-      const quizHash = this.generateQuizDataHash(quizData);
-      const cachedData = localStorage.getItem(
-        `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`,
-      );
-
-      if (!cachedData) {
-        return { insights: null, analysis: null, topPath: null };
-      }
-
-      const parsedData: CachedAIData = JSON.parse(cachedData);
-
-      // Check if cache is valid and quiz data hasn't changed
-      if (
-        parsedData.quizDataHash === quizHash &&
-        this.isCacheValid(parsedData.timestamp)
-      ) {
-        console.log("Using cached AI content");
-        return {
-          insights: parsedData.insights,
-          analysis: parsedData.analysis,
-          topPath: parsedData.topPath,
-        };
-      }
+    console.log("🚫 AI Cache disabled - returning null to force fresh generation");
+    return { insights: null, analysis: null, topPath: null };
 
       // Cache is invalid or expired, remove it
       this.clearCacheForQuiz(quizData);
