@@ -59,7 +59,7 @@ async function fixDatabaseSchema() {
 // Run the fix
 fixDatabaseSchema()
   .then(() => {
-    console.log("���� Database fix completed!");
+    console.log("Database fix completed!");
     process.exit(0);
   })
   .catch((error) => {
