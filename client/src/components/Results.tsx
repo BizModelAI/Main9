@@ -225,8 +225,9 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       localStorage.setItem(confettiKey, "true");
     }
 
-    // Use advanced scoring algorithm
-    const advancedScores = calculateAdvancedBusinessModelMatches(quizData);
+    // Use centralized business model service
+    const advancedScores =
+      businessModelService.getBusinessModelMatches(quizData);
     console.log("Advanced algorithm scores:", advancedScores);
     console.log(
       "Top 3 business models:",
