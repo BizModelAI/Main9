@@ -336,18 +336,18 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     );
   };
 
-  // Function to load cached preview data (NO API calls on Results page!)
+    // Function to load cached preview data using new 1-hour cache system
   const loadCachedPreviewData = async () => {
     try {
-      console.log("✅ Loading cached preview data from quiz loading phase...");
+      console.log("✅ Loading cached data using 1-hour session cache...");
       setIsGeneratingAI(true);
 
-      // Get cached preview data from localStorage (set during quiz loading)
-      const cachedData = localStorage.getItem("quiz-completion-ai-insights");
-      if (cachedData) {
-        const aiData = JSON.parse(cachedData);
-        if (aiData.insights && aiData.complete) {
-          console.log("✅ Using cached preview insights from quiz loading");
+      // Use new AICacheManager for 1-hour session cache
+      const aiCacheManager = AICacheManager.getInstance();
+      const cachedContent = aiCacheManager.getCachedAIContent(quizData);
+
+      if (cachedContent.insights && cachedContent.analysis) {
+        console.log("✅ Using cached AI content from 1-hour session cache");
           setAiInsights(aiData.insights);
 
           // Generate fallback analysis for top path preview
