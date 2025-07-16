@@ -1046,6 +1046,76 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(payments.createdAt));
   }
 
+  // Optimized method to get payments with user data in a single query (fixes N+1 problem)
+  async getPaymentsWithUsers(
+    options: {
+      limit?: number;
+      offset?: number;
+      status?: string;
+    } = {},
+  ): Promise<
+    Array<
+      Payment & {
+        user: { id: number; email: string; username?: string } | null;
+      }
+    >
+  > {
+    const { limit = 100, offset = 0, status } = options;
+
+    let query = this.ensureDb()
+      .select({
+        // Payment fields
+        id: payments.id,
+        userId: payments.userId,
+        amount: payments.amount,
+        currency: payments.currency,
+        type: payments.type,
+        stripePaymentIntentId: payments.stripePaymentIntentId,
+        paypalOrderId: payments.paypalOrderId,
+        status: payments.status,
+        quizAttemptId: payments.quizAttemptId,
+        createdAt: payments.createdAt,
+        completedAt: payments.completedAt,
+        version: payments.version,
+        // User fields
+        userEmail: users.email,
+        userName: users.name,
+      })
+      .from(payments)
+      .leftJoin(users, eq(payments.userId, users.id))
+      .orderBy(desc(payments.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    if (status) {
+      query = query.where(eq(payments.status, status));
+    }
+
+    const results = await query;
+
+    return results.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      amount: row.amount,
+      currency: row.currency,
+      type: row.type,
+      stripePaymentIntentId: row.stripePaymentIntentId,
+      paypalOrderId: row.paypalOrderId,
+      status: row.status,
+      quizAttemptId: row.quizAttemptId,
+      createdAt: row.createdAt,
+      completedAt: row.completedAt,
+      version: row.version,
+      user: row.userEmail
+        ? {
+            id: row.userId,
+            email: row.userEmail,
+            username: row.userName || undefined,
+          }
+        : null,
+    }));
+  }
+
   // Refund operations
   async createRefund(refund: Omit<InsertRefund, "id">): Promise<Refund> {
     const [newRefund] = await this.ensureDb()
