@@ -132,7 +132,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
       setSelectedAttemptId(attempt.id);
 
       // Fetch AI content for this attempt
-      console.log(`🔍 Fetching AI content for quiz attempt ${attempt.id}...`);
+      console.log(`Fetching AI content for quiz attempt ${attempt.id}...`);
       const response = await fetch(
         `/api/quiz-attempts/${attempt.id}/ai-content`,
         {
