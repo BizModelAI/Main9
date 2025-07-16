@@ -261,9 +261,27 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         socialMediaInterest: quizData.socialMediaInterest,
       });
 
-      // Use centralized business model service for fresh calculation
-      const advancedScores =
-        businessModelService.getBusinessModelMatches(quizData);
+      // Use cached business model scores from context (calculated once at quiz completion)
+      let advancedScores = businessModelScores;
+
+      // Fallback: Calculate if scores not available (shouldn't happen in normal flow)
+      if (!advancedScores && quizData) {
+        console.warn(
+          "⚠️ Business model scores not found in context, calculating fallback...",
+        );
+        advancedScores = businessModelService.getBusinessModelMatches(quizData);
+        // Store the calculated scores for future use
+        const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+        if (quizAttemptId) {
+          calculateAndStoreScores(quizData, parseInt(quizAttemptId));
+        }
+      }
+
+      if (!advancedScores) {
+        console.error("❌ No business model scores available");
+        return;
+      }
+
       console.log("All business model scores:", advancedScores);
       console.log(
         "Top 5 business models:",
