@@ -76,6 +76,17 @@ export interface IStorage {
   getPaymentsByStripeId(stripePaymentIntentId: string): Promise<Payment[]>;
   getPaymentById(paymentId: number): Promise<Payment | undefined>;
   getAllPayments(): Promise<Payment[]>;
+  getPaymentsWithUsers(options?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+  }): Promise<
+    Array<
+      Payment & {
+        user: { id: number; email: string; username?: string } | null;
+      }
+    >
+  >;
 
   // Refund operations
   createRefund(refund: Omit<InsertRefund, "id">): Promise<Refund>;
