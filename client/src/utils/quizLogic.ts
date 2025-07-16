@@ -1,6 +1,7 @@
 import { QuizData, BusinessPath } from "../types";
 import { businessPaths } from "../data/businessPaths";
 import { apiPost } from "./apiClient";
+import { businessModelService } from "./businessModelService";
 
 // AI-powered business fit analysis
 export async function generateAIPersonalizedPaths(
