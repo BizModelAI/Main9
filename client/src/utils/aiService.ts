@@ -419,16 +419,6 @@ ${userProfile}`,
     }
   }
 
-  // Cache management
-  private createCacheKey(quizData: QuizData, topPaths: BusinessPath[]): string {
-    const quizKey = `${quizData.mainMotivation}_${quizData.successIncomeGoal}_${quizData.weeklyTimeCommitment}_${quizData.techSkillsRating}_${quizData.riskComfortLevel}`;
-    const pathsKey = topPaths
-      .slice(0, 3)
-      .map((p) => `${p.id}_${p.fitScore}`)
-      .join("_");
-    return `ai_insights_${quizKey}_${pathsKey}`;
-  }
-
   // Method to retroactively save AI content when unpaid user provides email
   async saveExistingAIContentToDatabase(): Promise<void> {
     try {
@@ -488,8 +478,6 @@ ${userProfile}`,
       console.error("Error retroactively saving AI content:", error);
     }
   }
-
-  // Cache methods removed - now using database storage instead of localStorage
 
   // Database helper methods for AI content storage
   private async saveAIContentToDatabase(
@@ -627,58 +615,6 @@ ${userProfile}`,
     }
 
     return null;
-  }
-
-  // DEPRECATED METHODS - for backward compatibility only
-  // These should be replaced with the new 3-call structure
-
-  async generateComprehensiveInsights(
-    quizData: QuizData,
-    topPaths: BusinessPath[],
-  ): Promise<any> {
-    console.warn(
-      "⚠️ generateComprehensiveInsights is deprecated. Use generateResultsPreview instead.",
-    );
-    return this.generateResultsPreview(quizData, topPaths);
-  }
-
-  async generateAISuccessPredictors(
-    quizData: QuizData,
-    topPath: BusinessPath,
-    fitCategory: string,
-  ): Promise<string[]> {
-    console.warn(
-      "⚠️ generateAISuccessPredictors is deprecated. Use generateResultsPreview instead.",
-    );
-    const preview = await this.generateResultsPreview(quizData, [topPath]);
-    return preview.successPredictors;
-  }
-
-  async generateBusinessFitDescriptions(
-    quizData: QuizData,
-    businessModels: BusinessPath[],
-  ): Promise<{ [key: string]: string }> {
-    console.warn(
-      "⚠️ generateBusinessFitDescriptions is deprecated. Use generateModelInsights instead.",
-    );
-    const descriptions: { [key: string]: string } = {};
-
-    for (const model of businessModels.slice(0, 3)) {
-      try {
-        const insights = await this.generateModelInsights(
-          quizData,
-          model.name,
-          "best",
-        );
-        descriptions[model.id] = insights.modelFitReason;
-      } catch (error) {
-        console.error(`Error generating description for ${model.name}:`, error);
-        descriptions[model.id] =
-          `This business model aligns well with your profile based on your quiz responses.`;
-      }
-    }
-
-    return descriptions;
   }
 }
 
