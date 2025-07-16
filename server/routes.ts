@@ -1435,7 +1435,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   );
 
-  // PayPal payment creation endpoint
+  // PayPal payment creation endpoint for report unlock
   app.post(
     "/api/create-paypal-payment",
     async (req: Request, res: Response) => {
@@ -1444,56 +1444,42 @@ export async function registerRoutes(app: Express): Promise<void> {
           return res.status(500).json({ error: "PayPal not configured" });
         }
 
-        const { userId, sessionId } = req.body;
+        const { userId, quizAttemptId } = req.body;
 
-        // Handle temporary users (sessionId provided) vs permanent users (userId provided)
-        let userIdentifier;
-        let isTemporaryUser = false;
-
-        if (sessionId) {
-          // This is a temporary user
-          isTemporaryUser = true;
-          userIdentifier = sessionId;
-
-          // Verify temporary user data exists
-          const tempData = await storage.getTemporaryUser(sessionId);
-          if (!tempData) {
-            return res
-              .status(404)
-              .json({ error: "Temporary account data not found or expired" });
-          }
-        } else if (userId) {
-          // This is a permanent user
-          const user = await storage.getUser(parseInt(userId));
-          if (!user) {
-            return res.status(404).json({ error: "User not found" });
-          }
-
-          // Access pass concept removed - users pay per report instead
-
-          userIdentifier = userId.toString();
-        } else {
-          return res.status(400).json({ error: "Missing userId or sessionId" });
+        if (!userId || !quizAttemptId) {
+          return res
+            .status(400)
+            .json({ error: "Missing userId or quizAttemptId" });
         }
 
-        // Pay-per-report model: Users pay for each report unlock
-        const user = await storage.getUser(parseInt(userId));
+        const user = await storage.getUser(userId);
         if (!user) {
           return res.status(404).json({ error: "User not found" });
         }
 
-        // Check if this is their first report or subsequent report
-        const existingPayments = await storage.getUserPayments(user.id);
-        const hasSuccessfulPayments = existingPayments.some(
-          (p) => p.status === "succeeded",
+        // Check if report is already unlocked
+        const payments = await storage.getPaymentsByUser(userId);
+        const existingPayment = payments.find(
+          (p) =>
+            p.quizAttemptId === quizAttemptId &&
+            p.type === "report_unlock" &&
+            p.status === "completed",
         );
 
-        // Pricing: $9.99 for first report, $4.99 for subsequent reports
-        const amount = hasSuccessfulPayments ? "4.99" : "9.99";
+        if (existingPayment) {
+          return res.status(400).json({
+            error: "Report is already unlocked for this quiz attempt",
+          });
+        }
+
+        // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
+        const completedPayments = payments.filter(
+          (p) => p.status === "completed",
+        );
+        const isFirstReport = completedPayments.length === 0;
+        const amount = isFirstReport ? "9.99" : "4.99";
         const paymentType = "report_unlock";
-        const description = hasSuccessfulPayments
-          ? "BizModelAI Report Unlock - Subsequent report $4.99"
-          : "BizModelAI Report Unlock - First report $9.99";
+        const description = `BizModelAI Report Unlock - ${isFirstReport ? "First report" : "Additional report"}`;
 
         // Create PayPal order
         const request = {
@@ -1507,10 +1493,10 @@ export async function registerRoutes(app: Express): Promise<void> {
                 },
                 description: description,
                 customId: JSON.stringify({
-                  userIdentifier,
+                  userId: userId.toString(),
                   type: paymentType,
-                  isTemporaryUser: isTemporaryUser.toString(),
-                  sessionId: sessionId || "",
+                  quizAttemptId: quizAttemptId.toString(),
+                  isFirstReport: isFirstReport.toString(),
                 }),
               },
             ],
@@ -1527,25 +1513,21 @@ export async function registerRoutes(app: Express): Promise<void> {
           throw new Error("Failed to create PayPal order");
         }
 
-        // For temporary users, we don't create a payment record yet
-        // For permanent users, create payment record
-        let paymentId = null;
-        if (!isTemporaryUser) {
-          const payment = await storage.createPayment({
-            userId: parseInt(userId),
-            amount: amount,
-            currency: "usd",
-            type: paymentType,
-            status: "pending",
-            stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
-          });
-          paymentId = payment.id;
-        }
+        // Create payment record in our database
+        const payment = await storage.createPayment({
+          userId,
+          amount: amount,
+          currency: "usd",
+          type: paymentType,
+          status: "pending",
+          quizAttemptId: quizAttemptId,
+          stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
+        });
 
         res.json({
           success: true,
           orderID: order.result.id,
-          paymentId,
+          paymentId: payment.id,
         });
       } catch (error) {
         console.error("Error creating PayPal payment:", error);
