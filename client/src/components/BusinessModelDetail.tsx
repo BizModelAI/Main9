@@ -305,9 +305,9 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
     if (path) {
       // Calculate fit score if quiz data is available
       if (quizData) {
-        const businessMatches = calculateAdvancedBusinessModelMatches(quizData);
-        const matchingBusiness = businessMatches.find(
-          (b) => b.id === businessId,
+        const matchingBusiness = businessModelService.getBusinessModelMatch(
+          quizData,
+          businessId,
         );
         const fitScore = matchingBusiness?.score || 0;
         setBusinessPath({ ...path, fitScore });
