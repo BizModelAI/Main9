@@ -243,6 +243,7 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
     async (data: QuizData, model: any) => {
       if (!businessId || !model) return;
 
+      const aiCacheManager = AICacheManager.getInstance();
       const cachedSkills = aiCacheManager.getCachedSkillsAnalysis(businessId);
 
       if (cachedSkills) {
