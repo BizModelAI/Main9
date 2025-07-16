@@ -88,6 +88,7 @@ const DownloadReportPage: React.FC = () => {
           const mockTopBusinessPath = personalizedPaths[0];
 
           // Check cache first, then generate AI analysis
+          const aiCacheManager = AICacheManager.getInstance();
           const cachedContent = aiCacheManager.getCachedAIContent(mockQuizData);
 
           let combinedAnalysis;
