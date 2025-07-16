@@ -30,6 +30,7 @@ import EmailCapture from "./components/EmailCapture";
 import LoggedInCongratulations from "./components/LoggedInCongratulations";
 import BusinessModelDetail from "./components/BusinessModelDetail";
 import { AICacheManager } from "./utils/aiCacheManager";
+import { businessModelService } from "./utils/businessModelService";
 import BusinessGuide from "./components/BusinessGuide";
 import DownloadReportPage from "./pages/DownloadReportPage";
 import PDFReportPage from "./pages/PDFReportPage";
