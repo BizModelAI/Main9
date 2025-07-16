@@ -786,6 +786,21 @@ const QuizWithNavigation: React.FC<{
       localStorage.setItem("quizDataTimestamp", Date.now().toString());
     }
 
+    // CRITICAL: Calculate and store business model scores immediately after quiz completion
+    try {
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      const attemptId = quizAttemptId ? parseInt(quizAttemptId) : undefined;
+
+      console.log("🔢 Calculating business model scores for completed quiz...");
+      await calculateAndStoreScores(data, attemptId);
+      console.log(
+        "✅ Business model scores calculated and stored successfully",
+      );
+    } catch (scoresError) {
+      console.error("❌ Error calculating business model scores:", scoresError);
+      // Don't block the flow - scores can be calculated later if needed
+    }
+
     // Reset congratulations tracking for this new quiz completion
     setCongratulationsShown(false);
     localStorage.setItem("congratulationsShown", "false");
