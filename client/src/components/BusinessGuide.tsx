@@ -133,10 +133,9 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
     const model = businessModels.find((m) => m.id === businessId);
 
     if (path) {
-      // Calculate fit score if quiz data is available
-      if (quizData) {
-        const matches = businessModelService.getBusinessModelMatches(quizData);
-        const match = matches.find((m) => m.id === businessId);
+      // Get fit score from context (calculated once at quiz completion)
+      if (quizData && businessId) {
+        const match = getMatchById(businessId);
         const fitScore = match ? match.score : 0;
         setBusinessPath({ ...path, fitScore });
       } else {
