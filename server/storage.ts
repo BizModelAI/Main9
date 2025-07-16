@@ -1089,11 +1089,15 @@ export class DatabaseStorage implements IStorage {
     return payment || undefined;
   }
 
-  async getAllPayments(): Promise<Payment[]> {
+  async getAllPayments(limit: number = 1000): Promise<Payment[]> {
+    console.warn(
+      "⚠️ getAllPayments() is deprecated. Use getPaymentsWithUsers() for better performance.",
+    );
     return await this.ensureDb()
       .select()
       .from(payments)
-      .orderBy(desc(payments.createdAt));
+      .orderBy(desc(payments.createdAt))
+      .limit(limit);
   }
 
   // Optimized method to get payments with user data in a single query (fixes N+1 problem)
