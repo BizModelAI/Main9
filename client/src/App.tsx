@@ -633,14 +633,33 @@ const QuizWithNavigation: React.FC<{
   const { user } = useAuth();
 
   const handleQuizComplete = async (data: QuizData) => {
-    console.log("Quiz completed, navigating to quiz loading page");
+    console.log("Quiz completed with 3-tier caching system");
     setQuizData(data);
 
-    // For authenticated users, save quiz data to database immediately
-    if (user && !String(user.id).startsWith("temp_")) {
-      console.log("Saving quiz data for authenticated user:", user.email);
-      try {
-        // Use XMLHttpRequest to avoid FullStory interference
+    // Get stored email if user provided one during the session
+    const storedEmail = localStorage.getItem("userEmail");
+
+    console.log("Quiz completion - current state:", {
+      hasUser: !!user,
+      userType: user
+        ? String(user.id).startsWith("temp_")
+          ? "temporary"
+          : "authenticated"
+        : "none",
+      hasStoredEmail: !!storedEmail,
+      userEmail: user?.email,
+      storedEmail,
+    });
+
+    try {
+      // TIER 1 & 2: For authenticated users (both paid and temporary), save to database
+      if (user) {
+        console.log(
+          "Saving quiz data for authenticated/temporary user:",
+          user.email,
+        );
+
+        // Use the legacy endpoint for authenticated users to maintain compatibility
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/api/auth/save-quiz-data", true);
         xhr.withCredentials = true;
@@ -668,32 +687,11 @@ const QuizWithNavigation: React.FC<{
 
         if (response.ok) {
           console.log("Quiz data saved successfully for authenticated user");
-          // Store quiz attempt ID for report unlock functionality
-          try {
-            const responseData = JSON.parse(response.text);
-            if (responseData.quizAttemptId) {
-              localStorage.setItem(
-                "currentQuizAttemptId",
-                responseData.quizAttemptId.toString(),
-              );
-            }
-          } catch (parseError) {
-            console.error("Error parsing save response:", parseError);
-          }
-        } else if (response.status === 402) {
-          // Payment required for additional quiz
-          console.log("Payment required for additional quiz attempt");
-          try {
-            const responseData = JSON.parse(response.text);
-            // Store quiz data temporarily and redirect to payment
-            localStorage.setItem("pendingQuizData", JSON.stringify(data));
-            localStorage.setItem("requiresQuizPayment", "true");
-            navigate("/quiz-payment-required");
-            return;
-          } catch (parseError) {
-            console.error(
-              "Error parsing payment required response:",
-              parseError,
+          const responseData = JSON.parse(response.text);
+          if (responseData.quizAttemptId) {
+            localStorage.setItem(
+              "currentQuizAttemptId",
+              responseData.quizAttemptId.toString(),
             );
           }
         } else {
@@ -703,13 +701,38 @@ const QuizWithNavigation: React.FC<{
             response.statusText,
           );
         }
-      } catch (error) {
-        console.error("Error saving quiz data for authenticated user:", error);
       }
-    } else {
-      console.log(
-        "User not authenticated or temporary user - quiz data will be saved on payment",
-      );
+      // TIER 2: User has provided email but not authenticated - will be handled by EmailCapture component
+      else if (storedEmail) {
+        console.log(
+          "User has provided email but not authenticated - EmailCapture will handle database storage",
+        );
+        // EmailCapture component will create temporary account when email is provided
+        // No action needed here - quiz data is stored in component state and localStorage as backup
+        localStorage.setItem("quizData", JSON.stringify(data));
+        localStorage.setItem("quizDataTimestamp", Date.now().toString());
+      }
+      // TIER 3: Anonymous users - localStorage with 1-hour expiration
+      else {
+        console.log(
+          "Anonymous user - storing quiz data in localStorage with 1-hour expiration",
+        );
+        const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour from now
+
+        localStorage.setItem("quizData", JSON.stringify(data));
+        localStorage.setItem("quizDataTimestamp", Date.now().toString());
+        localStorage.setItem("quizDataExpires", expiresAt.toString());
+
+        console.log(
+          "Quiz data stored locally, expires at:",
+          new Date(expiresAt),
+        );
+      }
+    } catch (error) {
+      console.error("Error in quiz completion caching:", error);
+      // Fallback: Always store in localStorage as backup
+      localStorage.setItem("quizData", JSON.stringify(data));
+      localStorage.setItem("quizDataTimestamp", Date.now().toString());
     }
 
     // Reset congratulations tracking for this new quiz completion
