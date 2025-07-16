@@ -7,6 +7,7 @@ import {
   Eye,
   ChevronRight,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { QuizData } from "../types";
