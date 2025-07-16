@@ -85,7 +85,7 @@ Personality Traits (0–5 scale):
         }
       }
 
-      console.log("🔄 Generating fresh preview insights");
+      console.log("��� Generating fresh preview insights");
       const userProfile = this.createUserProfile(quizData, topPaths[0]);
 
       const response = await this.makeOpenAIRequest({
@@ -453,18 +453,57 @@ ${userProfile}`,
       });
 
       if (response && response.content) {
-        const insights = JSON.parse(response.content);
+        try {
+          // Clean up the response content to ensure valid JSON
+          let cleanContent = response.content.trim();
 
-        // Save to database instead of localStorage cache
-        if (quizAttemptId) {
-          await this.saveAIContentToDatabase(
-            quizAttemptId,
-            `model_${modelName}`,
-            insights,
+          // Remove any potential markdown code blocks
+          cleanContent = cleanContent
+            .replace(/```json\s*/g, "")
+            .replace(/```\s*/g, "");
+
+          // Find the JSON object (between first { and last })
+          const firstBrace = cleanContent.indexOf("{");
+          const lastBrace = cleanContent.lastIndexOf("}");
+
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
+          }
+
+          const insights = JSON.parse(cleanContent);
+
+          // Save to database instead of localStorage cache
+          if (quizAttemptId) {
+            await this.saveAIContentToDatabase(
+              quizAttemptId,
+              `model_${modelName}`,
+              insights,
+            );
+          }
+
+          return insights;
+        } catch (parseError) {
+          console.error(
+            "JSON parse error in generateModelInsights:",
+            response.content,
           );
-        }
+          console.error("Parse error details:", parseError);
 
-        return insights;
+          // Return fallback insights for model
+          return {
+            modelFitReason: `Unable to generate detailed analysis for ${modelName} at this time. This business model may still be a good fit based on your quiz responses.`,
+            keyInsights: [
+              "Technical analysis temporarily unavailable",
+              "Model compatibility being assessed",
+              "Retry recommended for detailed insights",
+            ],
+            successPredictors: [
+              "Your profile shows potential for this business model",
+              "Further analysis needed for detailed recommendations",
+              "Consider trying again or exploring other options",
+            ],
+          };
+        }
       }
 
       throw new Error("No valid response from AI service");
