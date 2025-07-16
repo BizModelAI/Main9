@@ -757,7 +757,7 @@ ${userProfile}`,
     };
   }> {
     try {
-      console.log("🚀 Generating consolidated full report content (1 AI call)");
+      console.log("Generating consolidated full report content (1 AI call)");
 
       const userProfile = this.createUserProfile(
         quizData,
