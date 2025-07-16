@@ -37,7 +37,7 @@ export const quizAttempts = pgTable("quiz_attempts", {
   quizData: jsonb("quiz_data").notNull(),
   aiContent: jsonb("ai_content"), // Store generated AI insights, recommendations, etc.
   completedAt: timestamp("completed_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at"), // Expiration for unpaid user quiz attempts (3 months)
+  // Note: No expiresAt needed - quiz attempts expire when user expires via CASCADE delete
 });
 
 // Payments table to track individual quiz payments
