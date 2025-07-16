@@ -233,21 +233,18 @@ const PayPalForm: React.FC<{
   const createOrder = async () => {
     setIsProcessing(true);
     try {
-      // Determine if this is a temporary user
-      const isTemporaryUser =
-        user?.isTemporary || user?.id.toString().startsWith("temp_");
-
-      const requestBody: any = {};
-
-      if (isTemporaryUser) {
-        // Extract session ID from temporary user ID
-        const sessionId = user?.id.toString().replace("temp_", "");
-        requestBody.sessionId = sessionId;
-      } else {
-        requestBody.userId = parseInt(user?.id || "0");
+      if (!quizAttemptId) {
+        throw new Error(
+          "Quiz attempt ID is required for report unlock payment",
+        );
       }
 
-      // Use appropriate endpoint based on user type
+      const requestBody = {
+        userId: parseInt(user?.id || "0"),
+        quizAttemptId: quizAttemptId,
+      };
+
+      // Use PayPal endpoint for report unlock payments
       const endpoint = "/api/create-paypal-payment";
 
       const response = await fetch(endpoint, {
