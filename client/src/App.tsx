@@ -49,7 +49,7 @@ import { NavigationGuardWrapper } from "./components/NavigationGuardWrapper";
 const LoadingPage = AIReportLoading;
 import { QuizData } from "./types";
 
-function App() {
+function MainAppContent() {
   const { user } = useAuth();
   const [quizData, setQuizData] = React.useState<QuizData | null>(null);
   const [showEmailCapture, setShowEmailCapture] = React.useState(false);
