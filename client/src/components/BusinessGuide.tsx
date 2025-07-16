@@ -61,6 +61,7 @@ interface BusinessResources {
 
 const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
   const { businessId } = useParams<{ businessId: string }>();
+  const { getMatchById } = useBusinessModelScores();
   const navigate = useNavigate();
   const businessOverviewRef = useRef<HTMLDivElement>(null);
   const [businessPath, setBusinessPath] = useState<BusinessPath | null>(null);
