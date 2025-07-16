@@ -263,10 +263,15 @@ const FullReport: React.FC<FullReportProps> = ({
   const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(true);
 
   const navigate = useNavigate();
+  const {
+    scores: businessModelScores,
+    getTopMatches,
+    getBottomMatches,
+  } = useBusinessModelScores();
 
-  // Calculate trait scores using centralized business model service
-  const advancedScores = businessModelService.getBusinessModelMatches(quizData);
-  const topThreeAdvanced = businessModelService.getTopMatches(quizData, 3);
+  // Use cached business model scores from context (calculated once at quiz completion)
+  const advancedScores = businessModelScores || [];
+  const topThreeAdvanced = getTopMatches(3);
 
   // Calculate trait scores using new comprehensive personality algorithm
   const personalityScores = calculatePersonalityScores(quizData);
