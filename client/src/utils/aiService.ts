@@ -401,19 +401,19 @@ CRITICAL RULES:
       switch (fitType) {
         case "best":
           fitPrompt =
-            "Explain why this is the user's ideal match. Use clear, confident tone. keyInsights all positive. successPredictors: traits that increase odds of success.";
+            "Explain why this is the user's ideal match. Use clear, confident tone.";
           break;
         case "strong":
           fitPrompt =
-            "Explain why it's a great fit, but briefly note why it's not their #1. keyInsights: mostly strengths, 1 light drawback. successPredictors: mostly positive, minor caveat if needed.";
+            "Explain why it's a great fit, but briefly note why it's not their #1.";
           break;
         case "possible":
           fitPrompt =
-            "Explain why it might work, but emphasize 2–3 quiz-based reasons why it likely won't right now. keyInsights: highlight gaps or blockers. successPredictors: traits that reduce odds of success.";
+            "Explain why it might work, but emphasize 2–3 quiz-based reasons why it likely won't right now.";
           break;
         case "poor":
           fitPrompt =
-            "Clearly explain why this model is misaligned with their profile. End with future-oriented line (what would need to change). keyInsights: clear mismatches. successPredictors: traits that would make success unlikely.";
+            "Clearly explain why this model is misaligned with their profile. End with future-oriented line (what would need to change).";
           break;
       }
 
