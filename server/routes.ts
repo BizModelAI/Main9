@@ -1277,7 +1277,6 @@ export async function registerRoutes(app: Express): Promise<void> {
                 customId: JSON.stringify({
                   userIdentifier,
                   type: paymentType,
-                  retakesGranted,
                   isTemporaryUser: isTemporaryUser.toString(),
                   sessionId: sessionId || "",
                 }),
