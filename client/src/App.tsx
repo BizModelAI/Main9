@@ -130,6 +130,39 @@ function MainAppContent() {
     }
   });
 
+  // Clean up expired localStorage data for anonymous users
+  React.useEffect(() => {
+    const cleanupExpiredData = () => {
+      const expiresAt = localStorage.getItem("quizDataExpires");
+      if (expiresAt) {
+        const expireTime = parseInt(expiresAt);
+        const now = Date.now();
+
+        if (now > expireTime) {
+          console.log("Anonymous quiz data expired, cleaning up localStorage");
+          localStorage.removeItem("quizData");
+          localStorage.removeItem("quizDataTimestamp");
+          localStorage.removeItem("quizDataExpires");
+
+          // Also clear React state if it matches the expired data
+          const savedQuizData = localStorage.getItem("quizData");
+          if (!savedQuizData && quizData) {
+            setQuizData(null);
+            console.log("Cleared expired quiz data from React state");
+          }
+        }
+      }
+    };
+
+    // Run cleanup immediately
+    cleanupExpiredData();
+
+    // Run cleanup every 5 minutes to catch expiration during session
+    const interval = setInterval(cleanupExpiredData, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [quizData]);
+
   // Handler for AI loading completion
   const handleAILoadingComplete = (data: any) => {
     console.log(
