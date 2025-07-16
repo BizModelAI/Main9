@@ -914,10 +914,10 @@ const Dashboard: React.FC = () => {
                         </span>
                       </div>
                       <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                        Start Your Journey
+                        {selectedBusinessModel.name}
                       </h2>
                       <p className="text-blue-100 text-lg">
-                        Complete Guide for {selectedBusinessModel.name}
+                        Start your journey to financial freedom today.
                       </p>
                     </div>
                   </div>
