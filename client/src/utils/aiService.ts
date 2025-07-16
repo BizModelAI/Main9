@@ -85,7 +85,7 @@ Personality Traits (0–5 scale):
         }
       }
 
-      console.log("��� Generating fresh preview insights");
+      console.log("🚀 Generating fresh preview insights");
       const userProfile = this.createUserProfile(quizData, topPaths[0]);
 
       const response = await this.makeOpenAIRequest({
