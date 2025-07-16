@@ -1454,7 +1454,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
           style={{ zIndex: 9999 }}
           hidden
         >
-          � SKIP TO RESULTS (DEV)
+          🚀 SKIP TO RESULTS (DEV)
         </button>
       </div>
 
