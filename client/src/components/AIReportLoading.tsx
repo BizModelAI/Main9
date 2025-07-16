@@ -343,10 +343,12 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
             );
             console.log("✅ Characteristics stored in database");
           } catch (dbError) {
-            console.warn(
-              "⚠️ Failed to store characteristics in database:",
+            console.error(
+              "❌ CRITICAL: Failed to store characteristics in database:",
               dbError,
             );
+            // This is critical data loss - we should notify the user
+            // In future: implement user notification system
           }
         }
 
