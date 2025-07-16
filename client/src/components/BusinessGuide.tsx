@@ -36,7 +36,7 @@ import {
 import { QuizData, BusinessPath } from "../types";
 import { businessPaths } from "../data/businessPaths";
 import { businessModels } from "../data/businessModels";
-import { calculateFitScore } from "../utils/quizLogic";
+import { businessModelService } from "../utils/businessModelService";
 import { usePaywall } from "../contexts/PaywallContext";
 import { useQuery } from "@tanstack/react-query";
 
