@@ -814,21 +814,21 @@ export async function registerRoutes(app: Express): Promise<void> {
             .json({ error: "Quiz attempt not found or unauthorized" });
         }
 
-        // Get existing AI content or initialize empty object
-        let existingContent = attempt.aiContent || {};
-
-        // If using new format, save content by type
+        // If using new format with contentType, save content by type using new table
         if (contentType) {
-          existingContent[contentType] = contentToSave;
+          await storage.saveAIContentToQuizAttempt(
+            quizAttemptId,
+            contentType,
+            contentToSave,
+          );
         } else {
-          // Old format - replace entire content
-          existingContent = contentToSave;
+          // Old format - save as generic content type
+          await storage.saveAIContentToQuizAttempt(
+            quizAttemptId,
+            "legacy",
+            contentToSave,
+          );
         }
-
-        await storage.saveAIContentToQuizAttempt(
-          quizAttemptId,
-          existingContent,
-        );
 
         console.log(
           `AI content (${contentType || "full"}) saved for quiz attempt ${quizAttemptId}`,
