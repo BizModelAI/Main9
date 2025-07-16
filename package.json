@@ -16,7 +16,8 @@
     "fix-production-db": "tsx scripts/fix-production-db.js",
     "cleanup-expired-data": "tsx scripts/cleanup-expired-data.ts",
     "remove-quiz-attempt-expiration": "tsx scripts/remove-quiz-attempt-expiration.ts",
-    "check-emoji-corruption": "node scripts/check-emoji-corruption.js"
+    "check-emoji-corruption": "node scripts/check-emoji-corruption.js",
+    "fix-emoji-corruption": "node scripts/fix-emoji-corruption.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
