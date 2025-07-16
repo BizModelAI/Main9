@@ -251,11 +251,15 @@ export class MemStorage implements IStorage {
 
   async saveAIContentToQuizAttempt(
     quizAttemptId: number,
-    aiContent: any,
+    contentType: string,
+    content: any,
   ): Promise<void> {
     const attempt = this.quizAttempts.get(quizAttemptId);
     if (attempt) {
-      attempt.aiContent = aiContent;
+      if (!attempt.aiContent) {
+        attempt.aiContent = {};
+      }
+      attempt.aiContent[contentType] = content;
     }
   }
 
