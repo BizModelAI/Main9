@@ -2296,6 +2296,31 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           });
         }
 
+        // Store business avoid descriptions in database if user is authenticated
+        try {
+          const userId = await getUserIdFromRequest(req);
+          if (userId) {
+            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            if (quizAttemptId) {
+              const descriptionsMap: { [key: string]: string } = {};
+              descriptions.forEach((desc: any) => {
+                descriptionsMap[desc.businessId] = desc.description;
+              });
+              await storage.saveAIContentToQuizAttempt(
+                quizAttemptId,
+                "businessAvoidDescriptions",
+                descriptionsMap,
+              );
+              console.log("✅ Business avoid descriptions stored in database");
+            }
+          }
+        } catch (dbError) {
+          console.warn(
+            "⚠️ Failed to store business avoid descriptions in database:",
+            dbError,
+          );
+        }
+
         res.json({ descriptions });
       } catch (error) {
         console.error("Error generating business avoid descriptions:", error);
