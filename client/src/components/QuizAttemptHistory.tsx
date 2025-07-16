@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { QuizData } from "../types";
-import { calculateAllBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { businessModelService } from "../utils/businessModelService";
 
 interface QuizAttempt {
   id: number;
