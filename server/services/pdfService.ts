@@ -116,6 +116,32 @@ export class PDFService {
   private generateHTMLFallback(options: PDFGenerationOptions): Buffer {
     const { quizData, userEmail, aiAnalysis, topBusinessPath } = options;
 
+    // Helper function to safely escape HTML
+    const escapeHtml = (text: string | undefined | null): string => {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#x27;");
+    };
+
+    // Helper function to safely format currency
+    const formatCurrency = (value: number | undefined | null): string => {
+      if (typeof value !== "number" || isNaN(value)) return "0";
+      return value.toLocaleString();
+    };
+
+    // Helper function to safely format timeline
+    const formatTimeline = (timeline: string | undefined | null): string => {
+      if (!timeline) return "Not specified";
+      return escapeHtml(timeline.replace(/-/g, " "));
+    };
+
+    // Safe user display name
+    const safeUserName = escapeHtml(userEmail?.split("@")[0] || "User");
+
     // Enhanced HTML template that closely matches the PDFReport component
     const htmlContent = `
     <!DOCTYPE html>
