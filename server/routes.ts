@@ -319,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Handle rate limit errors specifically
       if (error instanceof Error && error.message.includes("429")) {
-        console.warn("🚫 Rate limited by OpenAI");
+        console.warn("���� Rate limited by OpenAI");
         res.status(429).json({
           error: "Rate limited by OpenAI",
           details: "Please try again in a few seconds",
@@ -1571,81 +1571,30 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         const metadata = JSON.parse(purchaseUnit.customId);
         const {
-          userIdentifier,
+          userId,
           type: paymentType,
-          isTemporaryUser,
-          sessionId,
+          quizAttemptId,
+          isFirstReport,
         } = metadata;
 
-        // Process the payment similar to Stripe webhook
-        if (isTemporaryUser === "true") {
-          // Handle temporary user payment
-          if (!sessionId) {
-            throw new Error("Missing session ID for temporary user");
-          }
+        // Find the payment record in our database using PayPal order ID
+        const userIdInt = parseInt(userId);
+        const payments = await storage.getPaymentsByUser(userIdInt);
+        const payment = payments.find(
+          (p) => p.stripePaymentIntentId === orderID,
+        );
 
-          // Get the temporary user data
-          const tempData = await storage.getTemporaryUser(sessionId);
-          if (!tempData) {
-            throw new Error("Temporary user data not found");
-          }
-
-          // Extract signup data from tempData.tempQuizData (which contains signup info)
-          const signupData = tempData.tempQuizData as any;
-
-          // Create the actual user account
-          const user = await storage.createUser({
-            username: tempData.email, // Use email as username
-            password: signupData.passwordHash || "temp_password",
-          });
-
-          // Update the user with additional fields
-          await storage.updateUser(user.id, {
-            email: tempData.email,
-          });
-
-          // Create payment record
-          const payment = await storage.createPayment({
-            userId: user.id,
-            amount: purchaseUnit.amount?.value || "9.99",
-            currency: "usd",
-            type: paymentType,
-            stripePaymentIntentId: orderID, // Using this field for PayPal order ID
-          });
-
-          // Complete the payment
-          await storage.completePayment(payment.id);
-
-          // Temporary data cleanup happens automatically via expiration
-
-          console.log(
-            `PayPal payment completed: ${paymentType} for temporary user converted to user ${user.id}`,
-          );
-        } else {
-          // Handle permanent user payment
-          const userId = parseInt(userIdentifier);
-
-          // Find the payment record in our database
-          const payments = await storage.getPaymentsByUser(userId);
-          const payment = payments.find(
-            (p) => p.stripePaymentIntentId === orderID,
-          );
-
-          if (!payment) {
-            console.error(
-              "Payment record not found for PayPal order:",
-              orderID,
-            );
-            throw new Error("Payment record not found");
-          }
-
-          // Complete the payment in our system
-          await storage.completePayment(payment.id);
-
-          console.log(
-            `PayPal payment completed: ${paymentType} for user ${userId}`,
-          );
+        if (!payment) {
+          console.error("Payment record not found for PayPal order:", orderID);
+          throw new Error("Payment record not found");
         }
+
+        // Complete the payment in our system
+        await storage.completePayment(payment.id);
+
+        console.log(
+          `PayPal payment completed: ${paymentType} for user ${userIdInt}, quiz attempt ${quizAttemptId}`,
+        );
 
         res.json({
           success: true,
