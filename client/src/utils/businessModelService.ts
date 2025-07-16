@@ -37,16 +37,14 @@ export class BusinessModelService {
   private getCacheKey(quizData: QuizData): string {
     // Create a stable cache key based on quiz data
     return JSON.stringify({
-      businessInterest: quizData.businessInterest,
+      mainMotivation: quizData.mainMotivation,
       selfMotivationLevel: quizData.selfMotivationLevel,
       weeklyTimeCommitment: quizData.weeklyTimeCommitment,
-      financialSituation: quizData.financialSituation,
+      upfrontInvestment: quizData.upfrontInvestment,
       riskComfortLevel: quizData.riskComfortLevel,
       techSkillsRating: quizData.techSkillsRating,
-      marketingSkillsRating: quizData.marketingSkillsRating,
-      previousExperience: quizData.previousExperience?.sort(),
-      primaryMotivation: quizData.primaryMotivation,
-      skillsAndExperience: quizData.skillsAndExperience?.sort(),
+      familiarTools: quizData.familiarTools?.sort(),
+      primaryMotivation: quizData.primaryMotivation || quizData.mainMotivation,
     });
   }
 
