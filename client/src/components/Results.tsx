@@ -528,6 +528,18 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     }
   };
 
+  // Validate that an AIAnalysis object has all required properties
+  const validateAIAnalysis = (analysis: any): analysis is AIAnalysis => {
+    return (
+      analysis &&
+      typeof analysis.fullAnalysis === "string" &&
+      Array.isArray(analysis.keyInsights) &&
+      Array.isArray(analysis.successPredictors) &&
+      Array.isArray(analysis.personalizedRecommendations) &&
+      Array.isArray(analysis.riskFactors)
+    );
+  };
+
   const generateFallbackAnalysis = (): AIAnalysis => {
     const topPath = personalizedPaths[0];
     if (!topPath) {
