@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Check if OpenAI API key is configured
       if (!process.env.OPENAI_API_KEY) {
-        console.error("❌ OpenAI API key not configured");
+        console.error("��� OpenAI API key not configured");
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
@@ -1943,8 +1943,24 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const refunds = await storage.getAllRefunds();
-      res.json(refunds);
+      // Get query parameters for pagination
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); // Max 1000 records
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const refunds = await storage.getAllRefunds(limit + offset);
+      const paginatedRefunds = refunds.slice(offset, offset + limit);
+
+      res.json({
+        refunds: paginatedRefunds,
+        pagination: {
+          limit,
+          offset,
+          total:
+            refunds.length === limit + offset
+              ? "more_available"
+              : refunds.length,
+        },
+      });
     } catch (error) {
       console.error("Error fetching refunds:", error);
       res.status(500).json({ error: "Internal server error" });
