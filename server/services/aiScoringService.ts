@@ -119,7 +119,7 @@ export class AIScoringService {
   async analyzeBusinessFit(
     quizData: QuizData,
   ): Promise<ComprehensiveFitAnalysis> {
-    console.log("��� analyzeBusinessFit called", {
+    console.log("analyzeBusinessFit called", {
       hasOpenAI: !!openai,
       hasApiKey: !!process.env.OPENAI_API_KEY,
       apiKeyLength: process.env.OPENAI_API_KEY?.length || 0,
