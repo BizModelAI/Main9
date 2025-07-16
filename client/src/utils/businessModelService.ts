@@ -74,6 +74,9 @@ export class BusinessModelService {
       `✅ Calculated fresh matches for ${matches.length} business models`,
     );
 
+    // Cache the results
+    this.cache.set(cacheKey, { matches, timestamp: now });
+
     return matches;
   }
 
