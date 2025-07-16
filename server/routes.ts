@@ -535,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         );
 
         const analysis = await Promise.race([analysisPromise, timeoutPromise]);
-        console.log("✅ AI business fit analysis completed successfully");
+        console.log("AI business fit analysis completed successfully");
         res.json(analysis);
       } catch (error) {
         console.error("��� Error in AI business fit analysis:", {
