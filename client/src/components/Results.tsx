@@ -479,13 +479,9 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
               keyInsights: aiData.insights.customRecommendations || [],
               successPredictors: aiData.insights.successStrategies || [],
               potentialChallenges: aiData.insights.potentialChallenges || [],
-              personalizedActionPlan: aiData.insights
-                .personalizedActionPlan || {
-                week1: [],
-                month1: [],
-                month3: [],
-                month6: [],
-              },
+              personalizedRecommendations:
+                aiData.insights.customRecommendations || [],
+              riskFactors: aiData.insights.potentialChallenges || [],
             };
 
             setAiAnalysis(generatedAnalysis);
