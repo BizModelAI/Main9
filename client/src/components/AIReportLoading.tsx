@@ -492,6 +492,26 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
         );
       }
 
+      // Store the avoid descriptions in database
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      if (quizAttemptId && Object.keys(descriptionsMap).length > 0) {
+        try {
+          const { AIService } = await import("../utils/aiService");
+          const aiService = AIService.getInstance();
+          await aiService.saveAIContentToDatabase(
+            quizAttemptId,
+            "businessAvoidDescriptions",
+            descriptionsMap,
+          );
+          console.log("✅ Business avoid descriptions stored in database");
+        } catch (dbError) {
+          console.warn(
+            "⚠️ Failed to store business avoid descriptions in database:",
+            dbError,
+          );
+        }
+      }
+
       return descriptionsMap;
     } catch (error) {
       console.error("Error generating business avoid descriptions:", error);
