@@ -624,7 +624,7 @@ ${userProfile}`,
       }
 
       console.log(
-        `�� Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
+        `💾 Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
       );
 
       const response = await fetch(
