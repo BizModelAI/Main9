@@ -240,67 +240,62 @@ export default function FullReportLoading({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        {/* Purple Brain Loading UI */}
+      <div className="max-w-4xl w-full text-center">
+        {/* Purple Icon */}
         <motion.div
-          className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 text-white relative overflow-hidden"
-          initial={{ opacity: 0, scale: 0.95 }}
+          className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-8"
+          initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative text-center">
-            {/* Spinning Brain */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <Brain className="h-10 w-10 text-white" />
+          </motion.div>
+        </motion.div>
+
+        {/* Main Heading */}
+        <motion.h1
+          className="text-5xl md:text-6xl font-bold text-gray-900 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          AI is Creating Your Comprehensive Report
+        </motion.h1>
+
+        {/* Subtext */}
+        <motion.p
+          className="text-xl text-gray-600 max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          Our advanced AI is generating your complete business analysis with
+          personalized insights. This will take about 8-12 seconds.
+        </motion.p>
+
+        {/* Animated Dots */}
+        <motion.div
+          className="flex justify-center space-x-2 mt-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          {[0, 1, 2].map((i) => (
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6"
-            >
-              <Brain className="h-8 w-8 text-white" />
-            </motion.div>
-
-            {/* Title */}
-            <h2 className="text-3xl font-bold mb-4">
-              Generating Your Full Report...
-            </h2>
-
-            {/* Current Stage Text */}
-            <p className="text-xl text-blue-100 mb-8">
-              {stages[currentStage].text}
-            </p>
-
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <div className="bg-white/20 rounded-full h-3 overflow-hidden">
-                <motion.div
-                  className="bg-white h-full rounded-full"
-                  style={{
-                    width: `${progress}%`,
-                  }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                />
-              </div>
-              <div className="mt-3 text-white/80 text-lg font-medium">
-                {Math.round(progress)}%
-              </div>
-            </div>
-
-            {/* Animated Dots */}
-            <div className="flex justify-center space-x-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="w-3 h-3 bg-white/60 rounded-full"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{
-                    duration: 1,
-                    repeat: Infinity,
-                    delay: i * 0.2,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+              key={i}
+              className="w-3 h-3 bg-purple-600 rounded-full"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                delay: i * 0.2,
+              }}
+            />
+          ))}
         </motion.div>
       </div>
     </div>
