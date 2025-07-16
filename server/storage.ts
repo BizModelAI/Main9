@@ -44,7 +44,19 @@ export interface IStorage {
   getQuizAttempts(userId: number): Promise<QuizAttempt[]>;
   canUserRetakeQuiz(userId: number): Promise<boolean>;
 
-  // AI content operations
+  // AI content operations (NEW TABLE-BASED)
+  saveAIContent(
+    quizAttemptId: number,
+    contentType: string,
+    content: any,
+  ): Promise<AiContent>;
+  getAIContent(
+    quizAttemptId: number,
+    contentType: string,
+  ): Promise<AiContent | null>;
+  getAllAIContentForQuizAttempt(quizAttemptId: number): Promise<AiContent[]>;
+
+  // DEPRECATED AI content operations (for backward compatibility)
   saveAIContentToQuizAttempt(
     quizAttemptId: number,
     aiContent: any,
