@@ -79,8 +79,8 @@ your data will be saved permanently.
 # Run data cleanup (removes expired data)
 npm run cleanup-expired-data
 
-# Add expiration column to existing quiz attempts (one-time migration)
-npm run add-quiz-attempt-expiration
+# Remove quiz attempt expiration column (one-time migration if needed)
+npm run remove-quiz-attempt-expiration
 ```
 
 ### Recommended Cron Schedule
