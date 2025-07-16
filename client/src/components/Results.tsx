@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Star,
@@ -34,11 +34,13 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
-import { generateAIPersonalizedPaths } from "../utils/quizLogic";
-import { businessModelService } from "../utils/businessModelService";
-import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
+import {
+  generatePersonalizedPaths,
+  generateAIPersonalizedPaths,
+} from "../utils/quizLogic";
+import { calculateAdvancedBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
 import { AIService } from "../utils/aiService";
-import { AICacheManager } from "../utils/aiCacheManager";
+import { aiCacheManager } from "../utils/aiCacheManager";
 import FullReport from "./FullReport";
 import AIReportLoading from "./AIReportLoading";
 import FullReportLoading from "./FullReportLoading";
@@ -119,11 +121,6 @@ interface AIInsights {
 
 const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   const navigate = useNavigate();
-  const {
-    scores: businessModelScores,
-    isLoading: scoresLoading,
-    calculateAndStoreScores,
-  } = useBusinessModelScores();
 
   // Get quiz attempt ID from localStorage (set when quiz is saved)
   const [quizAttemptId, setQuizAttemptId] = useState<number | null>(() => {
@@ -150,24 +147,26 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Initialize with null, will be set in useEffect with fallback content
   const [aiInsights, setAiInsights] = useState<AIInsights | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
-
-  // Check for query parameters
-  const [searchParams] = useSearchParams();
-
   // Check if we have complete pre-generated AI content to set initial loading state
   const hasCompleteAIContent = (() => {
     try {
-      const aiCacheManager = AICacheManager.getInstance();
-      const cachedContent = aiCacheManager.getCachedAIContent(quizData);
-      // Check if we have both insights and analysis cached (within 1 hour)
-      return cachedContent.insights !== null && cachedContent.analysis !== null;
+      const preGeneratedData = localStorage.getItem(
+        "quiz-completion-ai-insights",
+      );
+      if (preGeneratedData) {
+        const { insights, analysis, complete, error, timestamp } =
+          JSON.parse(preGeneratedData);
+        const isRecent = Date.now() - timestamp < 5 * 60 * 1000;
+        return isRecent && insights && analysis && complete && !error;
+      }
     } catch {
       return false;
     }
+    return false;
   })();
 
-  // Enable AI generation for dynamic content
-  const [isGeneratingAI, setIsGeneratingAI] = useState(true);
+  // Always start with false to prevent API calls in production
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [showAIInsights, setShowAIInsights] = useState(false);
 
   const [showPreview, setShowPreview] = useState(true);
@@ -192,251 +191,164 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   } = usePaywall();
 
   // In pure pay-per-report model, check if this specific report is unlocked
-  // Basic access shows the first result, but full reports require payment for both auth/non-auth users
-  const canViewFullReport = user ? isReportUnlocked : false;
+  // Basic access is always available, but full reports require payment
+  const canViewFullReport = user ? isReportUnlocked : true;
 
-  // Check for showFullReport query parameter and navigate to full report
   useEffect(() => {
-    const shouldShowFullReport = searchParams.get("showFullReport");
-    if (shouldShowFullReport === "true") {
-      console.log("Query parameter detected: user requesting full report");
+    console.log("Results component received quizData:", quizData);
 
-      if (canViewFullReport) {
-        console.log("✅ User has access - showing full report directly");
-        setShowFullReport(true);
-      } else {
-        console.log(
-          "⏳ User access check pending - showing full report loading",
-        );
-        // For paid users, show the full report loading which will generate the content
-        setShowFullReportLoading(true);
+    // Force clear ALL AI caches to ensure fresh and accurate results
+    console.log("🧹 Force clearing all AI caches for fresh quiz results...");
+
+    // Clear AI cache manager caches
+    aiCacheManager.clearAllCache();
+
+    // Clear specific localStorage items that might cause inconsistencies
+    const specificKeys = [
+      "quiz-completion-ai-insights",
+      "ai-generation-in-progress",
+      "ai-generation-timestamp",
+      "ai-cache-reset-timestamp",
+    ];
+
+    specificKeys.forEach((key) => localStorage.removeItem(key));
+
+    // Clear any AI-related cache keys
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith("ai-analysis-") ||
+          key.startsWith("skills-analysis-") ||
+          key.startsWith("ai-cache-"))
+      ) {
+        keysToRemove.push(key);
       }
-
-      // Clear the query parameter to clean up the URL
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete("showFullReport");
-      const newURL = `${window.location.pathname}${newSearchParams.toString() ? `?${newSearchParams.toString()}` : ""}`;
-      window.history.replaceState({}, "", newURL);
     }
-  }, [searchParams, canViewFullReport]);
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    console.log(
+      `✅ Cleared ${keysToRemove.length + specificKeys.length} AI cache entries for fresh results`,
+    );
 
-  useEffect(() => {
-    const initializeResults = async () => {
-      console.log("Results component received quizData:", quizData);
+    // Trigger confetti blast only on first visit to results page
+    const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
+    const hasShownConfetti = localStorage.getItem(confettiKey);
 
-      // Ensure quiz data is preserved in localStorage to prevent navigation issues
-      if (quizData) {
-        localStorage.setItem("quizData", JSON.stringify(quizData));
-        localStorage.setItem("hasCompletedQuiz", "true");
-        console.log("✅ Quiz data safely stored in localStorage");
-      }
+    if (!hasShownConfetti) {
+      const triggerConfetti = () => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      };
 
-      // Trigger confetti blast only on first visit to results page
-      const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
-      const hasShownConfetti = localStorage.getItem(confettiKey);
+      // Small delay to ensure page is mounted
+      setTimeout(triggerConfetti, 500);
 
-      if (!hasShownConfetti) {
-        const triggerConfetti = () => {
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
-          });
-        };
+      // Mark confetti as shown for this user
+      localStorage.setItem(confettiKey, "true");
+    }
 
-        // Small delay to ensure page is mounted
-        setTimeout(triggerConfetti, 500);
+    // Use advanced scoring algorithm
+    const advancedScores = calculateAdvancedBusinessModelMatches(quizData);
+    console.log("Advanced algorithm scores:", advancedScores);
+    console.log(
+      "Top 3 business models:",
+      advancedScores
+        .slice(0, 3)
+        .map((s) => `${s.name} (${s.score}%)`)
+        .join(", "),
+    );
 
-        // Mark confetti as shown for this user
-        localStorage.setItem(confettiKey, "true");
-      }
-
-      // Debug: Log quiz data to see if it's varying
-      console.log("Quiz Data used for scoring:", {
-        mainMotivation: quizData.mainMotivation,
-        weeklyTimeCommitment: quizData.weeklyTimeCommitment,
-        techSkillsRating: quizData.techSkillsRating,
-        riskComfortLevel: quizData.riskComfortLevel,
-        directCommunicationEnjoyment: quizData.directCommunicationEnjoyment,
-        socialMediaInterest: quizData.socialMediaInterest,
-      });
-
-      // Use cached business model scores from context (calculated once at quiz completion)
-      let advancedScores = businessModelScores;
-
-      // Fallback: Calculate if scores not available (shouldn't happen in normal flow)
-      if (!advancedScores && quizData) {
-        console.warn(
-          "⚠️ Business model scores not found in context, calculating fallback...",
-        );
-        advancedScores = businessModelService.getBusinessModelMatches(quizData);
-        // Store the calculated scores for future use
-        const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
-        if (quizAttemptId) {
-          calculateAndStoreScores(quizData, parseInt(quizAttemptId));
-        }
-      }
-
-      if (!advancedScores) {
-        console.error("❌ No business model scores available");
-        return;
-      }
-
-      console.log("All business model scores:", advancedScores);
-      console.log(
-        "Top 5 business models:",
-        advancedScores
-          .slice(0, 5)
-          .map((s) => `${s.name} (${s.score}%)`)
-          .join(", "),
-      );
-
-      // Convert to BusinessPath format for compatibility
-      const convertedPaths: BusinessPath[] = advancedScores.map((score) => ({
-        id: score.id,
-        name: score.name,
-        description: getBusinessModelDescription(score.id, score.name),
-        detailedDescription: `${score.name} with ${score.score}% compatibility`,
-        fitScore: score.score,
-        difficulty:
-          score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
-        timeToProfit:
-          score.score >= 80
-            ? "1-3 months"
-            : score.score >= 60
-              ? "3-6 months"
-              : "6+ months",
-        startupCost:
-          score.score >= 70
-            ? "$0-500"
-            : score.score >= 50
-              ? "$500-2000"
-              : "$2000+",
-        potentialIncome:
-          score.score >= 80
-            ? "$3K-10K+/month"
-            : score.score >= 60
-              ? "$1K-5K/month"
-              : "$500-2K/month",
-        pros: [
-          `${score.score}% compatibility match`,
-          `${score.category} for your profile`,
-          "Personalized recommendations",
+    // Convert to BusinessPath format for compatibility
+    const convertedPaths: BusinessPath[] = advancedScores.map((score) => ({
+      id: score.id,
+      name: score.name,
+      description: getBusinessModelDescription(score.id, score.name),
+      detailedDescription: `${score.name} with ${score.score}% compatibility`,
+      fitScore: score.score,
+      difficulty:
+        score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
+      timeToProfit:
+        score.score >= 80
+          ? "1-3 months"
+          : score.score >= 60
+            ? "3-6 months"
+            : "6+ months",
+      startupCost:
+        score.score >= 70
+          ? "$0-500"
+          : score.score >= 50
+            ? "$500-2000"
+            : "$2000+",
+      potentialIncome:
+        score.score >= 80
+          ? "$3K-10K+/month"
+          : score.score >= 60
+            ? "$1K-5K/month"
+            : "$500-2K/month",
+      pros: [
+        `${score.score}% compatibility match`,
+        `${score.category} for your profile`,
+        "Personalized recommendations",
+      ],
+      cons:
+        score.score < 70
+          ? ["Lower compatibility score", "May require skill development"]
+          : ["Minor adjustments needed"],
+      tools: [
+        "Standard business tools",
+        "Communication platforms",
+        "Analytics tools",
+      ],
+      skills: ["Basic business skills", "Communication", "Organization"],
+      icon: "💼",
+      marketSize: "Large",
+      averageIncome: {
+        beginner: "$1K-3K",
+        intermediate: "$3K-8K",
+        advanced: "$8K-20K+",
+      },
+      userStruggles: ["Getting started", "Finding clients", "Scaling up"],
+      solutions: [
+        "Step-by-step guidance",
+        "Proven frameworks",
+        "Community support",
+      ],
+      bestFitPersonality: ["Motivated", "Organized", "Goal-oriented"],
+      resources: {
+        platforms: ["LinkedIn", "Website", "Social Media"],
+        learning: ["Online courses", "Books", "Mentorship"],
+        tools: ["CRM", "Analytics", "Communication"],
+      },
+      actionPlan: {
+        phase1: [
+          "Setup basic infrastructure",
+          "Define target market",
+          "Create initial offerings",
         ],
-        cons:
-          score.score < 70
-            ? ["Lower compatibility score", "May require skill development"]
-            : ["Minor adjustments needed"],
-        tools: [
-          "Standard business tools",
-          "Communication platforms",
-          "Analytics tools",
+        phase2: [
+          "Launch marketing campaigns",
+          "Build client base",
+          "Optimize processes",
         ],
-        skills: ["Basic business skills", "Communication", "Organization"],
-        icon: "💼",
-        marketSize: "Large",
-        averageIncome: {
-          beginner: "$1K-3K",
-          intermediate: "$3K-8K",
-          advanced: "$8K-20K+",
-        },
-        userStruggles: ["Getting started", "Finding clients", "Scaling up"],
-        solutions: [
-          "Step-by-step guidance",
-          "Proven frameworks",
-          "Community support",
-        ],
-        bestFitPersonality: ["Motivated", "Organized", "Goal-oriented"],
-        resources: {
-          platforms: ["LinkedIn", "Website", "Social Media"],
-          learning: ["Online courses", "Books", "Mentorship"],
-          tools: ["CRM", "Analytics", "Communication"],
-        },
-        actionPlan: {
-          phase1: [
-            "Setup basic infrastructure",
-            "Define target market",
-            "Create initial offerings",
-          ],
-          phase2: [
-            "Launch marketing campaigns",
-            "Build client base",
-            "Optimize processes",
-          ],
-          phase3: ["Scale operations", "Expand services", "Build team"],
-        },
-      }));
+        phase3: ["Scale operations", "Expand services", "Build team"],
+      },
+    }));
 
-      setPersonalizedPaths(convertedPaths);
+    setPersonalizedPaths(convertedPaths);
 
-      // Mark quiz as completed
-      setHasCompletedQuiz(true);
-    };
-
-    initializeResults();
+    // Mark quiz as completed
+    setHasCompletedQuiz(true);
   }, [quizData, setHasCompletedQuiz]);
 
   // This function is no longer used - AI content comes from loading page
   const generateAIContent = async (paths: BusinessPath[]) => {
     console.log(
-      "⚠️ generateAIContent called but should not be used - AI content comes from loading page",
+      "��️ generateAIContent called but should not be used - AI content comes from loading page",
     );
-  };
-
-  // Function to load cached preview data using new 1-hour cache system
-  const loadGeneratedContent = async () => {
-    try {
-      console.log("Loading AI content generated by quiz-loading page...");
-      setIsGeneratingAI(true);
-
-      // Get the content that was stored by quiz-loading page
-      const storedAIData = localStorage.getItem("quiz-completion-ai-insights");
-
-      if (storedAIData) {
-        const aiData = JSON.parse(storedAIData);
-        console.log("Found stored AI data:", aiData);
-
-        if (aiData.insights && !aiData.error) {
-          console.log("Using AI content generated by quiz-loading page");
-
-          // Use the insights that were generated
-          setAiInsights(aiData.insights);
-
-          // Create analysis from the insights data for the AI-Generated Insights section
-          const generatedAnalysis = {
-            fullAnalysis: aiData.insights.personalizedSummary || "",
-            keyInsights: aiData.insights.customRecommendations || [],
-            successPredictors: aiData.insights.successStrategies || [],
-            potentialChallenges: aiData.insights.potentialChallenges || [],
-            personalizedRecommendations:
-              aiData.insights.customRecommendations || [],
-            riskFactors: aiData.insights.potentialChallenges || [],
-          };
-
-          setAiAnalysis(generatedAnalysis);
-          setIsGeneratingAI(false);
-          return;
-        }
-      }
-
-      // If no stored data found, use fallback content only
-      console.log("⚠️ No generated AI content found, using fallback");
-      const topPath = personalizedPaths[0];
-      const fallbackInsights = generateFallbackInsights(topPath);
-      const fallbackAnalysis = generateFallbackAnalysis();
-      setAiInsights(fallbackInsights);
-      setAiAnalysis(fallbackAnalysis);
-      setIsGeneratingAI(false);
-    } catch (error) {
-      console.error("❌ Error loading generated content:", error);
-
-      // Use fallback content on error
-      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
-      const fallbackAnalysis = generateFallbackAnalysis();
-      setAiInsights(fallbackInsights);
-      setAiAnalysis(fallbackAnalysis);
-      setIsGeneratingAI(false);
-    }
   };
 
   // Generate full AI content only when user accesses specific pages (on-demand)
@@ -444,24 +356,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     try {
       const aiService = AIService.getInstance();
 
-      // Generate detailed AI analysis using the current method
-      const analysisData = await aiService.generatePersonalizedInsights(
+      // Generate detailed AI analysis using the centralized method
+      const analysis = await aiService.generateDetailedAnalysis(
         quizData,
-        [paths[0]],
+        paths[0],
       );
-
-      // Extract the analysis portion from the insights
-      const analysis = {
-        fullAnalysis: "", // generatePersonalizedInsights doesn't return fullAnalysis
-        keyInsights: analysisData.keyInsights || [],
-        successPredictors: [], // generatePersonalizedInsights doesn't return successPredictors
-        potentialChallenges: analysisData.potentialChallenges || [],
-        personalizedRecommendations:
-          analysisData.personalizedRecommendations || [],
-        riskFactors: analysisData.potentialChallenges || [],
-      };
-
-      console.log("✅ Generated analysis:", analysis);
       setAiAnalysis(analysis);
     } catch (error) {
       console.error("Error generating detailed AI analysis:", error);
@@ -472,64 +371,116 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Use cached AI data from loading page or set fallback content
   useEffect(() => {
     if (personalizedPaths.length > 0) {
-      // Load generated content from quiz-loading page (NO API calls!)
-      loadGeneratedContent();
-    }
-  }, [personalizedPaths]);
+      // Check for cached AI data from the loading page first
+      const cachedAIData = localStorage.getItem("quiz-completion-ai-insights");
 
-  // Monitor for newly generated AI insights from quiz-loading page
-  useEffect(() => {
-    const checkForNewAIData = () => {
-      const storedAIData = localStorage.getItem("quiz-completion-ai-insights");
+      console.log("���� DEBUGGING AI INSIGHTS LOADING:");
+      console.log("Cached AI data found:", !!cachedAIData);
 
-      if (storedAIData && !aiInsights) {
+      if (cachedAIData) {
         try {
-          const aiData = JSON.parse(storedAIData);
+          const parsedData = JSON.parse(cachedAIData);
+          console.log("Parsed cached data:", parsedData);
 
-          // Check if we have new complete AI data that we haven't loaded yet
-          if (aiData.insights && !aiData.error) {
+          const { insights, analysis, complete, error, timestamp } = parsedData;
+          const isRecent = Date.now() - timestamp < 5 * 60 * 1000; // 5 minutes
+
+          console.log("Data validity check:", {
+            isRecent,
+            hasInsights: !!insights,
+            isComplete: complete,
+            hasError: error,
+            timeAgo:
+              Math.round((Date.now() - timestamp) / 1000) + " seconds ago",
+          });
+
+          if (isRecent && insights && complete && !error) {
+            // Verify cached insights match current top business model
+            const currentTopModel = personalizedPaths[0]?.name;
+            const insightsMentionsModel =
+              insights.personalizedSummary?.includes(currentTopModel || "");
+
+            console.log("🔍 Business model consistency check:");
+            console.log("Current top model:", currentTopModel);
+            console.log("Insights mention model:", insightsMentionsModel);
             console.log(
-              "New AI insights detected from quiz-loading, loading...",
+              "Insights preview:",
+              insights.personalizedSummary?.substring(0, 150) + "...",
             );
 
-            setAiInsights(aiData.insights);
+            if (insightsMentionsModel) {
+              console.log(
+                "✅ Using cached AI insights from loading page - matches current model",
+              );
+              setAiInsights(insights);
+            } else {
+              console.log(
+                "❌ Cached insights don't match current top model, using fallback",
+              );
+              const fallbackInsights = generateFallbackInsights(
+                personalizedPaths[0],
+              );
+              setAiInsights(fallbackInsights);
+            }
 
-            // Create analysis from insights for AI-Generated Insights section
-            const generatedAnalysis = {
-              fullAnalysis: aiData.insights.personalizedSummary || "",
-              keyInsights: aiData.insights.customRecommendations || [],
-              successPredictors: aiData.insights.successStrategies || [],
-              potentialChallenges: aiData.insights.potentialChallenges || [],
-              personalizedRecommendations:
-                aiData.insights.customRecommendations || [],
-              riskFactors: aiData.insights.potentialChallenges || [],
-            };
+            // If analysis is also cached, use it
+            if (analysis) {
+              setAiAnalysis(analysis);
+              // Cache this for the FullReport to use
+              aiCacheManager.cacheAIContent(
+                quizData,
+                insights,
+                analysis,
+                personalizedPaths[0],
+              );
+            } else {
+              console.log(
+                "📝 No analysis cached, using fallback analysis only",
+              );
+              const fallbackAnalysis = generateFallbackAnalysis();
+              setAiAnalysis(fallbackAnalysis);
+              // Cache the fallback analysis
+              aiCacheManager.cacheAIContent(
+                quizData,
+                insights,
+                fallbackAnalysis,
+                personalizedPaths[0],
+              );
+            }
 
-            setAiAnalysis(generatedAnalysis);
             setIsGeneratingAI(false);
+            return;
+          } else {
+            console.log(
+              "❌ Cached data invalid - falling back to generic content",
+            );
           }
         } catch (error) {
-          console.error("Error parsing stored AI data:", error);
+          console.error("Error parsing cached AI data:", error);
         }
+      } else {
+        console.log("❌ No cached AI data found in localStorage");
       }
-    };
 
-    // Check immediately
-    checkForNewAIData();
-
-    // Set up interval to check for new AI data every 3 seconds
-    const interval = setInterval(checkForNewAIData, 3000);
-
-    // Clean up interval after 30 seconds (AI should be done by then)
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-    }, 30000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, [personalizedPaths, aiInsights]);
+      // Fallback if no valid cached data - ensure consistency with actual business models
+      const topBusinessModel = personalizedPaths[0];
+      console.log(
+        `🚀 Setting fallback AI content for ${topBusinessModel?.name || "unknown business model"} (no valid AI data from loading page)`,
+      );
+      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
+      const fallbackAnalysis = generateFallbackAnalysis();
+      setAiInsights(fallbackInsights);
+      setAiAnalysis(fallbackAnalysis);
+      // Cache the fallback content for the FullReport to use
+      aiCacheManager.cacheAIContent(
+        quizData,
+        fallbackInsights,
+        fallbackAnalysis,
+        personalizedPaths[0],
+      );
+      setIsGeneratingAI(false);
+    }
+  }, [personalizedPaths]);
 
   // Helper function to execute download action (PDF)
   const executeDownloadAction = async () => {
@@ -548,8 +499,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         body: JSON.stringify({
           quizData: quizData,
           userEmail: userEmail,
-          aiAnalysis: { ...aiAnalysis, ...aiInsights },
-          topBusinessPath: personalizedPaths[0],
         }),
       });
 
@@ -628,18 +577,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         alert("Unable to share. Please copy the URL manually.");
       }
     }
-  };
-
-  // Validate that an AIAnalysis object has all required properties
-  const validateAIAnalysis = (analysis: any): analysis is AIAnalysis => {
-    return (
-      analysis &&
-      typeof analysis.fullAnalysis === "string" &&
-      Array.isArray(analysis.keyInsights) &&
-      Array.isArray(analysis.successPredictors) &&
-      Array.isArray(analysis.personalizedRecommendations) &&
-      Array.isArray(analysis.riskFactors)
-    );
   };
 
   const generateFallbackAnalysis = (): AIAnalysis => {
@@ -828,45 +765,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     setShowUnlockModal(true);
   };
 
-  const handleAILoadingComplete = async (data: any) => {
+  const handleAILoadingComplete = (data: any) => {
     setLoadedReportData(data);
     setShowAILoading(false);
     setShowFullReport(true);
-
-    // Save AI content to database if we have a quiz attempt ID and user is authenticated
-    const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
-    if (currentQuizAttemptId && data && user) {
-      try {
-        const response = await fetch(
-          `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ aiContent: data }),
-          },
-        );
-
-        if (response.ok) {
-          console.log(
-            `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
-          );
-        } else {
-          console.error(
-            "Failed to save AI content to database:",
-            response.status,
-          );
-        }
-      } catch (error) {
-        console.error("Error saving AI content to database:", error);
-      }
-    } else if (currentQuizAttemptId && data && !user) {
-      console.log(
-        "Skipping AI content save to database - user not authenticated",
-      );
-    }
   };
 
   // Payment handler for all users - PaymentAccountModal will auto-skip to payment for logged-in users
@@ -1065,47 +967,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       <FullReportLoading
         quizData={quizData}
         userEmail={userEmail}
-        onComplete={async (data) => {
+        onComplete={(data) => {
           setLoadedReportData(data);
           setShowFullReportLoading(false);
           setShowFullReport(true);
-
-          // Save AI content to database if we have a quiz attempt ID and user is authenticated
-          const currentQuizAttemptId = localStorage.getItem(
-            "currentQuizAttemptId",
-          );
-          if (currentQuizAttemptId && data && user) {
-            try {
-              const response = await fetch(
-                `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
-                {
-                  method: "POST",
-                  credentials: "include",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ aiContent: data }),
-                },
-              );
-
-              if (response.ok) {
-                console.log(
-                  `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
-                );
-              } else {
-                console.error(
-                  "Failed to save AI content to database:",
-                  response.status,
-                );
-              }
-            } catch (error) {
-              console.error("Error saving AI content to database:", error);
-            }
-          } else if (currentQuizAttemptId && data && !user) {
-            console.log(
-              "Skipping AI content save to database - user not authenticated",
-            );
-          }
         }}
         onExit={() => setShowFullReportLoading(false)}
       />
@@ -1280,8 +1145,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
               </div>
             </motion.div>
           ) : (
-            aiAnalysis &&
-            aiAnalysis.fullAnalysis && (
+            aiAnalysis && (
               <motion.div
                 className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 mb-12 text-white relative overflow-hidden"
                 initial={{ opacity: 0, y: 30 }}
@@ -1312,19 +1176,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           // Full content when unlocked
                           <div>
                             {(() => {
-                              // Safely handle potential undefined/null values
-                              console.log(
-                                "Current aiAnalysis state:",
-                                aiAnalysis,
-                              );
-                              if (!aiAnalysis?.fullAnalysis) {
-                                return (
-                                  <div className="text-gray-600">
-                                    Loading analysis...
-                                  </div>
-                                );
-                              }
-
                               const sentences =
                                 aiAnalysis.fullAnalysis.split(". ");
                               const thirdLength = Math.ceil(
@@ -1359,7 +1210,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   Key Insights
                                 </h4>
                                 <ul className="space-y-2">
-                                  {aiAnalysis?.keyInsights?.map(
+                                  {aiAnalysis.keyInsights.map(
                                     (insight, index) => (
                                       <li
                                         key={index}
@@ -1384,7 +1235,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   Success Predictors
                                 </h4>
                                 <ul className="space-y-2">
-                                  {aiAnalysis?.successPredictors?.map(
+                                  {aiAnalysis.successPredictors.map(
                                     (predictor, index) => (
                                       <li
                                         key={index}
@@ -1488,15 +1339,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                             {/* Three paragraphs with seamless gradient fade */}
                             <div className="relative mb-8">
                               {(() => {
-                                // Safely handle potential undefined/null values
-                                if (!aiAnalysis?.fullAnalysis) {
-                                  return (
-                                    <div className="text-gray-600">
-                                      Loading analysis...
-                                    </div>
-                                  );
-                                }
-
                                 const sentences =
                                   aiAnalysis.fullAnalysis.split(". ");
                                 const thirdLength = Math.ceil(
@@ -1573,7 +1415,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">🚀</div>
+                                    <div className="text-3xl mt-1">���</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Step-by-Step Launch Guidance
@@ -1741,35 +1583,23 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     </motion.div>
                   )}
 
-                  <div className="h-full p-4 md:p-8">
-                    {/* Mobile Layout */}
-                    <div className="md:hidden">
-                      {/* Mobile Header with inline percentage */}
+                  <div className="h-full p-4 md:p-8 flex flex-col md:flex-row">
+                    {/* Left Column - Main Info */}
+                    <div className="flex-1 md:pr-6 mb-6 md:mb-0">
                       <div className="flex items-center mb-4">
                         <div
-                          className={`w-12 h-12 rounded-2xl flex items-center justify-center mr-4 ${
+                          className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center mr-3 md:mr-4 ${
                             index === 0 ? "bg-yellow-500" : "bg-blue-600"
                           }`}
                         >
-                          <IconComponent className="h-6 w-6 text-white" />
+                          <IconComponent className="h-5 w-5 md:h-6 md:w-6 text-white" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-bold text-gray-900">
-                              {path.name}
-                            </h3>
-                            <div
-                              className={`text-2xl font-bold ${
-                                index === 0
-                                  ? "text-yellow-600"
-                                  : "text-blue-600"
-                              }`}
-                            >
-                              {path.fitScore}%
-                            </div>
-                          </div>
+                        <div>
+                          <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                            {path.name}
+                          </h3>
                           <div
-                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium mt-1 ${
+                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                               path.difficulty === "Easy"
                                 ? "bg-green-100 text-green-800"
                                 : path.difficulty === "Medium"
@@ -1782,56 +1612,107 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
                       </div>
 
-                      {/* Mobile Description */}
-                      <p className="text-gray-600 mb-4 leading-relaxed text-sm">
+                      <p className="text-gray-600 mb-4 md:mb-6 leading-relaxed text-sm md:text-base">
                         {path.description}
                       </p>
 
-                      {/* Mobile Key Metrics */}
-                      <div className="grid grid-cols-2 gap-2 mb-4">
+                      {/* Key Metrics in compact grid */}
+                      <div className="grid grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
                         <div
-                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2`}
+                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2 md:p-3`}
                         >
                           <div className="flex items-center mb-1">
-                            <Clock className="h-3 w-3 text-gray-500 mr-1" />
+                            <Clock className="h-3 w-3 md:h-4 md:w-4 text-gray-500 mr-1" />
                             <span className="text-xs font-medium text-gray-700">
                               Time to Profit
                             </span>
                           </div>
-                          <div className="font-bold text-gray-900 text-xs">
+                          <div className="font-bold text-gray-900 text-xs md:text-sm">
                             {path.timeToProfit}
                           </div>
                         </div>
                         <div
-                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2`}
+                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2 md:p-3`}
                         >
                           <div className="flex items-center mb-1">
-                            <DollarSign className="h-3 w-3 text-gray-500 mr-1" />
+                            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-gray-500 mr-1" />
                             <span className="text-xs font-medium text-gray-700">
                               Startup Cost
                             </span>
                           </div>
-                          <div className="font-bold text-gray-900 text-xs">
+                          <div className="font-bold text-gray-900 text-xs md:text-sm">
                             {path.startupCost}
                           </div>
                         </div>
                       </div>
 
-                      {/* Mobile Potential Income */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 mb-4">
+                      {/* Action Elements */}
+                      <div className="space-y-2 md:space-y-3 mt-4 md:mt-auto">
+                        {/* Primary CTA - Only show if card is not locked */}
+                        {!(index > 0 && !canViewFullReport) && (
+                          <button
+                            onClick={() => handleViewFullReport(path)}
+                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 md:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-sm md:text-base"
+                          >
+                            <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                            View Full Report
+                          </button>
+                        )}
+
+                        {/* Secondary CTA - Only show if card is not locked */}
+                        {!(index > 0 && !canViewFullReport) && (
+                          <div className="text-center space-y-2 md:space-y-3">
+                            <button
+                              onClick={() => handleLearnMore(path)}
+                              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs md:text-sm font-bold flex items-center justify-center group"
+                            >
+                              Learn more about {path.name} for you
+                              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                            </button>
+
+                            <button
+                              onClick={() => handleStartBusinessModel(path)}
+                              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs md:text-sm font-bold flex items-center justify-center group"
+                            >
+                              Complete Guide to {path.name}
+                              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Column - Score & Highlights */}
+                    <div className="md:w-48 flex flex-col md:flex-col w-full">
+                      {/* Fit Score */}
+                      <div className="text-center mb-4 md:mb-6">
+                        <div
+                          className={`text-3xl md:text-5xl font-bold mb-1 ${
+                            index === 0 ? "text-yellow-600" : "text-blue-600"
+                          }`}
+                        >
+                          {path.fitScore}%
+                        </div>
+                        <div className="text-sm text-gray-500 font-medium">
+                          AI Match
+                        </div>
+                      </div>
+
+                      {/* Potential Income */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
                         <div className="flex items-center mb-2">
-                          <TrendingUp className="h-3 w-3 text-green-600 mr-2" />
-                          <span className="text-xs font-medium text-green-800">
+                          <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600 mr-2" />
+                          <span className="text-xs md:text-sm font-medium text-green-800">
                             Potential Income
                           </span>
                         </div>
-                        <div className="text-lg font-bold text-green-700">
+                        <div className="text-lg md:text-xl font-bold text-green-700">
                           {path.potentialIncome}
                         </div>
                       </div>
 
-                      {/* Mobile Top Benefits */}
-                      <div className="mb-4">
+                      {/* Top Pros */}
+                      <div className="flex-1">
                         <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
                           Top Benefits
@@ -1846,175 +1727,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                             </li>
                           ))}
                         </ul>
-                      </div>
-
-                      {/* Mobile CTAs at Bottom */}
-                      <div className="space-y-2 mt-auto">
-                        {!(index > 0 && !canViewFullReport) && (
-                          <button
-                            onClick={() => handleViewFullReport(path)}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center text-sm"
-                          >
-                            📊 View Full Report
-                          </button>
-                        )}
-
-                        {!(index > 0 && !canViewFullReport) && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleLearnMore(path)}
-                              className="flex-1 text-blue-600 hover:text-blue-700 font-medium text-xs transition-colors border border-blue-200 py-2 px-3 rounded-lg text-center"
-                            >
-                              Learn more about {path.name} for you →
-                            </button>
-                            <button
-                              onClick={() => handleStartBusinessModel(path)}
-                              className="flex-1 text-green-600 hover:text-green-700 font-medium text-xs transition-colors border border-green-200 py-2 px-3 rounded-lg text-center"
-                            >
-                              Complete Guide to {path.name} →
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Desktop Layout */}
-                    <div className="hidden md:flex md:flex-col">
-                      {/* Desktop Header */}
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="flex items-center">
-                          <div
-                            className={`w-16 h-16 rounded-2xl flex items-center justify-center mr-4 ${
-                              index === 0 ? "bg-yellow-500" : "bg-blue-600"
-                            }`}
-                          >
-                            <IconComponent className="h-8 w-8 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                              {path.name}
-                            </h3>
-                            <div
-                              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                                path.difficulty === "Easy"
-                                  ? "bg-green-100 text-green-800"
-                                  : path.difficulty === "Medium"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {path.difficulty}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Desktop Score */}
-                        <div className="text-right">
-                          <div
-                            className={`text-6xl font-bold ${
-                              index === 0 ? "text-yellow-600" : "text-blue-600"
-                            }`}
-                          >
-                            {path.fitScore}%
-                          </div>
-                          <div className="text-sm text-gray-500 font-medium">
-                            AI Match
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Desktop Description */}
-                      <p className="text-gray-600 text-base leading-relaxed mb-6">
-                        {path.description}
-                      </p>
-
-                      {/* Desktop Key Metrics Row */}
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-gray-50 rounded-xl p-4">
-                          <div className="flex items-center mb-2">
-                            <Clock className="h-4 w-4 text-gray-500 mr-2" />
-                            <span className="text-sm font-medium text-gray-700">
-                              Time to Profit
-                            </span>
-                          </div>
-                          <div className="font-bold text-gray-900">
-                            {path.timeToProfit}
-                          </div>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4">
-                          <div className="flex items-center mb-2">
-                            <DollarSign className="h-4 w-4 text-gray-500 mr-2" />
-                            <span className="text-sm font-medium text-gray-700">
-                              Startup Cost
-                            </span>
-                          </div>
-                          <div className="font-bold text-gray-900">
-                            {path.startupCost}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Desktop Potential Income */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6">
-                        <div className="flex items-center mb-2">
-                          <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
-                          <span className="text-sm font-medium text-green-800">
-                            Potential Income
-                          </span>
-                        </div>
-                        <div className="text-2xl font-bold text-green-700">
-                          {path.potentialIncome}
-                        </div>
-                      </div>
-
-                      {/* Desktop Top Benefits */}
-                      <div className="mb-6">
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                          <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
-                          Top Benefits
-                        </h4>
-                        <ul className="text-sm text-gray-600 space-y-2">
-                          {path.pros.slice(0, 3).map((pro, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="text-green-500 mr-2 text-xs">
-                                •
-                              </span>
-                              <span className="leading-tight">{pro}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Desktop CTAs */}
-                      <div className="space-y-3 mt-auto">
-                        {!(index > 0 && !canViewFullReport) && (
-                          <button
-                            onClick={() => handleViewFullReport(path)}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center"
-                          >
-                            📊 View Full Report
-                          </button>
-                        )}
-
-                        {!(index > 0 && !canViewFullReport) && (
-                          <div className="text-center space-y-3">
-                            <button
-                              onClick={() => handleLearnMore(path)}
-                              className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors flex items-center justify-center group"
-                            >
-                              Learn more about {path.name} for you
-                              <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                            </button>
-
-                            <button
-                              onClick={() => handleStartBusinessModel(path)}
-                              className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors flex items-center justify-center group"
-                            >
-                              Complete Guide to {path.name}
-                              <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
