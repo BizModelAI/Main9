@@ -1236,6 +1236,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                         <div className="space-y-4 text-gray-700 leading-relaxed">
                           {(() => {
                             // Get the cached AI analysis that was generated on the Results page
+                            const aiCacheManager = AICacheManager.getInstance();
                             const cachedData =
                               aiCacheManager.getCachedAIContent(quizData);
 
