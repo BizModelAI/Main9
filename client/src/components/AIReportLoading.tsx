@@ -507,10 +507,12 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           );
           console.log("✅ Business avoid descriptions stored in database");
         } catch (dbError) {
-          console.warn(
-            "⚠️ Failed to store business avoid descriptions in database:",
+          console.error(
+            "❌ CRITICAL: Failed to store business avoid descriptions in database:",
             dbError,
           );
+          // This is critical data loss - we should notify the user
+          // In future: implement user notification system
         }
       }
 
