@@ -1704,20 +1704,20 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </button>
                       )}
 
-                      {/* Secondary CTA - Only show if card is not locked */}
+                      {/* Secondary CTAs - Single line with black text and arrows */}
                       {!(index > 0 && !canViewFullReport) && (
-                        <div className="text-center space-y-2">
+                        <div className="flex items-center justify-center space-x-4 text-xs">
                           <button
                             onClick={() => handleLearnMore(path)}
-                            className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs font-bold flex items-center justify-center group"
+                            className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
                           >
                             Learn more about {path.name} for you
                             <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                           </button>
-
+                          <span className="text-gray-300">|</span>
                           <button
                             onClick={() => handleStartBusinessModel(path)}
-                            className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs font-bold flex items-center justify-center group"
+                            className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
                           >
                             Complete Guide to {path.name}
                             <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
