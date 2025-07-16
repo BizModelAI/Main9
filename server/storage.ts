@@ -950,21 +950,55 @@ export class DatabaseStorage implements IStorage {
 
   async completePayment(paymentId: number): Promise<void> {
     await this.ensureDb().transaction(async (tx) => {
-      // Update payment status
-      const [payment] = await tx
+      // Get current payment with version for optimistic locking
+      const [currentPayment] = await tx
+        .select()
+        .from(payments)
+        .where(eq(payments.id, paymentId))
+        .limit(1);
+
+      if (!currentPayment) {
+        throw new Error("Payment not found");
+      }
+
+      // Check if payment is already completed (idempotency)
+      if (currentPayment.status === "completed") {
+        console.log(`⚠️ Payment ${paymentId} already completed, skipping`);
+        return;
+      }
+
+      // Check if payment is in a valid state for completion
+      if (currentPayment.status !== "pending") {
+        throw new Error(
+          `Payment ${paymentId} is in invalid state: ${currentPayment.status}`,
+        );
+      }
+
+      // Use optimistic locking to prevent race conditions
+      const [updatedPayment] = await tx
         .update(payments)
         .set({
           status: "completed",
           completedAt: new Date(),
+          version: currentPayment.version + 1, // Increment version
         })
-        .where(eq(payments.id, paymentId))
+        .where(
+          and(
+            eq(payments.id, paymentId),
+            eq(payments.version, currentPayment.version), // Only update if version matches
+          ),
+        )
         .returning();
 
-      if (!payment) {
-        throw new Error("Payment not found");
+      if (!updatedPayment) {
+        throw new Error(
+          `Payment ${paymentId} was modified by another process (race condition detected)`,
+        );
       }
 
-      // Payment completed - no need to update user access in pay-per-report model
+      console.log(
+        `✅ Payment ${paymentId} completed successfully with version ${updatedPayment.version}`,
+      );
     });
   }
 
