@@ -147,6 +147,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Initialize with null, will be set in useEffect with fallback content
   const [aiInsights, setAiInsights] = useState<AIInsights | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
+
+  // Check for query parameters
+  const [searchParams] = useSearchParams();
+
   // Check if we have complete pre-generated AI content to set initial loading state
   const hasCompleteAIContent = (() => {
     try {
@@ -1565,7 +1569,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">📊</div>
+                                    <div className="text-3xl mt-1">��</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Income Potential & Market Fit
