@@ -199,7 +199,7 @@ export class PDFService {
                             <div class="flex items-center justify-center mb-2">
                                 <span class="font-semibold">Timeline</span>
                             </div>
-                            <p class="text-2xl font-bold">${quizData.firstIncomeTimeline?.replace("-", " ")}</p>
+                                                        <p class="text-2xl font-bold">${formatTimeline(quizData.firstIncomeTimeline)}</p>
                         </div>
                         
                         <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
