@@ -2514,7 +2514,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           dataRetentionPolicy: isPaid
             ? "permanent"
             : "24_hours_from_quiz_completion",
-          hasAccessPass: false, // Access pass concept removed
+
           accountCreatedAt: user?.createdAt,
           dataWillBeDeletedIfUnpaid: !isPaid,
         });
@@ -2552,7 +2552,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
       console.log("Before quiz attempt:", {
         userId: testUser.id,
         isPaid,
-        hasAccessPass: false, // Access pass concept removed
+
         attemptsCount,
       });
 
@@ -2574,7 +2574,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
 
       console.log("After quiz attempt:", {
         userId: testUser.id,
-        hasAccessPass: false, // Access pass concept removed
+
         attemptsCount: finalAttemptsCount,
       });
 
@@ -2583,11 +2583,10 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         testUserId: testUser.id,
         before: {
           isPaid,
-          hasAccessPass: false, // Access pass concept removed
+
           attemptsCount,
         },
         after: {
-          hasAccessPass: false, // Access pass concept removed
           attemptsCount: finalAttemptsCount,
         },
       });
