@@ -23,13 +23,11 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { QuizData, BusinessPath } from "../types";
-import {
-  generatePersonalizedPaths,
-  generateAIPersonalizedPaths,
-} from "../utils/quizLogic";
-import { calculateAdvancedBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { generateAIPersonalizedPaths } from "../utils/quizLogic";
+import { businessModelService } from "../utils/businessModelService";
+import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
 import { AIService } from "../utils/aiService";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 import { useNavigate } from "react-router-dom";
 import {
   calculatePersonalityScores,
@@ -265,10 +263,15 @@ const FullReport: React.FC<FullReportProps> = ({
   const [isLoadingDescriptions, setIsLoadingDescriptions] = useState(true);
 
   const navigate = useNavigate();
+  const {
+    scores: businessModelScores,
+    getTopMatches,
+    getBottomMatches,
+  } = useBusinessModelScores();
 
-  // Calculate trait scores using advanced algorithm
-  const advancedScores = calculateAdvancedBusinessModelMatches(quizData);
-  const topThreeAdvanced = advancedScores.slice(0, 3);
+  // Use cached business model scores from context (calculated once at quiz completion)
+  const advancedScores = businessModelScores || [];
+  const topThreeAdvanced = getTopMatches(3);
 
   // Calculate trait scores using new comprehensive personality algorithm
   const personalityScores = calculatePersonalityScores(quizData);
@@ -538,7 +541,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       } catch (error) {
         console.error("Error generating AI insights:", error);
         // Set fallback insights that use actual quiz data
-        const fallbackPreviewInsights = `Based on your quiz responses, you show strong alignment with ${paths[0]?.name || "online business"} with a ${paths[0]?.fitScore || 75}% compatibility score. Your income goal of ${getIncomeRangeLabel(quizData.successIncomeGoal)} and ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} per week commitment indicate ${quizData.successIncomeGoal >= 5000 ? "ambitious" : "realistic"} expectations.
+        const fallbackInsights = `Based on your quiz responses, you show strong alignment with ${paths[0]?.name || "online business"} with a ${paths[0]?.fitScore || 75}% compatibility score. Your income goal of ${getIncomeRangeLabel(quizData.successIncomeGoal)} and ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} per week commitment indicate ${quizData.successIncomeGoal >= 5000 ? "ambitious" : "realistic"} expectations.
 
 Your ${quizData.techSkillsRating}/5 tech skills rating combined with your ${quizData.learningPreference} learning preference suggests you're well-suited for ${quizData.techSkillsRating >= 4 ? "advanced" : "foundational"} business approaches. With ${quizData.riskComfortLevel}/5 risk tolerance, you're positioned to ${quizData.riskComfortLevel >= 4 ? "explore innovative strategies" : "build systematically"}.
 
@@ -553,7 +556,7 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
 
         setAiInsights({
           // New structure (priority)
-          previewInsights: fallbackPreviewInsights,
+          insights: fallbackInsights,
           keySuccessIndicators: fallbackKeyIndicators,
           personalizedRecommendations: [
             `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
@@ -622,7 +625,7 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
           ],
 
           // Backward compatibility fields
-          personalizedSummary: fallbackPreviewInsights,
+          personalizedSummary: fallbackInsights,
           customRecommendations: [
             `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
             `Your ${quizData.learningPreference} learning preference suggests ${quizData.learningPreference === "hands_on" ? "jumping into projects quickly" : "studying comprehensive guides first"}`,
@@ -719,15 +722,16 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
       try {
         setIsLoadingDescriptions(true);
 
-        const { calculateAdvancedBusinessModelMatches } = await import(
-          "../utils/advancedScoringAlgorithm"
+        const { businessModelService } = await import(
+          "../utils/businessModelService"
         );
         const { businessPaths } = await import("../../../shared/businessPaths");
 
-        const allMatches = calculateAdvancedBusinessModelMatches(quizData);
+        const allMatches =
+          businessModelService.getBusinessModelMatches(quizData);
 
-        // Get the bottom 3 business models (worst matches)
-        const bottomThree = allMatches.slice(-3).reverse(); // reverse to get worst-first order
+        // Get the bottom 3 business models (worst matches) from context
+        const bottomThree = getBottomMatches(3);
 
         const businessMatches = bottomThree.map((match) => {
           const pathData = businessPaths.find((path) => path.id === match.id);
@@ -778,11 +782,13 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         console.error("Error generating business avoid descriptions:", error);
         // Set fallback descriptions
         const fallbackDescriptions: { [key: string]: string } = {};
-        const { calculateAdvancedBusinessModelMatches } = await import(
-          "../utils/advancedScoringAlgorithm"
+        const { businessModelService } = await import(
+          "../utils/businessModelService"
         );
-        const allMatches = calculateAdvancedBusinessModelMatches(quizData);
-        const bottomThree = allMatches.slice(-3).reverse();
+        const allMatches =
+          businessModelScores ||
+          businessModelService.getBusinessModelMatches(quizData);
+        const bottomThree = getBottomMatches(3);
 
         bottomThree.forEach((match) => {
           fallbackDescriptions[match.id] =
@@ -823,7 +829,22 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
             "Failed to load AI paths in Full Report, using fallback:",
             error,
           );
-          const fallbackPaths = generatePersonalizedPaths(quizData);
+          // Use cached scores from context, fallback to calculation if needed
+          let fallbackMatches = businessModelScores;
+          if (!fallbackMatches) {
+            console.warn(
+              "⚠️ No cached scores in FullReport fallback, calculating...",
+            );
+            fallbackMatches =
+              businessModelService.getBusinessModelMatches(quizData);
+          }
+
+          const fallbackPaths = fallbackMatches.map((match) => {
+            const businessPath = businessPaths.find(
+              (path) => path.id === match.id,
+            );
+            return { ...businessPath!, fitScore: match.score };
+          });
           setPersonalizedPaths(fallbackPaths);
 
           // Generate AI insights with fallback paths
@@ -913,7 +934,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           "Analytics tools",
         ],
         skills: ["Basic business skills", "Communication", "Organization"],
-        icon: "💼",
+        icon: "�",
         marketSize: "Large",
         averageIncome: {
           beginner: "$1K-3K",
@@ -950,9 +971,8 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
     .slice(0, 3);
 
   // Get the worst 3 business models based on actual scoring
-  const allBusinessMatches = calculateAdvancedBusinessModelMatches(quizData);
-  const worstThreePaths = allBusinessMatches
-    .slice(-3) // Get bottom 3 (lowest scores)
+  const allBusinessMatches = businessModelScores || [];
+  const worstThreePaths = getBottomMatches(3)
     .reverse() // Reverse to show worst-first order
     .map((match) => ({
       id: match.id,
@@ -1059,7 +1079,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
             transition={{ duration: 0.8 }}
           >
             <div className="mx-auto mb-8">
-              <span className="text-6xl">🎉</span>
+              <span className="text-6xl">�</span>
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
@@ -1232,6 +1252,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                         <div className="space-y-4 text-gray-700 leading-relaxed">
                           {(() => {
                             // Get the cached AI analysis that was generated on the Results page
+                            const aiCacheManager = AICacheManager.getInstance();
                             const cachedData =
                               aiCacheManager.getCachedAIContent(quizData);
 
@@ -1582,7 +1603,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
 
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                   <h3 className="font-semibold text-blue-900 mb-2">
-                    💡 Future Consideration
+                    � Future Consideration
                   </h3>
                   <p className="text-blue-800 text-sm">
                     As you develop your skills and gain experience, some of

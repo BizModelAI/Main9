@@ -116,6 +116,32 @@ export class PDFService {
   private generateHTMLFallback(options: PDFGenerationOptions): Buffer {
     const { quizData, userEmail, aiAnalysis, topBusinessPath } = options;
 
+    // Helper function to safely escape HTML
+    const escapeHtml = (text: string | undefined | null): string => {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#x27;");
+    };
+
+    // Helper function to safely format currency
+    const formatCurrency = (value: number | undefined | null): string => {
+      if (typeof value !== "number" || isNaN(value)) return "0";
+      return value.toLocaleString();
+    };
+
+    // Helper function to safely format timeline
+    const formatTimeline = (timeline: string | undefined | null): string => {
+      if (!timeline) return "Not specified";
+      return escapeHtml(timeline.replace(/-/g, " "));
+    };
+
+    // Safe user display name
+    const safeUserName = escapeHtml(userEmail?.split("@")[0] || "User");
+
     // Enhanced HTML template that closely matches the PDFReport component
     const htmlContent = `
     <!DOCTYPE html>
@@ -157,7 +183,7 @@ export class PDFService {
                 <div class="max-w-4xl mx-auto">
                     <div class="text-center mb-6">
                         <h1 class="text-4xl font-bold mb-2">Business Path Analysis Report</h1>
-                        <p class="text-xl opacity-90">Personalized Recommendations for ${userEmail?.split("@")[0] || "User"}</p>
+                                                <p class="text-xl opacity-90">Personalized Recommendations for ${safeUserName}</p>
                         <p class="text-sm opacity-75 mt-2">Generated on ${new Date().toLocaleDateString()}</p>
                     </div>
                     
@@ -166,21 +192,21 @@ export class PDFService {
                             <div class="flex items-center justify-center mb-2">
                                 <span class="font-semibold">Income Goal</span>
                             </div>
-                            <p class="text-2xl font-bold">$${quizData.successIncomeGoal?.toLocaleString()}/month</p>
+                                                        <p class="text-2xl font-bold">$${formatCurrency(quizData.successIncomeGoal)}/month</p>
                         </div>
                         
                         <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                             <div class="flex items-center justify-center mb-2">
                                 <span class="font-semibold">Timeline</span>
                             </div>
-                            <p class="text-2xl font-bold">${quizData.firstIncomeTimeline?.replace("-", " ")}</p>
+                                                        <p class="text-2xl font-bold">${formatTimeline(quizData.firstIncomeTimeline)}</p>
                         </div>
                         
                         <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                             <div class="flex items-center justify-center mb-2">
                                 <span class="font-semibold">Investment</span>
                             </div>
-                            <p class="text-2xl font-bold">$${quizData.upfrontInvestment?.toLocaleString()}</p>
+                                                        <p class="text-2xl font-bold">$${formatCurrency(quizData.upfrontInvestment)}</p>
                         </div>
                     </div>
                 </div>
@@ -196,10 +222,10 @@ export class PDFService {
                             <div>
                                 <h3 class="font-semibold text-gray-900">Your Profile</h3>
                                 <div class="grid grid-cols-2 gap-4 mt-2 text-sm">
-                                    <div><span class="font-medium">Income Goal:</span> $${quizData.successIncomeGoal?.toLocaleString()}/month</div>
-                                    <div><span class="font-medium">Timeline:</span> ${quizData.firstIncomeTimeline?.replace("-", " ")}</div>
-                                    <div><span class="font-medium">Investment:</span> $${quizData.upfrontInvestment?.toLocaleString()}</div>
-                                    <div><span class="font-medium">Time Commitment:</span> ${quizData.weeklyTimeCommitment} hours/week</div>
+                                                                        <div><span class="font-medium">Income Goal:</span> $${formatCurrency(quizData.successIncomeGoal)}/month</div>
+                                                                        <div><span class="font-medium">Timeline:</span> ${formatTimeline(quizData.firstIncomeTimeline)}</div>
+                                                                        <div><span class="font-medium">Investment:</span> $${formatCurrency(quizData.upfrontInvestment)}</div>
+                                                                        <div><span class="font-medium">Time Commitment:</span> ${formatCurrency(quizData.weeklyTimeCommitment)} hours/week</div>
                                 </div>
                             </div>
                             

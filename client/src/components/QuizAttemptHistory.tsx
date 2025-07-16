@@ -7,10 +7,11 @@ import {
   Eye,
   ChevronRight,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { QuizData } from "../types";
-import { calculateAllBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { businessModelService } from "../utils/businessModelService";
 
 interface QuizAttempt {
   id: number;
@@ -21,7 +22,11 @@ interface QuizAttempt {
 
 interface QuizAttemptHistoryProps {
   userId: number;
-  onQuizSelected?: (quizData: QuizData, aiContent?: any) => void;
+  onQuizSelected?: (
+    quizData: QuizData,
+    aiContent?: any,
+    completedAt?: string,
+  ) => void;
 }
 
 export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
@@ -49,6 +54,9 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
   const [selectedAttemptId, setSelectedAttemptId] = React.useState<
     number | null
   >(null);
+  const [loadingAttemptId, setLoadingAttemptId] = React.useState<number | null>(
+    null,
+  );
   const [showAllAttempts, setShowAllAttempts] = React.useState(false);
 
   // Check if current localStorage quiz data matches any attempt
@@ -115,6 +123,8 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
   }
 
   const handleSelectQuiz = async (attempt: QuizAttempt) => {
+    setLoadingAttemptId(attempt.id);
+
     try {
       // Store the selected quiz data in localStorage
       localStorage.setItem("quizData", JSON.stringify(attempt.quizData));
@@ -122,7 +132,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
       setSelectedAttemptId(attempt.id);
 
       // Fetch AI content for this attempt
-      console.log(`🔍 Fetching AI content for quiz attempt ${attempt.id}...`);
+      console.log(`Fetching AI content for quiz attempt ${attempt.id}...`);
       const response = await fetch(
         `/api/quiz-attempts/${attempt.id}/ai-content`,
         {
@@ -135,7 +145,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         const data = await response.json();
         aiContent = data.aiContent;
         console.log(
-          `✅ AI content fetched for attempt ${attempt.id}:`,
+          `AI content fetched for attempt ${attempt.id}:`,
           aiContent ? "Found" : "None",
         );
 
@@ -143,21 +153,21 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         if (aiContent) {
           localStorage.setItem("loadedReportData", JSON.stringify(aiContent));
           console.log(
-            `💾 AI content stored in localStorage for attempt ${attempt.id}`,
+            `AI content stored in localStorage for attempt ${attempt.id}`,
           );
         } else {
           localStorage.removeItem("loadedReportData");
-          console.log(`🗑️ No AI content to store for attempt ${attempt.id}`);
+          console.log(`No AI content to store for attempt ${attempt.id}`);
         }
       } else {
         console.log(
-          `⚠️ AI content fetch failed for attempt ${attempt.id}:`,
+          `AI content fetch failed for attempt ${attempt.id}:`,
           response.status,
           response.statusText,
         );
         if (response.status === 500) {
           console.log(
-            "💡 This might be due to missing ai_content column in database",
+            "This might be due to missing ai_content column in database",
           );
         }
         localStorage.removeItem("loadedReportData");
@@ -165,16 +175,29 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
 
       // Call the callback if provided
       if (onQuizSelected) {
-        onQuizSelected(attempt.quizData, aiContent);
+        onQuizSelected(attempt.quizData, aiContent, attempt.completedAt);
       }
 
+      // Show success notification
+      const attemptDate = format(new Date(attempt.completedAt), "MMM d, yyyy");
+      // You can customize this notification system as needed
+      console.log(`Successfully loaded quiz from ${attemptDate}`);
+
       // Instead of page reload, trigger a React state update
-      // This will be handled by the parent component
       console.log("Quiz attempt switched successfully without page reload");
     } catch (error) {
       console.error("Error switching quiz attempt:", error);
-      // Fallback to page reload if API fails
-      window.location.reload();
+
+      // Show error message
+      alert("Failed to load quiz data. Falling back to current quiz.");
+
+      // Reset loading state
+      setLoadingAttemptId(null);
+
+      // Don't reload on error - just show message and keep current state
+      return;
+    } finally {
+      setLoadingAttemptId(null);
     }
   };
 
@@ -184,8 +207,8 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
 
   const getTopBusinessPath = (quizData: QuizData) => {
     try {
-      // Use the actual scoring algorithm to get the top business model
-      const matches = calculateAllBusinessModelMatches(quizData);
+      // Use the BusinessModelService to get the top business model
+      const matches = businessModelService.getBusinessModelMatches(quizData);
       if (matches && matches.length > 0) {
         return matches[0].name;
       }
@@ -293,8 +316,17 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                   ) : (
-                    <button className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                      <Eye className="w-4 h-4" />
+                    <button
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleSelectQuiz(attempt)}
+                      disabled={loadingAttemptId === attempt.id}
+                      title={`View quiz from ${format(new Date(attempt.completedAt), "MMM d, yyyy")}`}
+                    >
+                      {loadingAttemptId === attempt.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   )}
                 </div>

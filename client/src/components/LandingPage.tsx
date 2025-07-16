@@ -345,19 +345,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartQuiz }) => {
                 name: "Sarah M.", 
                 result: "Started affiliate marketing, $4.2K first month", 
                 time: "2 weeks ago",
-                avatar: "👩‍💼"
+                avatar: "�‍�"
               },
               { 
                 name: "Mike R.", 
                 result: "Launched freelance writing, $6K/month", 
                 time: "1 month ago",
-                avatar: "👨‍💻"
+                avatar: "�‍�"
               },
               { 
                 name: "Lisa K.", 
                 result: "Created online course, $12K launch", 
                 time: "3 weeks ago",
-                avatar: "👩‍🎓"
+                avatar: "�‍�"
               }
             ].map((testimonial, index) => (
               <motion.div 

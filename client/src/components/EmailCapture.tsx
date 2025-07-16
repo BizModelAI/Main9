@@ -97,40 +97,91 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Store email for unpaid users and send quiz results email
+      // Use new 3-tier caching system to save quiz data and create temporary account
       if (quizData) {
-        const sessionId = getSessionId();
-        const response = await fetch("/api/email-results", {
+        console.log(
+          "EmailCapture: Saving quiz data with email to create temporary account",
+        );
+
+        const response = await fetch("/api/save-quiz-data", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            sessionId,
-            email: email.trim(),
             quizData: quizData,
-            isPaidUser: false, // EmailCapture is only for unpaid users
+            email: email.trim(),
           }),
         });
 
         if (response.ok) {
+          const result = await response.json();
+          console.log("EmailCapture: Quiz data saved successfully", result);
+
           setEmailSent(true);
+
+          // Store email in localStorage so AI service knows user provided email
+          localStorage.setItem("userEmail", email.trim());
+
+          // Store the quiz attempt ID for future reference
+          if (result.attemptId) {
+            localStorage.setItem("quizAttemptId", result.attemptId.toString());
+          }
+
+          // Also send preview email to user
+          try {
+            const emailResponse = await fetch("/api/email-results", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                sessionId: result.attemptId || Date.now(), // Use attempt ID or fallback
+                email: email.trim(),
+                quizData: quizData,
+                isPaidUser: false,
+              }),
+            });
+
+            if (!emailResponse.ok) {
+              console.warn("Failed to send preview email, but continuing...");
+            }
+          } catch (emailError) {
+            console.warn("Error sending preview email:", emailError);
+            // Don't block the flow for email issues
+          }
+
+          // Retroactively save any existing AI content to database
+          try {
+            const { AIService } = await import("../utils/aiService");
+            const aiService = AIService.getInstance();
+            await aiService.saveExistingAIContentToDatabase();
+          } catch (error) {
+            console.error(
+              "Error saving existing AI content to database:",
+              error,
+            );
+          }
+
           // Wait a moment to show success message
           setTimeout(() => {
             onStartAIGeneration(email);
           }, 1500);
         } else {
-          console.error("Failed to send email");
-          // Still proceed even if email fails
+          console.error("Failed to save quiz data with email");
+          const errorData = await response.json();
+          console.error("Error details:", errorData);
+          // Still proceed even if save fails
           onStartAIGeneration(email);
         }
       } else {
         // No quiz data, just proceed
+        localStorage.setItem("userEmail", email.trim());
         onStartAIGeneration(email);
       }
     } catch (error) {
-      console.error("Error sending email:", error);
-      // Still proceed even if email fails
+      console.error("Error in email capture:", error);
+      // Still proceed even if there's an error
       onStartAIGeneration(email);
     } finally {
       setIsSubmitting(false);
@@ -215,18 +266,18 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
               {[
                 {
                   icon: CheckCircle,
-                  title: "Permanent Access",
-                  description: "Return anytime with your personal link",
+                  title: "3-Month Storage",
+                  description: "Your results saved securely for 90 days",
                 },
                 {
                   icon: Clock,
-                  title: "Save Your Progress",
-                  description: "Never lose your personalized results",
+                  title: "Email Delivery",
+                  description: "Get results delivered to your inbox",
                 },
                 {
                   icon: Star,
-                  title: "Future Updates",
-                  description: "Get notified of new insights and features",
+                  title: "Upgrade Option",
+                  description: "Convert to permanent storage anytime",
                 },
               ].map((benefit, index) => (
                 <motion.div
@@ -309,15 +360,16 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
                 className="text-center space-y-3"
               >
                 <p className="text-xs text-gray-500">
-                  🔒 We respect your privacy. No spam, just your results and
-                  occasional valuable insights.
+                  🔒 We respect your privacy. Your results will be stored for 3
+                  months, then automatically deleted unless you upgrade to
+                  permanent storage.
                 </p>
 
                 <button
                   onClick={handleGuestContinue}
                   className="text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center justify-center group text-sm mx-auto"
                 >
-                  Continue as Guest (results won't be saved)
+                  Continue as Guest (1-hour local storage only)
                   <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
                 </button>
               </motion.div>

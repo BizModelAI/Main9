@@ -4,15 +4,23 @@ import {
   Routes,
   Route,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PaywallProvider } from "./contexts/PaywallContext";
+import {
+  BusinessModelScoresProvider,
+  cleanupExpiredBusinessModelScores,
+  useBusinessModelScores,
+} from "./contexts/BusinessModelScoresContext";
 
 // Import debug utilities (available as window.debugOpenAI and window.debugAIContent)
 import "./utils/debugOpenAI";
 import "./utils/debugAIContent";
+import "./utils/clearAllCaches";
+import "./utils/debugBusinessModels";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -27,7 +35,10 @@ import Settings from "./pages/Settings";
 import Quiz from "./components/Quiz";
 import Results from "./components/Results";
 import EmailCapture from "./components/EmailCapture";
+import LoggedInCongratulations from "./components/LoggedInCongratulations";
 import BusinessModelDetail from "./components/BusinessModelDetail";
+import { AICacheManager } from "./utils/aiCacheManager";
+import { businessModelService } from "./utils/businessModelService";
 import BusinessGuide from "./components/BusinessGuide";
 import DownloadReportPage from "./pages/DownloadReportPage";
 import PDFReportPage from "./pages/PDFReportPage";
@@ -39,12 +50,17 @@ import QuizCompletionLoading from "./components/QuizCompletionLoading";
 import QuizPaymentRequired from "./pages/QuizPaymentRequired";
 import SaveResultsPayment from "./pages/SaveResultsPayment";
 import { NavigationGuardWrapper } from "./components/NavigationGuardWrapper";
+import { initializeEmojiSafeguards } from "./utils/emojiHelper";
+
+// Initialize emoji corruption prevention system
+initializeEmojiSafeguards();
 
 // Alias for loading page component
 const LoadingPage = AIReportLoading;
 import { QuizData } from "./types";
 
-function App() {
+function MainAppContent() {
+  const { user } = useAuth();
   const [quizData, setQuizData] = React.useState<QuizData | null>(null);
   const [showEmailCapture, setShowEmailCapture] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
@@ -122,6 +138,57 @@ function App() {
       }
     }
   });
+
+  // Clean up expired localStorage data for anonymous users
+  React.useEffect(() => {
+    const cleanupExpiredData = () => {
+      // Clean up expired quiz data
+      const expiresAt = localStorage.getItem("quizDataExpires");
+      if (expiresAt) {
+        const expireTime = parseInt(expiresAt);
+        const now = Date.now();
+
+        if (now > expireTime) {
+          console.log("Anonymous quiz data expired, cleaning up localStorage");
+          localStorage.removeItem("quizData");
+          localStorage.removeItem("quizDataTimestamp");
+          localStorage.removeItem("quizDataExpires");
+
+          // Also clear React state if it matches the expired data
+          const savedQuizData = localStorage.getItem("quizData");
+          if (!savedQuizData && quizData) {
+            setQuizData(null);
+            console.log("Cleared expired quiz data from React state");
+          }
+        }
+      }
+
+      // Clean up expired AI content for anonymous users
+      try {
+        // Import dynamically to avoid issues with module loading
+        import("./utils/aiService")
+          .then(({ AIService }) => {
+            AIService.cleanupExpiredLocalStorageContent();
+          })
+          .catch((error) => {
+            console.error("Error cleaning up AI content:", error);
+          });
+      } catch (error) {
+        console.error("Error cleaning up AI content:", error);
+      }
+
+      // Clean up expired business model scores
+      cleanupExpiredBusinessModelScores();
+    };
+
+    // Run cleanup immediately
+    cleanupExpiredData();
+
+    // Run cleanup every 5 minutes to catch expiration during session
+    const interval = setInterval(cleanupExpiredData, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [quizData]);
 
   // Handler for AI loading completion
   const handleAILoadingComplete = (data: any) => {
@@ -232,190 +299,134 @@ function App() {
     };
   };
 
-  return (
-    <AuthProvider>
-      <PaywallProvider>
-        <Router>
-          <NavigationGuardWrapper>
-            <Analytics />
-            <SpeedInsights />
-            <Routes>
-              {/* Public routes with layout */}
-              <Route
-                path="/"
-                element={
-                  <Layout>
-                    <Index />
-                  </Layout>
-                }
-              />
+  const navigate = useNavigate();
+  const location = useLocation();
 
-              <Route
-                path="/explore"
-                element={
-                  <Layout>
-                    <BusinessExplorer quizData={quizData} />
-                  </Layout>
-                }
-              />
+  console.log("MainAppContent - Current location:", location.pathname);
+  console.log("MainAppContent - quizData:", !!quizData);
+  console.log("MainAppContent - userEmail:", userEmail);
 
-              <Route
-                path="/contact"
-                element={
-                  <Layout>
-                    <ContactUs />
-                  </Layout>
-                }
-              />
+  // Load quiz data from localStorage first, then server if authenticated
+  React.useEffect(() => {
+    const loadQuizData = async () => {
+      // Don't auto-load quiz data when user is on /quiz page (they want to start fresh)
+      if (location.pathname === "/quiz") {
+        console.log(
+          "MainAppContent - On /quiz page, skipping auto-load of existing quiz data",
+        );
+        return;
+      }
 
-              {/* Auth routes (no layout) */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+      if (!quizData) {
+        console.log(
+          "MainAppContent - No quiz data in state, checking localStorage...",
+        );
 
-              {/* Protected routes with layout */}
-              <Route
-                path="/dashboard"
-                element={
-                  <Layout>
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  </Layout>
-                }
-              />
+        // First try localStorage (works for both authenticated and non-authenticated users)
+        const savedQuizData = localStorage.getItem("quizData");
+        if (savedQuizData) {
+          try {
+            const parsed = JSON.parse(savedQuizData);
+            console.log("MainAppContent - Found quiz data in localStorage");
+            setQuizData(parsed);
+            return; // Found data in localStorage, no need to fetch from server
+          } catch (error) {
+            console.error(
+              "MainAppContent - Error parsing localStorage quiz data:",
+              error,
+            );
+          }
+        }
 
-              <Route
-                path="/settings"
-                element={
-                  <Layout>
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  </Layout>
-                }
-              />
+        // If no localStorage data and user is authenticated, try server
+        if (user) {
+          console.log("MainAppContent - User authenticated, trying server...");
+          try {
+            const response = await fetch("/api/auth/latest-quiz-data", {
+              credentials: "include",
+            });
+            if (response.ok) {
+              const data = await response.json();
+              console.log(
+                "MainAppContent - Received quiz data from server:",
+                data,
+              );
+              if (data.quizData) {
+                setQuizData(data.quizData);
+              }
+            } else {
+              console.log(
+                "MainAppContent - Server request failed, no quiz data available",
+              );
+            }
+          } catch (error) {
+            console.log(
+              "MainAppContent - Error loading from server (non-critical):",
+              error,
+            );
+          }
+        } else {
+          console.log(
+            "MainAppContent - User not authenticated, relying on localStorage only",
+          );
+        }
+      }
+    };
 
-              {/* Quiz without layout (has its own design) */}
-              <Route
-                path="/quiz"
-                element={
-                  <QuizWithNavigation
-                    quizData={quizData}
-                    setQuizData={setQuizData}
-                    showEmailCapture={showEmailCapture}
-                    setShowEmailCapture={setShowEmailCapture}
-                    userEmail={userEmail}
-                    setUserEmail={setUserEmail}
-                    generateMockQuizData={generateMockQuizData}
-                    showAILoading={showAILoading}
-                    setShowAILoading={setShowAILoading}
-                    loadedReportData={loadedReportData}
-                    setLoadedReportData={setLoadedReportData}
-                    showCongratulations={showCongratulations}
-                    setShowCongratulations={setShowCongratulations}
-                    congratulationsShown={congratulationsShown}
-                    setCongratulationsShown={setCongratulationsShown}
-                    handleAILoadingComplete={handleAILoadingComplete}
-                  />
-                }
-              />
+    loadQuizData();
+  }, [quizData, setQuizData, user]);
 
-              {/* Quiz completion loading page - NOW uses AIReportLoading */}
-              <Route
-                path="/quiz-loading"
-                element={
-                  <AIReportLoadingWrapper
-                    quizData={quizData}
-                    setShowCongratulations={setShowCongratulations}
-                  />
-                }
-              />
+  if (location.pathname === "/quiz") {
+    return (
+      <QuizWithNavigation
+        quizData={quizData}
+        setQuizData={setQuizData}
+        showEmailCapture={showEmailCapture}
+        setShowEmailCapture={setShowEmailCapture}
+        userEmail={userEmail}
+        setUserEmail={setUserEmail}
+        generateMockQuizData={generateMockQuizData}
+        showAILoading={showAILoading}
+        setShowAILoading={setShowAILoading}
+        loadedReportData={loadedReportData}
+        setLoadedReportData={setLoadedReportData}
+        showCongratulations={showCongratulations}
+        setShowCongratulations={setShowCongratulations}
+        congratulationsShown={congratulationsShown}
+        setCongratulationsShown={setCongratulationsShown}
+        handleAILoadingComplete={handleAILoadingComplete}
+      />
+    );
+  }
 
-              {/* Loading page - NOW uses QuizCompletionLoading */}
-              <Route
-                path="/loading"
-                element={
-                  <QuizCompletionLoadingWrapper
-                    quizData={quizData}
-                    userEmail={userEmail}
-                    showCongratulations={showCongratulations}
-                    setUserEmail={setUserEmail}
-                    setShowCongratulations={setShowCongratulations}
-                    loadedReportData={loadedReportData}
-                    handleAILoadingComplete={handleAILoadingComplete}
-                  />
-                }
-              />
+  if (location.pathname === "/results") {
+    return (
+      <Layout>
+        <ResultsWrapperWithReset
+          quizData={quizData}
+          userEmail={userEmail}
+          onBack={() => window.history.back()}
+          loadedReportData={loadedReportData}
+          setShowCongratulations={setShowCongratulations}
+        />
+      </Layout>
+    );
+  }
 
-              {/* Results with layout */}
-              <Route
-                path="/results"
-                element={
-                  <Layout>
-                    <ResultsWrapperWithReset
-                      quizData={quizData}
-                      userEmail={userEmail}
-                      onBack={() => window.history.back()}
-                      loadedReportData={loadedReportData}
-                      setShowCongratulations={setShowCongratulations}
-                    />
-                  </Layout>
-                }
-              />
+  if (
+    location.pathname === "/ai-loading" ||
+    location.pathname === "/quiz-loading"
+  ) {
+    return (
+      <AIReportLoadingWrapper
+        quizData={quizData}
+        setShowCongratulations={setShowCongratulations}
+      />
+    );
+  }
 
-              {/* Business Model Detail Page */}
-              <Route
-                path="/business/:businessId"
-                element={
-                  <Layout>
-                    <BusinessModelDetail quizData={quizData} />
-                  </Layout>
-                }
-              />
-
-              {/* Business Guide Page */}
-              <Route
-                path="/guide/:businessId"
-                element={
-                  <Layout>
-                    <BusinessGuide quizData={quizData} />
-                  </Layout>
-                }
-              />
-
-              {/* Download Report Page */}
-              <Route path="/report" element={<DownloadReportPage />} />
-
-              {/* PDF Report Page (no layout) */}
-              <Route path="/pdf-report" element={<PDFReportPage />} />
-
-              {/* Privacy Policy */}
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-
-              {/* Unsubscribe Page */}
-              <Route path="/unsubscribe" element={<UnsubscribePage />} />
-
-              {/* Admin Page */}
-              <Route path="/admin" element={<AdminPage />} />
-
-              {/* Quiz Payment Required */}
-              <Route
-                path="/quiz-payment-required"
-                element={<QuizPaymentRequired />}
-              />
-
-              {/* Save Results Payment */}
-              <Route
-                path="/save-results-payment"
-                element={<SaveResultsPayment />}
-              />
-            </Routes>
-          </NavigationGuardWrapper>
-        </Router>
-      </PaywallProvider>
-    </AuthProvider>
-  );
+  // Default fallback
+  return <div>Loading...</div>;
 }
 
 // AIReport loading wrapper component for quiz completion
@@ -486,10 +497,16 @@ const AIReportLoadingWrapper: React.FC<{
     }
   };
 
+  // Handle navigation in useEffect to avoid setState during render
+  React.useEffect(() => {
+    if (!quizData) {
+      console.log("No quiz data found, redirecting to quiz");
+      navigate("/quiz");
+    }
+  }, [quizData, navigate]);
+
   if (!quizData) {
-    // Fallback if no quiz data
-    navigate("/quiz");
-    return null;
+    return <div>Redirecting...</div>;
   }
 
   return (
@@ -500,6 +517,57 @@ const AIReportLoadingWrapper: React.FC<{
         onExit={() => navigate("/quiz")}
       />
     </div>
+  );
+};
+
+// Comprehensive cache clearing function for new quiz sessions
+const clearQuizRelatedCache = () => {
+  console.log("Clearing all quiz-related cache for new session");
+
+  // Quiz data
+  localStorage.removeItem("quizData");
+  localStorage.removeItem("hasCompletedQuiz");
+  localStorage.removeItem("currentQuizAttemptId");
+  localStorage.removeItem("pendingQuizData");
+  localStorage.removeItem("requiresQuizPayment");
+
+  // AI-related data
+  localStorage.removeItem("quiz-completion-ai-insights");
+  localStorage.removeItem("loadedReportData");
+  localStorage.removeItem("ai-generation-in-progress");
+  localStorage.removeItem("ai-generation-timestamp");
+
+  // UI state flags
+  localStorage.removeItem("congratulationsShown");
+  localStorage.removeItem("hasEverSelectedModel");
+  localStorage.removeItem("selectedBusinessModel");
+
+  // Clear AI service caches
+  const aiCacheManager = AICacheManager.getInstance();
+  aiCacheManager.forceResetCache();
+
+  // Clear any legacy AI cache keys
+  // Note: AI content is now stored in database per user/quiz attempt
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (
+      key &&
+      (key.startsWith("ai_insights_") || // Legacy AI service cache keys
+        key.startsWith("preview_") || // Legacy preview cache keys
+        key.startsWith("fullreport_") || // Legacy full report cache keys
+        key.startsWith("ai-analysis-") ||
+        key.startsWith("skills-analysis-") ||
+        key.startsWith("ai-cache-") ||
+        key.startsWith("confetti_shown_"))
+    ) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+  console.log(
+    `Cleared AI caches and ${keysToRemove.length + 12} legacy cache entries for new quiz session (AI content now in database)`,
   );
 };
 
@@ -522,6 +590,7 @@ const QuizCompletionLoadingWrapper: React.FC<{
   handleAILoadingComplete,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleLoadingComplete = () => {
     console.log(
@@ -571,7 +640,15 @@ const QuizCompletionLoadingWrapper: React.FC<{
           onComplete={handleLoadingComplete}
         />
       )}
-      {showCongratulations && quizData && (
+      {showCongratulations && quizData && user && (
+        <LoggedInCongratulations
+          onContinue={handleCongratulationsComplete}
+          onSendEmailPreview={() => {}}
+          quizData={quizData}
+          onStartAIGeneration={handleCongratulationsComplete}
+        />
+      )}
+      {showCongratulations && quizData && !user && (
         <EmailCapture
           onEmailSubmit={handleCongratulationsComplete}
           onContinueAsGuest={handleCongratulationsComplete}
@@ -591,7 +668,7 @@ const QuizWithNavigation: React.FC<{
   showEmailCapture: boolean;
   setShowEmailCapture: (show: boolean) => void;
   userEmail: string | null;
-  setUserEmail: (email: string) => void;
+  setUserEmail: (email: string | null) => void;
   generateMockQuizData: () => QuizData;
   showAILoading: boolean;
   setShowAILoading: (show: boolean) => void;
@@ -622,16 +699,36 @@ const QuizWithNavigation: React.FC<{
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { calculateAndStoreScores } = useBusinessModelScores();
 
   const handleQuizComplete = async (data: QuizData) => {
-    console.log("Quiz completed, navigating to quiz loading page");
+    console.log("Quiz completed with 3-tier caching system");
     setQuizData(data);
 
-    // For authenticated users, save quiz data to database immediately
-    if (user && !String(user.id).startsWith("temp_")) {
-      console.log("Saving quiz data for authenticated user:", user.email);
-      try {
-        // Use XMLHttpRequest to avoid FullStory interference
+    // Get stored email if user provided one during the session
+    const storedEmail = localStorage.getItem("userEmail");
+
+    console.log("Quiz completion - current state:", {
+      hasUser: !!user,
+      userType: user
+        ? String(user.id).startsWith("temp_")
+          ? "temporary"
+          : "authenticated"
+        : "none",
+      hasStoredEmail: !!storedEmail,
+      userEmail: user?.email,
+      storedEmail,
+    });
+
+    try {
+      // TIER 1 & 2: For authenticated users (both paid and temporary), save to database
+      if (user) {
+        console.log(
+          "Saving quiz data for authenticated/temporary user:",
+          user.email,
+        );
+
+        // Use the legacy endpoint for authenticated users to maintain compatibility
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/api/auth/save-quiz-data", true);
         xhr.withCredentials = true;
@@ -659,32 +756,11 @@ const QuizWithNavigation: React.FC<{
 
         if (response.ok) {
           console.log("Quiz data saved successfully for authenticated user");
-          // Store quiz attempt ID for report unlock functionality
-          try {
-            const responseData = JSON.parse(response.text);
-            if (responseData.quizAttemptId) {
-              localStorage.setItem(
-                "currentQuizAttemptId",
-                responseData.quizAttemptId.toString(),
-              );
-            }
-          } catch (parseError) {
-            console.error("Error parsing save response:", parseError);
-          }
-        } else if (response.status === 402) {
-          // Payment required for additional quiz
-          console.log("Payment required for additional quiz attempt");
-          try {
-            const responseData = JSON.parse(response.text);
-            // Store quiz data temporarily and redirect to payment
-            localStorage.setItem("pendingQuizData", JSON.stringify(data));
-            localStorage.setItem("requiresQuizPayment", "true");
-            navigate("/quiz-payment-required");
-            return;
-          } catch (parseError) {
-            console.error(
-              "Error parsing payment required response:",
-              parseError,
+          const responseData = JSON.parse(response.text);
+          if (responseData.quizAttemptId) {
+            localStorage.setItem(
+              "currentQuizAttemptId",
+              responseData.quizAttemptId.toString(),
             );
           }
         } else {
@@ -694,13 +770,53 @@ const QuizWithNavigation: React.FC<{
             response.statusText,
           );
         }
-      } catch (error) {
-        console.error("Error saving quiz data for authenticated user:", error);
       }
-    } else {
+      // TIER 2: User has provided email but not authenticated - will be handled by EmailCapture component
+      else if (storedEmail) {
+        console.log(
+          "User has provided email but not authenticated - EmailCapture will handle database storage",
+        );
+        // EmailCapture component will create temporary account when email is provided
+        // No action needed here - quiz data is stored in component state and localStorage as backup
+        localStorage.setItem("quizData", JSON.stringify(data));
+        localStorage.setItem("quizDataTimestamp", Date.now().toString());
+      }
+      // TIER 3: Anonymous users - localStorage with 1-hour expiration
+      else {
+        console.log(
+          "Anonymous user - storing quiz data in localStorage with 1-hour expiration",
+        );
+        const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour from now
+
+        localStorage.setItem("quizData", JSON.stringify(data));
+        localStorage.setItem("quizDataTimestamp", Date.now().toString());
+        localStorage.setItem("quizDataExpires", expiresAt.toString());
+
+        console.log(
+          "Quiz data stored locally, expires at:",
+          new Date(expiresAt),
+        );
+      }
+    } catch (error) {
+      console.error("Error in quiz completion caching:", error);
+      // Fallback: Always store in localStorage as backup
+      localStorage.setItem("quizData", JSON.stringify(data));
+      localStorage.setItem("quizDataTimestamp", Date.now().toString());
+    }
+
+    // CRITICAL: Calculate and store business model scores immediately after quiz completion
+    try {
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      const attemptId = quizAttemptId ? parseInt(quizAttemptId) : undefined;
+
+      console.log("� Calculating business model scores for completed quiz...");
+      await calculateAndStoreScores(data, attemptId);
       console.log(
-        "User not authenticated or temporary user - quiz data will be saved on payment",
+        "✅ Business model scores calculated and stored successfully",
       );
+    } catch (scoresError) {
+      console.error("❌ Error calculating business model scores:", scoresError);
+      // Don't block the flow - scores can be calculated later if needed
     }
 
     // Reset congratulations tracking for this new quiz completion
@@ -749,15 +865,20 @@ const QuizWithNavigation: React.FC<{
   };
 
   const handleReturnToQuiz = () => {
-    console.log("Returning to quiz - explicitly clearing quiz data");
+    console.log("Returning to quiz - clearing all quiz-related cache");
+
+    // Clear all quiz-related state
     setShowCongratulations(false);
     setQuizData(null);
-    // Clear localStorage quiz data when user explicitly returns to quiz
-    localStorage.removeItem("quizData");
-    localStorage.removeItem("loadedReportData");
-    // Reset congratulations tracking for next quiz completion
+    setUserEmail(null);
+    setShowAILoading(false);
+    setShowEmailCapture(false);
     setCongratulationsShown(false);
-    localStorage.setItem("congratulationsShown", "false");
+    setLoadedReportData(null);
+
+    // Clear all localStorage cache
+    clearQuizRelatedCache();
+
     // Stay on current page (quiz)
   };
 
@@ -796,7 +917,7 @@ const QuizWithNavigation: React.FC<{
           style={{ zIndex: 9999 }}
           hidden
         >
-          🚀 SKIP TO RESULTS (DEV)
+          � SKIP TO RESULTS (DEV)
         </button>
       </div>
 
@@ -809,7 +930,15 @@ const QuizWithNavigation: React.FC<{
             : undefined
         }
       />
-      {showCongratulations && quizData && (
+      {showCongratulations && quizData && user && (
+        <LoggedInCongratulations
+          onContinue={handleCongratulationsComplete}
+          onSendEmailPreview={() => {}}
+          quizData={quizData}
+          onStartAIGeneration={handleCongratulationsComplete}
+        />
+      )}
+      {showCongratulations && quizData && !user && (
         <EmailCapture
           onEmailSubmit={handleCongratulationsComplete}
           onContinueAsGuest={handleCongratulationsComplete}
@@ -907,23 +1036,207 @@ const ResultsWrapperWithReset: React.FC<{
   } else {
     console.error("No quiz data available - showing fallback message");
     console.log("Current localStorage keys:", Object.keys(localStorage));
+    console.log("localStorage quizData:", localStorage.getItem("quizData"));
+    console.log(
+      "localStorage currentQuizAttemptId:",
+      localStorage.getItem("currentQuizAttemptId"),
+    );
+
+    // Try to get quiz data from the API as a last resort
+    React.useEffect(() => {
+      const fetchQuizData = async () => {
+        try {
+          console.log("Attempting to fetch quiz data from API as fallback...");
+          const response = await fetch("/api/auth/latest-quiz-data", {
+            credentials: "include",
+          });
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Fallback API response:", data);
+            if (data.quizData) {
+              console.log("Found quiz data via API, storing in localStorage");
+              localStorage.setItem("quizData", JSON.stringify(data.quizData));
+              // Force a re-render by navigating to same page
+              window.location.reload();
+            }
+          } else {
+            console.log("API fallback failed:", response.status);
+          }
+        } catch (error) {
+          console.log("API fallback error:", error);
+        }
+      };
+
+      fetchQuizData();
+    }, []);
+
     return (
-      <div className="py-20 text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          No Results Found
-        </h1>
-        <p className="text-xl text-gray-600 mb-8">
-          Please take the quiz first to see your personalized results.
-        </p>
-        <a
-          href="/quiz"
-          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-        >
-          Take the Quiz
-        </a>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Loading Results...
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Retrieving your quiz data...
+          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
       </div>
     );
   }
 };
+
+function App() {
+  return (
+    <AuthProvider>
+      <PaywallProvider>
+        <BusinessModelScoresProvider>
+          <Router>
+            <NavigationGuardWrapper>
+              <Analytics />
+              <SpeedInsights />
+              <Routes>
+                {/* Public routes with layout */}
+                <Route
+                  path="/"
+                  element={
+                    <Layout>
+                      <Index />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/business-explorer"
+                  element={
+                    <Layout>
+                      <BusinessExplorer />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/business-model/:id"
+                  element={
+                    <Layout>
+                      <BusinessModelDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/business-guide"
+                  element={
+                    <Layout>
+                      <BusinessGuide />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/contact"
+                  element={
+                    <Layout>
+                      <ContactUs />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    <Layout>
+                      <Login />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/forgot-password"
+                  element={
+                    <Layout>
+                      <ForgotPassword />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reset-password"
+                  element={
+                    <Layout>
+                      <ResetPassword />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/privacy-policy"
+                  element={
+                    <Layout>
+                      <PrivacyPolicy />
+                    </Layout>
+                  }
+                />
+
+                {/* Protected routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Dashboard />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Settings />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Direct routes (no layout) */}
+                <Route path="/quiz" element={<MainAppContent />} />
+                <Route path="/results" element={<MainAppContent />} />
+                <Route path="/ai-loading" element={<MainAppContent />} />
+                <Route path="/quiz-loading" element={<MainAppContent />} />
+                <Route
+                  path="/download-report"
+                  element={
+                    <Layout>
+                      <DownloadReportPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/pdf-report"
+                  element={
+                    <Layout>
+                      <PDFReportPage />
+                    </Layout>
+                  }
+                />
+
+                <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                {/* Admin Page */}
+                <Route path="/admin" element={<AdminPage />} />
+
+                {/* Quiz Payment Required */}
+                <Route
+                  path="/quiz-payment-required"
+                  element={<QuizPaymentRequired />}
+                />
+
+                {/* Save Results Payment */}
+                <Route
+                  path="/save-results-payment"
+                  element={<SaveResultsPayment />}
+                />
+              </Routes>
+            </NavigationGuardWrapper>
+          </Router>
+        </BusinessModelScoresProvider>
+      </PaywallProvider>
+    </AuthProvider>
+  );
+}
 
 export default App;

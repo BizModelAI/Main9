@@ -84,7 +84,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mr-4 ${
             isTopMatch ? 'bg-yellow-500' : 'bg-blue-600'
           }`}>
-            <span className="text-white text-xl">📊</span>
+            <span className="text-white text-xl">�</span>
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">

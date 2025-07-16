@@ -15,11 +15,8 @@ import { PaymentAccountModal } from "../components/PaymentAccountModal";
 import { usePaywall } from "../contexts/PaywallContext";
 import { useAuth } from "../contexts/AuthContext";
 import { QuizData } from "../types";
-import {
-  generatePersonalizedPaths,
-  generateAIPersonalizedPaths,
-} from "../utils/quizLogic";
-import { calculateAdvancedBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { generateAIPersonalizedPaths } from "../utils/quizLogic";
+import { businessModelService } from "../utils/businessModelService";
 
 interface BusinessExplorerProps {
   quizData?: QuizData | null;
@@ -146,7 +143,8 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     const loadPersonalizedPaths = async () => {
       try {
         // Use the same scoring algorithm as Results and Full Report for consistency
-        const advancedScores = calculateAdvancedBusinessModelMatches(quizData);
+        const advancedScores =
+          businessModelService.getBusinessModelMatches(quizData);
         const consistentPaths = advancedScores.map((score) => ({
           id: score.id,
           name: score.name,

@@ -36,7 +36,8 @@ import {
 import { QuizData, BusinessPath } from "../types";
 import { businessPaths } from "../data/businessPaths";
 import { businessModels } from "../data/businessModels";
-import { calculateFitScore } from "../utils/quizLogic";
+import { businessModelService } from "../utils/businessModelService";
+import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
 import { usePaywall } from "../contexts/PaywallContext";
 import { useQuery } from "@tanstack/react-query";
 
@@ -60,6 +61,7 @@ interface BusinessResources {
 
 const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
   const { businessId } = useParams<{ businessId: string }>();
+  const { getMatchById } = useBusinessModelScores();
   const navigate = useNavigate();
   const businessOverviewRef = useRef<HTMLDivElement>(null);
   const [businessPath, setBusinessPath] = useState<BusinessPath | null>(null);
@@ -131,9 +133,10 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
     const model = businessModels.find((m) => m.id === businessId);
 
     if (path) {
-      // Calculate fit score if quiz data is available
-      if (quizData) {
-        const fitScore = calculateFitScore(businessId, quizData);
+      // Get fit score from context (calculated once at quiz completion)
+      if (quizData && businessId) {
+        const match = getMatchById(businessId);
+        const fitScore = match ? match.score : 0;
         setBusinessPath({ ...path, fitScore });
       } else {
         setBusinessPath(path);
@@ -1806,7 +1809,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
 
               <div className="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <h3 className="font-semibold text-yellow-900 mb-2">
-                  💡 Pro Tip
+                  � Pro Tip
                 </h3>
                 <p className="text-yellow-800">
                   Start with the free tools first. You can always upgrade to
@@ -1969,7 +1972,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
 
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <h3 className="font-semibold text-blue-900 mb-2">
-                  💡 Success Tip
+                  � Success Tip
                 </h3>
                 <p className="text-blue-800">
                   Most successful entrepreneurs make mistakes early on. The key

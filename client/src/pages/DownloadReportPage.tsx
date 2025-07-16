@@ -5,9 +5,9 @@ import { Download, ArrowLeft, AlertCircle } from "lucide-react";
 import BusinessReportContent from "../components/BusinessReportContent";
 import { QuizData, AIAnalysis, BusinessPath } from "../types";
 import { AIService } from "../utils/aiService";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 import { businessPaths } from "../data/businessPaths";
-import { generatePersonalizedPaths } from "../utils/quizLogic";
+import { businessModelService } from "../utils/businessModelService";
 
 const DownloadReportPage: React.FC = () => {
   const location = useLocation();
@@ -84,10 +84,19 @@ const DownloadReportPage: React.FC = () => {
           };
 
           // Generate personalized paths and get the top one
-          const personalizedPaths = generatePersonalizedPaths(mockQuizData);
-          const mockTopBusinessPath = personalizedPaths[0];
+          const matches =
+            businessModelService.getBusinessModelMatches(mockQuizData);
+          const topMatch = matches[0];
+          const businessPath = businessPaths.find(
+            (path) => path.id === topMatch.id,
+          );
+          const mockTopBusinessPath = {
+            ...businessPath!,
+            fitScore: topMatch.score,
+          };
 
           // Check cache first, then generate AI analysis
+          const aiCacheManager = AICacheManager.getInstance();
           const cachedContent = aiCacheManager.getCachedAIContent(mockQuizData);
 
           let combinedAnalysis;
@@ -109,17 +118,15 @@ const DownloadReportPage: React.FC = () => {
               );
 
             combinedAnalysis = {
-              ...mockDetailedAnalysis,
-              ...mockPersonalizedInsights,
+              fullAnalysis: "", // generatePersonalizedInsights doesn't return fullAnalysis
+              keyInsights: mockPersonalizedInsights.keyInsights || [],
+              personalizedRecommendations:
+                mockPersonalizedInsights.personalizedRecommendations || [],
+              riskFactors: mockPersonalizedInsights.potentialChallenges || [],
+              successPredictors: [], // generatePersonalizedInsights doesn't return successPredictors
             };
 
-            // Cache the generated content
-            aiCacheManager.cacheAIContent(
-              mockQuizData,
-              mockPersonalizedInsights,
-              mockDetailedAnalysis,
-              mockTopBusinessPath,
-            );
+            // Skip caching for mock data (type mismatch between API response and cache structure)
           }
 
           setReportData({

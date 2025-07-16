@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Database, Trash2, Info } from "lucide-react";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 
 const CacheDebugInfo: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [cacheStatus, setCacheStatus] = useState<any>(null);
 
   const refreshCacheStatus = () => {
+    const aiCacheManager = AICacheManager.getInstance();
     const status = aiCacheManager.getCacheStatus();
     setCacheStatus(status);
   };
 
   const clearCache = () => {
+    const aiCacheManager = AICacheManager.getInstance();
     aiCacheManager.clearAllCache();
     refreshCacheStatus();
   };

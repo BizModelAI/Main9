@@ -191,18 +191,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   } = usePaywall();
 
   // In pure pay-per-report model, check if this specific report is unlocked
-  // Basic access shows the first result, but full reports require payment for both auth/non-auth users
-  const canViewFullReport = user ? isReportUnlocked : false;
+  // Basic access is always available, but full reports require payment
+  const canViewFullReport = user ? isReportUnlocked : true;
 
   useEffect(() => {
     console.log("Results component received quizData:", quizData);
-
-    // Ensure quiz data is preserved in localStorage to prevent navigation issues
-    if (quizData) {
-      localStorage.setItem("quizData", JSON.stringify(quizData));
-      localStorage.setItem("hasCompletedQuiz", "true");
-      console.log("✅ Quiz data safely stored in localStorage");
-    }
 
     // Force clear ALL AI caches to ensure fresh and accurate results
     console.log("🧹 Force clearing all AI caches for fresh quiz results...");
@@ -354,54 +347,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // This function is no longer used - AI content comes from loading page
   const generateAIContent = async (paths: BusinessPath[]) => {
     console.log(
-      "⚠️ generateAIContent called but should not be used - AI content comes from loading page",
+      "��️ generateAIContent called but should not be used - AI content comes from loading page",
     );
-  };
-
-  // Function to load cached preview data (NO API calls on Results page!)
-  const loadCachedPreviewData = async () => {
-    try {
-      console.log("✅ Loading cached preview data from quiz loading phase...");
-      setIsGeneratingAI(true);
-
-      // Get cached preview data from localStorage (set during quiz loading)
-      const cachedData = localStorage.getItem("quiz-completion-ai-insights");
-      if (cachedData) {
-        const aiData = JSON.parse(cachedData);
-        if (aiData.insights && aiData.complete) {
-          console.log("✅ Using cached preview insights from quiz loading");
-          setAiInsights(aiData.insights);
-
-          // Generate fallback analysis for top path preview
-          const topPath = personalizedPaths[0];
-          if (topPath) {
-            const fallbackAnalysis = generateFallbackAnalysis();
-            setAiAnalysis(fallbackAnalysis);
-          }
-
-          setIsGeneratingAI(false);
-          return;
-        }
-      }
-
-      // Fallback if no cached data available
-      console.log("⚠️ No cached preview data found, using fallback content");
-      const topPath = personalizedPaths[0];
-      const fallbackInsights = generateFallbackInsights(topPath);
-      const fallbackAnalysis = generateFallbackAnalysis();
-      setAiInsights(fallbackInsights);
-      setAiAnalysis(fallbackAnalysis);
-      setIsGeneratingAI(false);
-    } catch (error) {
-      console.error("Error loading cached preview data:", error);
-
-      // Use fallback content if loading cached data fails
-      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
-      const fallbackAnalysis = generateFallbackAnalysis();
-      setAiInsights(fallbackInsights);
-      setAiAnalysis(fallbackAnalysis);
-      setIsGeneratingAI(false);
-    }
   };
 
   // Generate full AI content only when user accesses specific pages (on-demand)
@@ -421,11 +368,40 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     }
   };
 
-  // Use cached AI data from loading page or set fallback content
+  // Use AI content generated during quiz-loading page
   useEffect(() => {
     if (personalizedPaths.length > 0) {
-      // Load cached preview data (NO API calls!)
-      loadCachedPreviewData();
+      // Check for AI data generated during quiz-loading
+      const cachedAIData = localStorage.getItem("quiz-completion-ai-insights");
+
+      if (cachedAIData) {
+        try {
+          const parsedData = JSON.parse(cachedAIData);
+          const { insights, analysis, complete, error } = parsedData;
+
+          if (complete && !error && insights) {
+            console.log("✅ Using AI content generated during quiz-loading");
+            setAiInsights(insights);
+            if (analysis) {
+              setAiAnalysis(analysis);
+            } else {
+              setAiAnalysis(generateFallbackAnalysis());
+            }
+            setIsGeneratingAI(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Error parsing AI data from quiz-loading:", error);
+        }
+      }
+
+      // Fallback only if no AI data from quiz-loading
+      console.log("⚠️ No AI data from quiz-loading, using fallback content");
+      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
+      const fallbackAnalysis = generateFallbackAnalysis();
+      setAiInsights(fallbackInsights);
+      setAiAnalysis(fallbackAnalysis);
+      setIsGeneratingAI(false);
     }
   }, [personalizedPaths]);
 
@@ -446,8 +422,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         body: JSON.stringify({
           quizData: quizData,
           userEmail: userEmail,
-          aiAnalysis: { ...aiAnalysis, ...aiInsights },
-          topBusinessPath: personalizedPaths[0],
         }),
       });
 
@@ -714,45 +688,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     setShowUnlockModal(true);
   };
 
-  const handleAILoadingComplete = async (data: any) => {
+  const handleAILoadingComplete = (data: any) => {
     setLoadedReportData(data);
     setShowAILoading(false);
     setShowFullReport(true);
-
-    // Save AI content to database if we have a quiz attempt ID and user is authenticated
-    const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
-    if (currentQuizAttemptId && data && user) {
-      try {
-        const response = await fetch(
-          `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ aiContent: data }),
-          },
-        );
-
-        if (response.ok) {
-          console.log(
-            `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
-          );
-        } else {
-          console.error(
-            "Failed to save AI content to database:",
-            response.status,
-          );
-        }
-      } catch (error) {
-        console.error("Error saving AI content to database:", error);
-      }
-    } else if (currentQuizAttemptId && data && !user) {
-      console.log(
-        "Skipping AI content save to database - user not authenticated",
-      );
-    }
   };
 
   // Payment handler for all users - PaymentAccountModal will auto-skip to payment for logged-in users
@@ -951,47 +890,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       <FullReportLoading
         quizData={quizData}
         userEmail={userEmail}
-        onComplete={async (data) => {
+        onComplete={(data) => {
           setLoadedReportData(data);
           setShowFullReportLoading(false);
           setShowFullReport(true);
-
-          // Save AI content to database if we have a quiz attempt ID and user is authenticated
-          const currentQuizAttemptId = localStorage.getItem(
-            "currentQuizAttemptId",
-          );
-          if (currentQuizAttemptId && data && user) {
-            try {
-              const response = await fetch(
-                `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
-                {
-                  method: "POST",
-                  credentials: "include",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ aiContent: data }),
-                },
-              );
-
-              if (response.ok) {
-                console.log(
-                  `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
-                );
-              } else {
-                console.error(
-                  "Failed to save AI content to database:",
-                  response.status,
-                );
-              }
-            } catch (error) {
-              console.error("Error saving AI content to database:", error);
-            }
-          } else if (currentQuizAttemptId && data && !user) {
-            console.log(
-              "Skipping AI content save to database - user not authenticated",
-            );
-          }
         }}
         onExit={() => setShowFullReportLoading(false)}
       />
@@ -1436,7 +1338,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">🚀</div>
+                                    <div className="text-3xl mt-1">���</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Step-by-Step Launch Guidance
@@ -1604,19 +1506,19 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     </motion.div>
                   )}
 
-                  <div className="h-full p-4 md:p-8 flex flex-col md:flex-row">
-                    {/* Left Column - Main Info */}
-                    <div className="flex-1 md:pr-6 mb-6 md:mb-0">
-                      <div className="flex items-center mb-4">
+                  {/* Mobile Layout */}
+                  <div className="md:hidden h-full p-4 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
                         <div
-                          className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center mr-3 md:mr-4 ${
+                          className={`w-10 h-10 rounded-2xl flex items-center justify-center mr-3 ${
                             index === 0 ? "bg-yellow-500" : "bg-blue-600"
                           }`}
                         >
-                          <IconComponent className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                          <IconComponent className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                          <h3 className="text-xl font-bold text-gray-900">
                             {path.name}
                           </h3>
                           <div
@@ -1632,83 +1534,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           </div>
                         </div>
                       </div>
-
-                      <p className="text-gray-600 mb-4 md:mb-6 leading-relaxed text-sm md:text-base">
-                        {path.description}
-                      </p>
-
-                      {/* Key Metrics in compact grid */}
-                      <div className="grid grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
+                      {/* Percentage next to title in mobile */}
+                      <div className="text-center">
                         <div
-                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2 md:p-3`}
-                        >
-                          <div className="flex items-center mb-1">
-                            <Clock className="h-3 w-3 md:h-4 md:w-4 text-gray-500 mr-1" />
-                            <span className="text-xs font-medium text-gray-700">
-                              Time to Profit
-                            </span>
-                          </div>
-                          <div className="font-bold text-gray-900 text-xs md:text-sm">
-                            {path.timeToProfit}
-                          </div>
-                        </div>
-                        <div
-                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2 md:p-3`}
-                        >
-                          <div className="flex items-center mb-1">
-                            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-gray-500 mr-1" />
-                            <span className="text-xs font-medium text-gray-700">
-                              Startup Cost
-                            </span>
-                          </div>
-                          <div className="font-bold text-gray-900 text-xs md:text-sm">
-                            {path.startupCost}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Elements */}
-                      <div className="space-y-2 md:space-y-3 mt-4 md:mt-auto">
-                        {/* Primary CTA - Only show if card is not locked */}
-                        {!(index > 0 && !canViewFullReport) && (
-                          <button
-                            onClick={() => handleViewFullReport(path)}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 md:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-sm md:text-base"
-                          >
-                            <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                            View Full Report
-                          </button>
-                        )}
-
-                        {/* Secondary CTA - Only show if card is not locked */}
-                        {!(index > 0 && !canViewFullReport) && (
-                          <div className="text-center space-y-2 md:space-y-3">
-                            <button
-                              onClick={() => handleLearnMore(path)}
-                              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs md:text-sm font-bold flex items-center justify-center group"
-                            >
-                              Learn more about {path.name} for you
-                              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                            </button>
-
-                            <button
-                              onClick={() => handleStartBusinessModel(path)}
-                              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs md:text-sm font-bold flex items-center justify-center group"
-                            >
-                              Complete Guide to {path.name}
-                              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right Column - Score & Highlights */}
-                    <div className="md:w-48 flex flex-col md:flex-col w-full">
-                      {/* Fit Score */}
-                      <div className="text-center mb-4 md:mb-6">
-                        <div
-                          className={`text-3xl md:text-5xl font-bold mb-1 ${
+                          className={`text-3xl font-bold ${
                             index === 0 ? "text-yellow-600" : "text-blue-600"
                           }`}
                         >
@@ -1718,36 +1547,233 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           AI Match
                         </div>
                       </div>
+                    </div>
 
-                      {/* Potential Income */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
-                        <div className="flex items-center mb-2">
-                          <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600 mr-2" />
-                          <span className="text-xs md:text-sm font-medium text-green-800">
-                            Potential Income
+                    <p className="text-gray-600 mb-4 leading-relaxed text-sm">
+                      {path.description}
+                    </p>
+
+                    {/* Key Metrics in compact grid */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div
+                        className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2`}
+                      >
+                        <div className="flex items-center mb-1">
+                          <Clock className="h-3 w-3 text-gray-500 mr-1" />
+                          <span className="text-xs font-medium text-gray-700">
+                            Time to Profit
                           </span>
                         </div>
-                        <div className="text-lg md:text-xl font-bold text-green-700">
-                          {path.potentialIncome}
+                        <div className="font-bold text-gray-900 text-xs">
+                          {path.timeToProfit}
+                        </div>
+                      </div>
+                      <div
+                        className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2`}
+                      >
+                        <div className="flex items-center mb-1">
+                          <DollarSign className="h-3 w-3 text-gray-500 mr-1" />
+                          <span className="text-xs font-medium text-gray-700">
+                            Startup Cost
+                          </span>
+                        </div>
+                        <div className="font-bold text-gray-900 text-xs">
+                          {path.startupCost}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Potential Income */}
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 mb-4">
+                      <div className="flex items-center mb-2">
+                        <TrendingUp className="h-3 w-3 text-green-600 mr-2" />
+                        <span className="text-xs font-medium text-green-800">
+                          Potential Income
+                        </span>
+                      </div>
+                      <div className="text-lg font-bold text-green-700">
+                        {path.potentialIncome}
+                      </div>
+                    </div>
+
+                    {/* Top Pros */}
+                    <div className="flex-1 mb-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                        Top Benefits
+                      </h4>
+                      <ul className="text-sm text-gray-600 space-y-2">
+                        {path.pros.slice(0, 3).map((pro, i) => (
+                          <li key={i} className="flex items-start">
+                            <span className="text-green-500 mr-2 text-xs">
+                              •
+                            </span>
+                            <span className="leading-tight">{pro}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* CTAs at bottom for mobile */}
+                    <div className="space-y-2 mt-auto">
+                      {/* Primary CTA - Only show if card is not locked */}
+                      {!(index > 0 && !canViewFullReport) && (
+                        <button
+                          onClick={() => handleViewFullReport(path)}
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-sm"
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          View Full Report
+                        </button>
+                      )}
+
+                      {/* Secondary CTAs - Two separate lines with black text and arrows */}
+                      {!(index > 0 && !canViewFullReport) && (
+                        <div className="flex flex-col items-center space-y-2 text-xs">
+                          <button
+                            onClick={() => handleLearnMore(path)}
+                            className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
+                          >
+                            Learn more about {path.name} for you
+                            <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                          </button>
+                          <button
+                            onClick={() => handleStartBusinessModel(path)}
+                            className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
+                          >
+                            Complete Guide to {path.name}
+                            <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout - New Design */}
+                  <div className="hidden md:block h-full p-6 md:p-8">
+                    <div className="flex flex-col md:flex-row">
+                      {/* Left Side */}
+                      <div className="flex-1 md:pr-6 mb-6 md:mb-0">
+                        <div className="flex items-center mb-4">
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mr-4 bg-yellow-500">
+                            <IconComponent className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold text-gray-900">
+                              {path.name}
+                            </h3>
+                            <div
+                              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                                path.difficulty === "Easy"
+                                  ? "bg-green-100 text-green-800"
+                                  : path.difficulty === "Medium"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {path.difficulty}
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="text-gray-600 mb-6 text-sm md:text-base">
+                          {path.description}
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                          <div className="bg-white rounded-xl p-3">
+                            <div className="flex items-center mb-1">
+                              <Clock className="h-4 w-4 text-gray-500 mr-1" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Time to Profit
+                              </span>
+                            </div>
+                            <div className="font-bold text-sm text-gray-900">
+                              {path.timeToProfit}
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-xl p-3">
+                            <div className="flex items-center mb-1">
+                              <DollarSign className="h-4 w-4 text-gray-500 mr-1" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Startup Cost
+                              </span>
+                            </div>
+                            <div className="font-bold text-sm text-gray-900">
+                              {path.startupCost}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="space-y-3">
+                          {!(index > 0 && !canViewFullReport) && (
+                            <button
+                              onClick={() => handleViewFullReport(path)}
+                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold text-base flex items-center justify-center hover:scale-[1.02] transition-all duration-300"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              View Full Report
+                            </button>
+                          )}
+                          {!(index > 0 && !canViewFullReport) && (
+                            <div className="text-center space-y-2">
+                              <button
+                                onClick={() => handleLearnMore(path)}
+                                className="text-gray-700 hover:text-blue-600 text-sm font-bold flex items-center justify-center group"
+                              >
+                                Learn more about {path.name} for you
+                                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                              </button>
+                              <button
+                                onClick={() => handleStartBusinessModel(path)}
+                                className="text-gray-700 hover:text-blue-600 text-sm font-bold flex items-center justify-center group"
+                              >
+                                Complete Guide to {path.name}
+                                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Top Pros */}
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                          <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
-                          Top Benefits
-                        </h4>
-                        <ul className="text-sm text-gray-600 space-y-2">
-                          {path.pros.slice(0, 3).map((pro, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="text-green-500 mr-2 text-xs">
-                                •
-                              </span>
-                              <span className="leading-tight">{pro}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      {/* Right Side */}
+                      <div className="md:w-48 flex flex-col justify-between">
+                        <div className="text-center mb-6">
+                          <div className="text-5xl font-bold text-yellow-600">
+                            {path.fitScore}%
+                          </div>
+                          <div className="text-sm text-gray-500 font-medium">
+                            AI Match
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6">
+                          <div className="flex items-center mb-2">
+                            <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
+                            <span className="text-sm font-medium text-green-800">
+                              Potential Income
+                            </span>
+                          </div>
+                          <div className="text-xl font-bold text-green-700">
+                            {path.potentialIncome}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                            Top Benefits
+                          </h4>
+                          <ul className="text-sm text-gray-600 space-y-2">
+                            {path.pros.slice(0, 3).map((pro, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="text-green-500 mr-2">•</span>
+                                <span className="leading-tight">{pro}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>

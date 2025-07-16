@@ -27,7 +27,7 @@ export async function setupVite(app: Express, server: Server) {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction) {
-    console.log("🚀 Starting in PRODUCTION mode - serving static assets...");
+    console.log("� Starting in PRODUCTION mode - serving static assets...");
 
     // In production, serve static assets from dist/public
     const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");

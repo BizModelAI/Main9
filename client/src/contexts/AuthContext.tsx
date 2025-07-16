@@ -56,13 +56,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           );
 
           const xhr = new XMLHttpRequest();
-          xhr.open("GET", "/api/auth/me", true);
+          console.log("Making XMLHttpRequest to /api/auth/me");
+          xhr.open("GET", "/api/auth/me?t=" + Date.now(), true);
           xhr.withCredentials = true;
           xhr.setRequestHeader("Content-Type", "application/json");
 
           response = await new Promise<Response>((resolve, reject) => {
             xhr.onload = () => {
               const responseText = xhr.responseText;
+              console.log("Auth API response:", xhr.status, responseText);
               resolve({
                 ok: xhr.status >= 200 && xhr.status < 300,
                 status: xhr.status,
@@ -409,7 +411,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // First verify the session is valid by checking auth status using XMLHttpRequest
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open("GET", "/api/auth/me", true);
+      xhr.open("GET", "/api/auth/me?t=" + Date.now(), true);
       xhr.withCredentials = true;
       xhr.setRequestHeader("Content-Type", "application/json");
 
@@ -465,6 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           new Promise<Response>((resolve, reject) => {
             xhr.onload = () => {
               const responseText = xhr.responseText;
+              console.log("Auth API response:", xhr.status, responseText);
               resolve({
                 ok: xhr.status >= 200 && xhr.status < 300,
                 status: xhr.status,

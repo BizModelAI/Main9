@@ -85,7 +85,7 @@ export class EmailService {
       }
 
       const { data, error } = await resend.emails.send({
-        from: "BizModelAI <onboarding@resend.dev>",
+        from: "BizModelAI <team@bizmodelai.com>",
         to: [options.to],
         subject: options.subject,
         html: options.html,
@@ -111,7 +111,7 @@ export class EmailService {
   private async checkUnsubscribeStatus(email: string): Promise<boolean> {
     try {
       const { storage } = await import("../storage.js");
-      const user = await storage.getUserByUsername(email);
+      const user = await storage.getUserByEmail(email);
       return user?.isUnsubscribed || false;
     } catch (error) {
       console.error("Error checking unsubscribe status:", error);
@@ -166,6 +166,37 @@ export class EmailService {
     });
   }
 
+  async sendContactFormNotification(formData: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    category: string;
+  }): Promise<boolean> {
+    const subject = `New Contact Form: ${formData.subject}`;
+    const html = this.generateContactFormNotificationHTML(formData);
+
+    return await this.sendEmail({
+      to: "team@bizmodelai.com",
+      subject,
+      html,
+    });
+  }
+
+  async sendContactFormConfirmation(
+    userEmail: string,
+    userName: string,
+  ): Promise<boolean> {
+    const subject = "We received your message - BizModelAI";
+    const html = this.generateContactFormConfirmationHTML(userName);
+
+    return await this.sendEmail({
+      to: userEmail,
+      subject,
+      html,
+    });
+  }
+
   private generateQuizResultsHTML(quizData: QuizData): string {
     const topBusinessModel = this.getTopBusinessModel(quizData);
 
@@ -194,7 +225,7 @@ export class EmailService {
             
             <div class="content" style="padding: 50px 40px; background: #FFFFFF !important; color: #000000 !important;">
               <div class="section" style="margin-bottom: 40px;">
-                <h2 class="section-title" style="font-size: 22px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">🎯 Your Best Fit Business Model</h2>
+                <h2 class="section-title" style="font-size: 22px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">� Your Best Fit Business Model</h2>
                 <div class="top-match-card" style="background: #FFFFFF !important; border: 2px solid #E5E7EB; border-radius: 16px; padding: 30px; margin-bottom: 30px; position: relative; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
                   <div class="match-badge" style="background: linear-gradient(135deg, #10B981, #059669); color: white !important; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; display: inline-block; margin-bottom: 16px;">Perfect Match</div>
                   <h3 class="match-name" style="font-size: 24px; font-weight: 700; color: #000000 !important; margin-bottom: 12px;">${topBusinessModel.name}</h3>
@@ -269,9 +300,15 @@ export class EmailService {
                 </a>
               </div>
 
-              <div class="footer-disclaimer" style="font-size: 14px; color: #9CA3AF !important; line-height: 1.5; margin-bottom: 16px;">
+                            <div class="footer-disclaimer" style="font-size: 14px; color: #9CA3AF !important; line-height: 1.5; margin-bottom: 16px;">
                 This email was sent because you completed our business assessment quiz.<br>
                 We're here to help you discover your perfect business path.
+              </div>
+
+              <div class="data-retention-notice" style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 16px; margin: 16px 0; font-size: 13px; color: #92400E !important; line-height: 1.4;">
+                <strong>� Data Retention Notice:</strong><br>
+                Your quiz results and data will be stored securely for <strong>3 months</strong> from today. After this period, your data will be automatically deleted from our systems unless you create a paid account.<br><br>
+                <strong>Want to keep your results forever?</strong> <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" style="color: #92400E !important; text-decoration: underline;">Upgrade to unlock your full report</a> and your data will be saved permanently.
               </div>
               <div class="footer-unsubscribe" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #F3F4F6;">
                 <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/unsubscribe" class="unsubscribe-link" style="color: #6B7280 !important; text-decoration: none; font-size: 14px; padding: 8px 16px; border-radius: 6px;">
@@ -753,7 +790,7 @@ export class EmailService {
               <!-- Top 3 Business Models Section -->
               <div class="section" style="margin-bottom: 40px;">
                 <h2 class="section-title" style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">
-                  🎯 Your Top 3 Business Matches
+                  � Your Top 3 Business Matches
                 </h2>
                 
                 ${top3Paths
@@ -801,12 +838,12 @@ export class EmailService {
               <!-- Key Recommendations Section -->
               <div class="section" style="margin-bottom: 40px;">
                 <h2 class="section-title" style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">
-                  💡 Key Recommendations
+                  � Key Recommendations
                 </h2>
                 <div class="recommendations-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
                   <div class="recommendation-card" style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; padding: 20px;">
                     <h4 style="font-weight: 600; color: #0369A1 !important; margin-bottom: 8px; display: flex; align-items: center;">
-                      🎯 Best Strategy
+                      � Best Strategy
                     </h4>
                     <p style="color: #1E40AF !important; font-size: 14px; line-height: 1.5;">
                       ${quizData.techSkillsRating >= 4 ? "Leverage your strong technical skills to build automated systems and scalable solutions" : "Focus on proven, user-friendly methods that don't require advanced technical knowledge"}
@@ -822,7 +859,7 @@ export class EmailService {
                   </div>
                   <div class="recommendation-card" style="background: #FEF3C7; border: 1px solid #FDE047; border-radius: 12px; padding: 20px;">
                     <h4 style="font-weight: 600; color: #92400E !important; margin-bottom: 8px; display: flex; align-items: center;">
-                      🚀 Growth Path
+                      � Growth Path
                     </h4>
                     <p style="color: #78350F !important; font-size: 14px; line-height: 1.5;">
                       ${quizData.riskComfortLevel >= 4 ? "Your high risk tolerance allows for aggressive growth strategies and innovative approaches" : "Focus on steady, proven growth methods that minimize risk while building confidence"}
@@ -830,7 +867,7 @@ export class EmailService {
                   </div>
                   <div class="recommendation-card" style="background: #F3E8FF; border: 1px solid #D8B4FE; border-radius: 12px; padding: 20px;">
                     <h4 style="font-weight: 600; color: #7C2D12 !important; margin-bottom: 8px; display: flex; align-items: center;">
-                      🎪 Timeline
+                      � Timeline
                     </h4>
                     <p style="color: #6B21A8 !important; font-size: 14px; line-height: 1.5;">
                       With ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} weekly commitment, expect ${quizData.weeklyTimeCommitment >= 20 ? "accelerated progress and faster results" : "steady progress with sustainable growth"}
@@ -842,7 +879,7 @@ export class EmailService {
               <!-- Your Business Profile Section -->
               <div class="section" style="margin-bottom: 40px;">
                 <h2 class="section-title" style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">
-                  📊 Your Business Profile
+                  � Your Business Profile
                 </h2>
                 <div class="profile-card" style="background: #FFFFFF !important; border: 1px solid #E5E7EB; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);">
                   <div class="profile-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -913,6 +950,208 @@ export class EmailService {
               <div class="footer-disclaimer" style="font-size: 14px; color: #9CA3AF !important; line-height: 1.5; margin-bottom: 16px;">
                 This comprehensive report is personalized just for you based on your quiz responses.<br>
                 Start building your business with confidence using these tailored insights.
+              </div>
+              <div class="footer-unsubscribe" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #F3F4F6;">
+                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/unsubscribe" class="unsubscribe-link" style="color: #6B7280 !important; text-decoration: none; font-size: 14px; padding: 8px 16px; border-radius: 6px;">
+                  Unsubscribe
+                </a>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  private generateContactFormNotificationHTML(formData: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    category: string;
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Contact Form Submission</title>
+          <style>
+            ${this.getBrighterStyles()}
+          </style>
+        </head>
+        <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F8FAFC !important; color: #000000 !important;">
+          <div class="email-container" style="max-width: 600px; margin: 0 auto; background: #FFFFFF !important; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12); border: 1px solid #E5E7EB;">
+            <div class="header" style="background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 40px; text-align: center;">
+              <div class="logo" style="width: 70px; height: 70px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;">
+                <img src="https://cdn.builder.io/api/v1/image/assets%2F8eb83e4a630e4b8d86715228efeb581b%2F8de3245c79ad43b48b9a59be9364a64e?format=webp&width=800" alt="BizModelAI Logo" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px; background: white; padding: 8px; box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);">
+              </div>
+              <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 12px; color: white !important;">New Contact Form Submission</h1>
+              <p style="font-size: 16px; opacity: 0.95; color: white !important;">From BizModelAI Contact Form</p>
+            </div>
+
+            <div class="content" style="padding: 40px; background: #FFFFFF !important; color: #000000 !important;">
+              <div class="form-details" style="background: #F8FAFC; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #E5E7EB;">
+                <h2 style="font-size: 20px; font-weight: 600; color: #000000 !important; margin-bottom: 20px;">Contact Details</h2>
+
+                <div class="detail-row" style="display: flex; margin-bottom: 16px; padding: 12px 0; border-bottom: 1px solid #E5E7EB;">
+                  <span style="font-weight: 600; color: #374151 !important; width: 120px; flex-shrink: 0;">Name:</span>
+                  <span style="color: #000000 !important;">${formData.name}</span>
+                </div>
+
+                <div class="detail-row" style="display: flex; margin-bottom: 16px; padding: 12px 0; border-bottom: 1px solid #E5E7EB;">
+                  <span style="font-weight: 600; color: #374151 !important; width: 120px; flex-shrink: 0;">Email:</span>
+                  <span style="color: #000000 !important;">${formData.email}</span>
+                </div>
+
+                <div class="detail-row" style="display: flex; margin-bottom: 16px; padding: 12px 0; border-bottom: 1px solid #E5E7EB;">
+                  <span style="font-weight: 600; color: #374151 !important; width: 120px; flex-shrink: 0;">Category:</span>
+                  <span style="color: #000000 !important;">${formData.category}</span>
+                </div>
+
+                <div class="detail-row" style="display: flex; margin-bottom: 16px; padding: 12px 0; border-bottom: 1px solid #E5E7EB;">
+                  <span style="font-weight: 600; color: #374151 !important; width: 120px; flex-shrink: 0;">Subject:</span>
+                  <span style="color: #000000 !important;">${formData.subject}</span>
+                </div>
+              </div>
+
+              <div class="message-section" style="background: #FFFFFF; border: 2px solid #2563EB; border-radius: 12px; padding: 30px;">
+                <h3 style="font-size: 18px; font-weight: 600; color: #2563EB !important; margin-bottom: 16px;">Message</h3>
+                <div style="background: #F8FAFC; padding: 20px; border-radius: 8px; border-left: 4px solid #2563EB;">
+                  <p style="color: #000000 !important; line-height: 1.6; margin: 0; white-space: pre-wrap;">${formData.message}</p>
+                </div>
+              </div>
+
+              <div style="margin-top: 30px; padding: 20px; background: #F0F9FF; border-radius: 12px; border: 1px solid #BAE6FD;">
+                <p style="color: #1E40AF !important; font-size: 14px; margin: 0; text-align: center;">
+                  <strong>Reply to:</strong> ${formData.email}
+                </p>
+              </div>
+            </div>
+
+            <div class="footer" style="background: #FFFFFF !important; padding: 30px; text-align: center; border-top: 1px solid #F3F4F6;">
+              <div class="footer-logo" style="font-size: 18px; font-weight: 700; color: #000000 !important; margin-bottom: 8px;">BizModelAI</div>
+              <div style="color: #6B7280 !important; font-size: 14px;">Contact Form Notification</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  private generateContactFormConfirmationHTML(userName: string): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="color-scheme" content="light only">
+          <meta name="supported-color-schemes" content="light">
+          <title>Message Received - BizModelAI</title>
+          <style>
+            ${this.getBrighterStyles()}
+          </style>
+        </head>
+        <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F8FAFC !important; color: #000000 !important;">
+          <div class="email-container" style="max-width: 600px; margin: 0 auto; background: #FFFFFF !important; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12); border: 1px solid #E5E7EB;">
+            <div class="header" style="background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 50px 40px; text-align: center; position: relative; overflow: hidden;">
+              <div class="logo" style="width: 70px; height: 70px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1;">
+                <img src="https://cdn.builder.io/api/v1/image/assets%2F8eb83e4a630e4b8d86715228efeb581b%2F8de3245c79ad43b48b9a59be9364a64e?format=webp&width=800" alt="BizModelAI Logo" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px; background: white; padding: 8px; box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);">
+              </div>
+              <h1 style="font-size: 32px; font-weight: 700; margin-bottom: 12px; position: relative; z-index: 1; color: white !important;">Message Received!</h1>
+              <p style="font-size: 18px; opacity: 0.95; position: relative; z-index: 1; color: white !important;">Thank you for reaching out to us</p>
+            </div>
+
+            <div class="content" style="padding: 50px 40px; background: #FFFFFF !important; color: #000000 !important;">
+              <div class="section" style="margin-bottom: 40px;">
+                <h2 style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px;">Hi ${userName}! �</h2>
+                <p style="font-size: 16px; color: #374151 !important; line-height: 1.6; margin-bottom: 20px;">
+                  We've successfully received your message and our team will review it shortly. We appreciate you taking the time to contact us.
+                </p>
+                <p style="font-size: 16px; color: #374151 !important; line-height: 1.6; margin-bottom: 30px;">
+                  <strong>What happens next?</strong>
+                </p>
+
+                <div class="timeline" style="background: #F8FAFC; border-radius: 12px; padding: 30px; border: 1px solid #E5E7EB;">
+                  <div class="timeline-item" style="display: flex; align-items: flex-start; margin-bottom: 20px;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #10B981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">
+                      <span style="color: white; font-weight: bold; font-size: 14px;">1</span>
+                    </div>
+                    <div>
+                      <h4 style="color: #000000 !important; font-weight: 600; margin-bottom: 4px;">Review (Within 2 hours)</h4>
+                      <p style="color: #6B7280 !important; font-size: 14px; margin: 0;">Our team will review your message and determine the best way to help.</p>
+                    </div>
+                  </div>
+
+                  <div class="timeline-item" style="display: flex; align-items: flex-start; margin-bottom: 20px;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #2563EB, #7C3AED); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">
+                      <span style="color: white; font-weight: bold; font-size: 14px;">2</span>
+                    </div>
+                    <div>
+                      <h4 style="color: #000000 !important; font-weight: 600; margin-bottom: 4px;">Response (Within 24 hours)</h4>
+                      <p style="color: #6B7280 !important; font-size: 14px; margin: 0;">We'll send you a personalized response with the information you need.</p>
+                    </div>
+                  </div>
+
+                  <div class="timeline-item" style="display: flex; align-items: flex-start;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #F59E0B, #D97706); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">
+                      <span style="color: white; font-weight: bold; font-size: 14px;">3</span>
+                    </div>
+                    <div>
+                      <h4 style="color: #000000 !important; font-weight: 600; margin-bottom: 4px;">Follow-up (If needed)</h4>
+                      <p style="color: #6B7280 !important; font-size: 14px; margin: 0;">We may reach out with additional questions or resources to better assist you.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #BAE6FD;">
+                <h3 style="color: #1E40AF !important; font-size: 18px; font-weight: 600; margin-bottom: 16px;">While you wait...</h3>
+                <p style="color: #1E3A8A !important; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+                  Explore our business assessment quiz to discover your perfect business model match, or browse our comprehensive business guides.
+                </p>
+                <div style="text-align: center;">
+                  <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/quiz" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; margin-right: 12px;">
+                    Take the Quiz →
+                  </a>
+                  <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/explore" style="display: inline-block; background: #FFFFFF; color: #2563EB !important; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; border: 2px solid #2563EB;">
+                    Explore Models
+                  </a>
+                </div>
+              </div>
+
+              <div style="text-align: center; padding: 20px;">
+                <p style="color: #6B7280 !important; font-size: 14px; margin: 0;">
+                  Need immediate assistance? Check out our <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/help" style="color: #2563EB !important; text-decoration: none;">Help Center</a>
+                </p>
+              </div>
+            </div>
+
+            <div class="footer" style="background: #FFFFFF !important; padding: 40px; text-align: center; border-top: 1px solid #F3F4F6;">
+              <div class="footer-logo" style="font-size: 20px; font-weight: 700; color: #000000 !important; margin-bottom: 10px;">BizModelAI</div>
+              <div class="footer-tagline" style="color: #6B7280 !important; font-size: 16px; margin-bottom: 20px;">Your AI-Powered Business Discovery Platform</div>
+
+              <!-- Social Media Links -->
+              <div class="social-media" style="margin-bottom: 20px;">
+                <a href="https://www.instagram.com/bizmodelai/" style="display: inline-block; margin: 0 8px; text-decoration: none;" target="_blank">
+                  <img src="https://cdn4.iconfinder.com/data/icons/social-media-logos-6/512/112-instagram-512.png" alt="Instagram" style="width: 24px; height: 24px;">
+                </a>
+                <a href="https://www.tiktok.com/@bizmodelai" style="display: inline-block; margin: 0 8px; text-decoration: none;" target="_blank">
+                  <img src="https://cdn4.iconfinder.com/data/icons/social-media-logos-6/512/113-tiktok-512.png" alt="TikTok" style="width: 24px; height: 24px;">
+                </a>
+                <a href="https://x.com/bizmodelai" style="display: inline-block; margin: 0 8px; text-decoration: none;" target="_blank">
+                  <img src="https://cdn4.iconfinder.com/data/icons/social-media-logos-6/512/121-twitter-512.png" alt="X (Twitter)" style="width: 24px; height: 24px;">
+                </a>
+                <a href="https://www.pinterest.com/bizmodelai/" style="display: inline-block; margin: 0 8px; text-decoration: none;" target="_blank">
+                  <img src="https://cdn4.iconfinder.com/data/icons/social-media-logos-6/512/114-pinterest-512.png" alt="Pinterest" style="width: 24px; height: 24px;">
+                </a>
+              </div>
+
+              <div class="footer-disclaimer" style="font-size: 14px; color: #9CA3AF !important; line-height: 1.5; margin-bottom: 16px;">
+                This confirmation email was sent because you contacted us through our website.<br>
+                We're committed to helping you discover your perfect business path.
               </div>
               <div class="footer-unsubscribe" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #F3F4F6;">
                 <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/unsubscribe" class="unsubscribe-link" style="color: #6B7280 !important; text-decoration: none; font-size: 14px; padding: 8px 16px; border-radius: 6px;">

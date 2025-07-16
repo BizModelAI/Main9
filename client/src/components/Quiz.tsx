@@ -31,7 +31,9 @@ import {
 } from "lucide-react";
 import { QuizData } from "../types";
 import { quizSteps } from "../data/quizSteps";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
+import { AICacheManager } from "../utils/aiCacheManager";
+import { businessModelService } from "../utils/businessModelService";
 
 // Mobile-specific content for scale questions
 const mobileScaleContent: Record<
@@ -634,9 +636,73 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
 
   // Everyone can take unlimited quizzes in the new pay-per-report system
 
-  // Debug logging for exit modal state
+  // Clear previous quiz cache when starting a new quiz (idempotent for React StrictMode)
   useEffect(() => {
-    console.log("Exit modal state changed:", showExitModal);
+    // Check if we've already cleared cache for this session to prevent double-clearing in StrictMode
+    const cacheCleared = sessionStorage.getItem("quiz-cache-cleared");
+    const currentSession = Date.now().toString();
+
+    if (cacheCleared && Date.now() - parseInt(cacheCleared) < 5000) {
+      console.log(
+        "� Quiz component re-mounted (React StrictMode), skipping cache clear",
+      );
+      return;
+    }
+
+    console.log("� Quiz component mounted - clearing previous quiz cache");
+
+    // Mark that we've cleared cache for this session
+    sessionStorage.setItem("quiz-cache-cleared", currentSession);
+
+    try {
+      // Clear quiz data from previous sessions
+      localStorage.removeItem("quizData");
+      localStorage.removeItem("hasCompletedQuiz");
+      localStorage.removeItem("currentQuizAttemptId");
+      localStorage.removeItem("loadedReportData");
+      localStorage.removeItem("quiz-completion-ai-insights");
+      localStorage.removeItem("ai-generation-in-progress");
+      localStorage.removeItem("ai-generation-timestamp");
+      localStorage.removeItem("congratulationsShown");
+
+      // Clear AI service caches (with error handling)
+      const aiCacheManager = AICacheManager.getInstance();
+      aiCacheManager.forceResetCache();
+
+      // Clear any remaining localStorage AI cache keys from previous sessions
+      // Note: AI content is now stored in database, not localStorage
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith("ai_insights_") || // Legacy AI service cache keys
+            key.startsWith("preview_") || // Legacy preview cache keys
+            key.startsWith("fullreport_") || // Legacy full report cache keys
+            key.startsWith("ai-analysis-") ||
+            key.startsWith("skills-analysis-") ||
+            key.startsWith("ai-cache-"))
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+      console.log(
+        `✅ Cleared AI caches and ${keysToRemove.length + 8} legacy cache entries for new quiz (AI content now stored in database)`,
+      );
+    } catch (error) {
+      console.error("Error cleaning up AI content:", error);
+      // Continue with quiz initialization even if cache clearing fails
+      console.log("⚠️ Cache clearing failed, but quiz will continue normally");
+    }
+  }, []); // Run only once when component mounts
+
+  // Debug logging for exit modal state (reduced verbosity for StrictMode)
+  useEffect(() => {
+    if (showExitModal) {
+      console.log("� Exit modal opened");
+    }
   }, [showExitModal]);
 
   // Get current round info

@@ -4,7 +4,7 @@ export const debugOpenAI = {
     try {
       const response = await fetch("/api/openai-status");
       const data = await response.json();
-      console.log("🔍 OpenAI Status:", data);
+      console.log("� OpenAI Status:", data);
       return data;
     } catch (error) {
       console.error("❌ Error checking OpenAI status:", error);
@@ -15,7 +15,7 @@ export const debugOpenAI = {
   // Test a simple OpenAI request
   async testRequest() {
     try {
-      console.log("🧪 Testing OpenAI request...");
+      console.log("� Testing OpenAI request...");
       const response = await fetch("/api/openai-chat", {
         method: "POST",
         headers: {
@@ -29,7 +29,7 @@ export const debugOpenAI = {
         }),
       });
 
-      console.log("📊 Response status:", response.status);
+      console.log("� Response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -52,7 +52,7 @@ export const debugOpenAI = {
   // Test the characteristics generation specifically
   async testCharacteristics() {
     try {
-      console.log("🧪 Testing characteristics generation...");
+      console.log("� Testing characteristics generation...");
       const response = await fetch("/api/openai-chat", {
         method: "POST",
         headers: {
@@ -91,7 +91,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
         }),
       });
 
-      console.log("📊 Characteristics response status:", response.status);
+      console.log("� Characteristics response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();

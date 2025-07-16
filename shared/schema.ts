@@ -8,17 +8,25 @@ import {
   jsonb,
   decimal,
   varchar,
+  unique,
+  index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(), // Email is now the primary identifier
   password: text("password").notNull(),
   name: text("name"), // User's full name
-  email: text("email"), // Optional email for paid users
   isUnsubscribed: boolean("is_unsubscribed").default(false).notNull(),
+  // New fields to consolidate paid/unpaid users
+  sessionId: text("session_id"), // Session ID for temporary/unpaid users
+  isPaid: boolean("is_paid").default(false).notNull(), // Whether user has made payment
+  isTemporary: boolean("is_temporary").default(false).notNull(), // Whether user is temporary (unpaid)
+  tempQuizData: jsonb("temp_quiz_data"), // Temporary quiz data for unpaid users
+  expiresAt: timestamp("expires_at"), // Expiration for temporary users (3 months for email-provided, 24 hours for session-only)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -30,29 +38,72 @@ export const quizAttempts = pgTable("quiz_attempts", {
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   quizData: jsonb("quiz_data").notNull(),
-  aiContent: jsonb("ai_content"), // Store generated AI insights, recommendations, etc.
+  aiContent: jsonb("ai_content"), // DEPRECATED: Use ai_content table instead
   completedAt: timestamp("completed_at").defaultNow().notNull(),
+  // Note: No expiresAt needed - quiz attempts expire when user expires via CASCADE delete
 });
+
+// AI Content table - stores all AI-generated content separately for better performance and deduplication
+export const aiContent = pgTable(
+  "ai_content",
+  {
+    id: serial("id").primaryKey(),
+    quizAttemptId: integer("quiz_attempt_id")
+      .references(() => quizAttempts.id, { onDelete: "cascade" })
+      .notNull(),
+    contentType: varchar("content_type", { length: 100 }).notNull(), // "preview", "fullReport", "model_BusinessName", "characteristics", etc.
+    content: jsonb("content").notNull(), // No artificial size limits - let PostgreSQL handle it
+    contentHash: varchar("content_hash", { length: 64 }), // SHA-256 hash for deduplication
+    generatedAt: timestamp("generated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    // One content type per quiz attempt (allows updates)
+    uniqueContentPerAttempt: unique().on(
+      table.quizAttemptId,
+      table.contentType,
+    ),
+  }),
+);
 
 // Payments table to track individual quiz payments
-export const payments = pgTable("payments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  currency: varchar("currency").default("usd").notNull(),
-  type: varchar("type").notNull(), // "access_pass" or "quiz_payment"
-  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
-  status: varchar("status").default("pending").notNull(), // "pending", "completed", "failed"
-  quizAttemptId: integer("quiz_attempt_id").references(() => quizAttempts.id, {
-    onDelete: "cascade",
-  }), // Links payment to specific quiz
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  completedAt: timestamp("completed_at"),
-});
+export const payments = pgTable(
+  "payments",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+    currency: varchar("currency").default("usd").notNull(),
+    type: varchar("type").notNull(), // "access_pass" or "quiz_payment"
+    stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(), // Prevent duplicate Stripe payments
+    paypalOrderId: varchar("paypal_order_id").unique(), // Prevent duplicate PayPal payments
+    status: varchar("status").default("pending").notNull(), // "pending", "completed", "failed"
+    quizAttemptId: integer("quiz_attempt_id").references(
+      () => quizAttempts.id,
+      {
+        onDelete: "cascade",
+      },
+    ), // Links payment to specific quiz
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+    // Version field for optimistic locking to prevent race conditions
+    version: integer("version").default(1).notNull(),
+  },
+  (table) => ({
+    // Index for faster payment lookups
+    paymentStatusIndex: index("idx_payment_status").on(table.status),
+    paymentUserIndex: index("idx_payment_user").on(table.userId),
+    paymentStripeIndex: index("idx_payment_stripe").on(
+      table.stripePaymentIntentId,
+    ),
+    paymentPaypalIndex: index("idx_payment_paypal").on(table.paypalOrderId),
+  }),
+);
 
-// Temporary email tracking for unpaid users (expires after 24 hours)
+// DEPRECATED: Temporary email tracking for unpaid users (expires after 24 hours)
+// This table is now consolidated into the users table - keeping for migration purposes only
 export const unpaidUserEmails = pgTable("unpaid_user_emails", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull().unique(), // Browser session ID
@@ -105,7 +156,7 @@ export const refunds = pgTable("refunds", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  email: true,
   password: true,
   name: true,
 });
@@ -117,6 +168,7 @@ export const insertPasswordResetTokenSchema =
   createInsertSchema(passwordResetTokens);
 export const insertRefundSchema = createInsertSchema(refunds);
 export const insertReportViewSchema = createInsertSchema(reportViews);
+export const insertAiContentSchema = createInsertSchema(aiContent);
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -134,3 +186,5 @@ export type InsertPasswordResetToken = z.infer<
 >;
 export type ReportView = typeof reportViews.$inferSelect;
 export type InsertReportView = z.infer<typeof insertReportViewSchema>;
+export type AiContent = typeof aiContent.$inferSelect;
+export type InsertAiContent = z.infer<typeof insertAiContentSchema>;

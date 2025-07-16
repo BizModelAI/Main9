@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Send, CheckCircle, PlayCircle, Grid3X3 } from "lucide-react";
+import { Send, CheckCircle, PlayCircle, ChevronDown } from "lucide-react";
 
 const ContactUs: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -28,24 +28,48 @@ const ContactUs: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitStatus("idle");
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setSubmitStatus("success");
-    setIsSubmitting(false);
-
-    // Reset form after success
-    setTimeout(() => {
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        message: "",
-        category: "general",
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       });
-      setSubmitStatus("idle");
-    }, 3000);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus("success");
+        // Reset form after success
+        setTimeout(() => {
+          setFormData({
+            name: "",
+            email: "",
+            subject: "",
+            message: "",
+            category: "general",
+          });
+          setSubmitStatus("idle");
+        }, 5000);
+      } else {
+        console.error("Contact form submission failed:", data.error);
+        setSubmitStatus("error");
+        setTimeout(() => {
+          setSubmitStatus("idle");
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      setSubmitStatus("error");
+      setTimeout(() => {
+        setSubmitStatus("idle");
+      }, 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -94,15 +118,53 @@ const ContactUs: React.FC = () => {
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   Message Sent Successfully!
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Thank you for reaching out. We'll get back to you within 24
-                  hours.
+                <p className="text-gray-600 mb-4">
+                  Thank you for reaching out. We've sent you a confirmation
+                  email and will get back to you within 24 hours.
                 </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                  <p className="text-blue-800 text-sm">
+                    <strong>What's next?</strong> Check your email for a
+                    confirmation message. Our team will review your inquiry and
+                    respond personally.
+                  </p>
+                </div>
                 <button
                   onClick={() => setSubmitStatus("idle")}
                   className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
                 >
                   Send Another Message
+                </button>
+              </div>
+            ) : submitStatus === "error" ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg
+                    className="h-8 w-8 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  Something went wrong
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  We couldn't send your message right now. Please try again or
+                  contact us directly at team@bizmodelai.com.
+                </p>
+                <button
+                  onClick={() => setSubmitStatus("idle")}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Try Again
                 </button>
               </div>
             ) : (
@@ -154,22 +216,28 @@ const ContactUs: React.FC = () => {
                       htmlFor="category"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Category
+                      Category *
                     </label>
-                    <select
-                      id="category"
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    >
-                      <option value="general">General Inquiry</option>
-                      <option value="quiz">Quiz Help</option>
-                      <option value="business">Business Model Questions</option>
-                      <option value="technical">Technical Support</option>
-                      <option value="billing">Billing & Account</option>
-                      <option value="partnership">Partnership</option>
-                    </select>
+                    <div className="relative">
+                      <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
+                      <select
+                        id="category"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none"
+                      >
+                        <option value="general">General Inquiry</option>
+                        <option value="quiz">Quiz Help</option>
+                        <option value="business">
+                          Business Model Questions
+                        </option>
+                        <option value="technical">Technical Support</option>
+                        <option value="billing">Billing & Account</option>
+                        <option value="partnership">Partnership</option>
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label
@@ -252,20 +320,13 @@ const ContactUs: React.FC = () => {
               Don't wait any longer. Take our AI-powered quiz and get
               personalized business recommendations in just 15 minutes.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <Link
                 to="/quiz"
                 className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-50 transition-colors flex items-center justify-center"
               >
                 <PlayCircle className="h-5 w-5 mr-2" />
                 Take the Quiz Now
-              </Link>
-              <Link
-                to="/explore"
-                className="bg-blue-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
-              >
-                <Grid3X3 className="h-5 w-5 mr-2" />
-                Browse Business Models
               </Link>
             </div>
           </motion.div>

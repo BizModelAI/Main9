@@ -3,7 +3,7 @@ import { db } from "./server/db.js";
 import { sql } from "drizzle-orm";
 
 async function simpleVerify() {
-  console.log("🔍 Simple AI Content System Verification\n");
+  console.log("� Simple AI Content System Verification\n");
 
   try {
     // 1. Check if we're connected to Supabase
@@ -11,7 +11,7 @@ async function simpleVerify() {
     const isSupabase =
       connectionString.includes("supabase") ||
       connectionString.includes(".pooler.supabase");
-    console.log("Database Type:", isSupabase ? "🟢 SUPABASE" : "🔵 PostgreSQL");
+    console.log("Database Type:", isSupabase ? "� SUPABASE" : "� PostgreSQL");
 
     if (!db) {
       console.log("❌ Database not connected");
@@ -64,7 +64,7 @@ async function simpleVerify() {
       SET ai_content = ${JSON.stringify(testData)}
       WHERE id = ${testId}
     `);
-    console.log("��� AI content save successful");
+    console.log("AI content save successful");
 
     // Test retrieve
     const retrieved = await db.execute(sql`
@@ -109,7 +109,7 @@ async function simpleVerify() {
       return false;
     }
 
-    console.log("\n🎉 VERIFICATION COMPLETE!");
+    console.log("\n� VERIFICATION COMPLETE!");
     console.log(
       "Database: " + (isSupabase ? "Supabase PostgreSQL" : "PostgreSQL"),
     );

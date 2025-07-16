@@ -16,7 +16,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { calculateAllBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { businessModelService } from "../utils/businessModelService";
 import { QuizData } from "../types";
 import { Link, useNavigate } from "react-router-dom";
 import { businessPaths } from "../data/businessPaths";
@@ -31,6 +31,10 @@ const Dashboard: React.FC = () => {
   const [topBusinessModels, setTopBusinessModels] = useState<any[]>([]);
   const [isLoadingScores, setIsLoadingScores] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0); // For triggering re-renders
+  const [historicalQuizDate, setHistoricalQuizDate] = useState<string | null>(
+    null,
+  );
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
   // Load real business model scores from user's quiz data
   useEffect(() => {
@@ -73,149 +77,148 @@ const Dashboard: React.FC = () => {
         }
 
         if (quizData) {
-          // Calculate real business model matches using the scoring algorithm
-          const calculatedMatches = calculateAllBusinessModelMatches(quizData);
+          // Calculate real business model matches using the BusinessModelService
+          const calculatedMatches =
+            businessModelService.getBusinessModelMatches(quizData);
 
           // Map the calculated results to the format expected by the UI
-          const formattedBusinessModels = calculatedMatches
-            .slice(0, 9)
-            .map((match) => {
-              // Map business model IDs to the UI format
-              const businessModelMap: Record<string, any> = {
-                "content-creation": {
-                  id: "content-creation-ugc",
-                  name: "Content Creation & UGC",
-                  description:
-                    "Create engaging content and user-generated content for brands",
-                  timeToProfit: "2-4 weeks",
-                  potentialIncome: "$2K-15K/month",
-                  difficulty: "Beginner",
-                  icon: "📱",
-                },
-                "affiliate-marketing": {
-                  id: "affiliate-marketing",
-                  name: "Affiliate Marketing",
-                  description:
-                    "Promote other people's products and earn commission on sales",
-                  timeToProfit: "3-6 months",
-                  potentialIncome: "$100-10K+/month",
-                  difficulty: "Easy",
-                  icon: "🔗",
-                },
-                freelancing: {
-                  id: "freelancing",
-                  name: "Freelancing",
-                  description:
-                    "Offer your skills and services to clients on a project basis",
-                  timeToProfit: "1-2 weeks",
-                  potentialIncome: "$500-8K/month",
-                  difficulty: "Easy",
-                  icon: "💼",
-                },
-                "e-commerce": {
-                  id: "e-commerce-dropshipping",
-                  name: "E-commerce / Dropshipping",
-                  description: "Sell products online without holding inventory",
-                  timeToProfit: "2-6 months",
-                  potentialIncome: "$1K-50K/month",
-                  difficulty: "Medium",
-                  icon: "🛍️",
-                },
-                "virtual-assistant": {
-                  id: "virtual-assistant",
-                  name: "Virtual Assistant",
-                  description:
-                    "Provide administrative support to businesses remotely",
-                  timeToProfit: "1-3 weeks",
-                  potentialIncome: "$300-5K/month",
-                  difficulty: "Easy",
-                  icon: "💻",
-                },
-                "online-tutoring": {
-                  id: "online-coaching-consulting",
-                  name: "Online Coaching & Consulting",
-                  description:
-                    "Share your expertise through 1-on-1 coaching or consulting",
-                  timeToProfit: "4-8 weeks",
-                  potentialIncome: "$1K-20K/month",
-                  difficulty: "Medium",
-                  icon: "🎯",
-                },
-                "handmade-goods": {
-                  id: "print-on-demand",
-                  name: "Print on Demand",
-                  description:
-                    "Design and sell custom products without inventory",
-                  timeToProfit: "6-12 weeks",
-                  potentialIncome: "$200-8K/month",
-                  difficulty: "Easy",
-                  icon: "🎨",
-                },
-                "youtube-automation": {
-                  id: "youtube-automation",
-                  name: "YouTube Automation",
-                  description:
-                    "Create and monetize YouTube channels with outsourced content",
-                  timeToProfit: "3-9 months",
-                  potentialIncome: "$500-15K/month",
-                  difficulty: "Medium",
-                  icon: "📹",
-                },
-                "local-service": {
-                  id: "local-service-arbitrage",
-                  name: "Local Service Arbitrage",
-                  description: "Connect local customers with service providers",
-                  timeToProfit: "2-8 weeks",
-                  potentialIncome: "$1K-12K/month",
-                  difficulty: "Medium",
-                  icon: "🏠",
-                },
-                "saas-development": {
-                  id: "app-saas-development",
-                  name: "App / SaaS Development",
-                  description:
-                    "Build and launch software applications or SaaS products",
-                  timeToProfit: "6-18 months",
-                  potentialIncome: "$5K-100K+/month",
-                  difficulty: "Hard",
-                  icon: "💻",
-                },
-                "social-media-agency": {
-                  id: "social-media-agency",
-                  name: "Social Media Agency",
-                  description:
-                    "Manage social media accounts and marketing for businesses",
-                  timeToProfit: "2-6 months",
-                  potentialIncome: "$2K-25K/month",
-                  difficulty: "Medium",
-                  icon: "📱",
-                },
-                copywriting: {
-                  id: "copywriting",
-                  name: "Copywriting",
-                  description: "Write persuasive marketing copy for businesses",
-                  timeToProfit: "2-8 weeks",
-                  potentialIncome: "$1K-15K/month",
-                  difficulty: "Easy",
-                  icon: "✍️",
-                },
-              };
-
-              const baseModel = businessModelMap[match.id] || {
-                id: match.id,
-                name: match.name,
-                description: `Build a successful ${match.name.toLowerCase()} business`,
+          const formattedBusinessModels = calculatedMatches.map((match) => {
+            // Map business model IDs to the UI format
+            const businessModelMap: Record<string, any> = {
+              "content-creation": {
+                id: "content-creation-ugc",
+                name: "Content Creation & UGC",
+                description:
+                  "Create engaging content and user-generated content for brands",
+                timeToProfit: "2-4 weeks",
+                potentialIncome: "$2K-15K/month",
+                difficulty: "Beginner",
+                icon: "�",
+              },
+              "affiliate-marketing": {
+                id: "affiliate-marketing",
+                name: "Affiliate Marketing",
+                description:
+                  "Promote other people's products and earn commission on sales",
+                timeToProfit: "3-6 months",
+                potentialIncome: "$100-10K+/month",
+                difficulty: "Easy",
+                icon: "�",
+              },
+              freelancing: {
+                id: "freelancing",
+                name: "Freelancing",
+                description:
+                  "Offer your skills and services to clients on a project basis",
+                timeToProfit: "1-2 weeks",
+                potentialIncome: "$500-8K/month",
+                difficulty: "Easy",
+                icon: "�",
+              },
+              "e-commerce": {
+                id: "e-commerce-dropshipping",
+                name: "E-commerce / Dropshipping",
+                description: "Sell products online without holding inventory",
                 timeToProfit: "2-6 months",
-                potentialIncome: "$1K-10K/month",
+                potentialIncome: "$1K-50K/month",
                 difficulty: "Medium",
-                icon: "🚀",
-              };
+                icon: "�️",
+              },
+              "virtual-assistant": {
+                id: "virtual-assistant",
+                name: "Virtual Assistant",
+                description:
+                  "Provide administrative support to businesses remotely",
+                timeToProfit: "1-3 weeks",
+                potentialIncome: "$300-5K/month",
+                difficulty: "Easy",
+                icon: "�",
+              },
+              "online-tutoring": {
+                id: "online-coaching-consulting",
+                name: "Online Coaching & Consulting",
+                description:
+                  "Share your expertise through 1-on-1 coaching or consulting",
+                timeToProfit: "4-8 weeks",
+                potentialIncome: "$1K-20K/month",
+                difficulty: "Medium",
+                icon: "�",
+              },
+              "handmade-goods": {
+                id: "print-on-demand",
+                name: "Print on Demand",
+                description:
+                  "Design and sell custom products without inventory",
+                timeToProfit: "6-12 weeks",
+                potentialIncome: "$200-8K/month",
+                difficulty: "Easy",
+                icon: "�",
+              },
+              "youtube-automation": {
+                id: "youtube-automation",
+                name: "YouTube Automation",
+                description:
+                  "Create and monetize YouTube channels with outsourced content",
+                timeToProfit: "3-9 months",
+                potentialIncome: "$500-15K/month",
+                difficulty: "Medium",
+                icon: "�",
+              },
+              "local-service": {
+                id: "local-service-arbitrage",
+                name: "Local Service Arbitrage",
+                description: "Connect local customers with service providers",
+                timeToProfit: "2-8 weeks",
+                potentialIncome: "$1K-12K/month",
+                difficulty: "Medium",
+                icon: "�",
+              },
+              "saas-development": {
+                id: "app-saas-development",
+                name: "App / SaaS Development",
+                description:
+                  "Build and launch software applications or SaaS products",
+                timeToProfit: "6-18 months",
+                potentialIncome: "$5K-100K+/month",
+                difficulty: "Hard",
+                icon: "�",
+              },
+              "social-media-agency": {
+                id: "social-media-agency",
+                name: "Social Media Agency",
+                description:
+                  "Manage social media accounts and marketing for businesses",
+                timeToProfit: "2-6 months",
+                potentialIncome: "$2K-25K/month",
+                difficulty: "Medium",
+                icon: "�",
+              },
+              copywriting: {
+                id: "copywriting",
+                name: "Copywriting",
+                description: "Write persuasive marketing copy for businesses",
+                timeToProfit: "2-8 weeks",
+                potentialIncome: "$1K-15K/month",
+                difficulty: "Easy",
+                icon: "✍️",
+              },
+            };
 
-              return {
-                ...baseModel,
-                fitScore: match.score, // Use the real calculated score
-              };
-            });
+            const baseModel = businessModelMap[match.id] || {
+              id: match.id,
+              name: match.name,
+              description: `Build a successful ${match.name.toLowerCase()} business`,
+              timeToProfit: "2-6 months",
+              potentialIncome: "$1K-10K/month",
+              difficulty: "Medium",
+              icon: "�",
+            };
+
+            return {
+              ...baseModel,
+              fitScore: match.score, // Use the real calculated score
+            };
+          });
 
           setTopBusinessModels(formattedBusinessModels);
         } else {
@@ -289,7 +292,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "2-4 weeks",
       potentialIncome: "$2K-15K/month",
       difficulty: "Beginner",
-      icon: "📱",
+      icon: "�",
     },
     {
       id: "affiliate-marketing",
@@ -300,7 +303,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-6 months",
       potentialIncome: "$100-10K+/month",
       difficulty: "Easy",
-      icon: "🔗",
+      icon: "�",
     },
     {
       id: "freelancing",
@@ -311,7 +314,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "1-2 weeks",
       potentialIncome: "$500-8K/month",
       difficulty: "Easy",
-      icon: "💼",
+      icon: "�",
     },
     {
       id: "e-commerce-dropshipping",
@@ -321,7 +324,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "2-6 months",
       potentialIncome: "$1K-50K/month",
       difficulty: "Medium",
-      icon: "🛒",
+      icon: "�",
     },
     {
       id: "virtual-assistant",
@@ -331,7 +334,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "1-3 weeks",
       potentialIncome: "$300-5K/month",
       difficulty: "Easy",
-      icon: "💻",
+      icon: "�",
     },
     {
       id: "online-coaching-consulting",
@@ -341,7 +344,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "4-8 weeks",
       potentialIncome: "$1K-20K/month",
       difficulty: "Medium",
-      icon: "🎯",
+      icon: "�",
     },
     {
       id: "print-on-demand",
@@ -351,7 +354,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "6-12 weeks",
       potentialIncome: "$200-8K/month",
       difficulty: "Easy",
-      icon: "🎨",
+      icon: "�",
     },
     {
       id: "youtube-automation",
@@ -362,7 +365,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-9 months",
       potentialIncome: "$500-15K/month",
       difficulty: "Medium",
-      icon: "📹",
+      icon: "�",
     },
     {
       id: "local-service-arbitrage",
@@ -372,7 +375,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "2-8 weeks",
       potentialIncome: "$1K-12K/month",
       difficulty: "Medium",
-      icon: "🏠",
+      icon: "�",
     },
   ];
 
@@ -411,8 +414,31 @@ const Dashboard: React.FC = () => {
     }, 0);
   };
 
-  const handleQuizSelected = (quizData: QuizData, aiContent?: any) => {
-    console.log("Quiz selected in Dashboard:", { quizData, aiContent });
+  const handleQuizSelected = (
+    quizData: QuizData,
+    aiContent?: any,
+    completedAt?: string,
+  ) => {
+    console.log("Quiz selected in Dashboard:", {
+      quizData,
+      aiContent,
+      completedAt,
+    });
+
+    // Set historical quiz date if provided
+    if (completedAt) {
+      const formattedDate = new Date(completedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+      setHistoricalQuizDate(formattedDate);
+    }
+
+    // Show success notification
+    setShowSuccessNotification(true);
+    setTimeout(() => setShowSuccessNotification(false), 3000);
+
     // Trigger a re-render of components that depend on localStorage data
     setRefreshKey((prev) => prev + 1);
     // Re-calculate business models with new quiz data
@@ -639,7 +665,7 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 max-w-7xl mx-auto px-4 sm:px-8">
             {isLoadingScores
               ? // Loading state
-                Array.from({ length: 9 }).map((_, index) => (
+                Array.from({ length: 18 }).map((_, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
@@ -798,7 +824,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-                Welcome back, {user?.name?.split(" ")[0]}! 👋
+                Welcome back, {user?.name?.split(" ")[0]}! �
               </h1>
               <p className="text-xl text-gray-600">
                 Ready to take the next step in your entrepreneurial journey?
@@ -811,6 +837,49 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Historical Quiz Banner */}
+        {historicalQuizDate && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center space-x-3">
+              <Calendar className="w-5 h-5 text-amber-600" />
+              <span className="text-amber-800 font-medium">
+                Viewing Quiz from {historicalQuizDate}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setHistoricalQuizDate(null);
+                localStorage.removeItem("currentQuizAttemptId");
+                setRefreshKey((prev) => prev + 1);
+              }}
+              className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+            >
+              Return to Current Quiz
+            </button>
+          </motion.div>
+        )}
+
+        {/* Success Notification */}
+        {showSuccessNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3"
+          >
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="text-green-800 font-medium">
+              Quiz data loaded successfully!
+            </span>
+          </motion.div>
+        )}
 
         {/* Start Your Journey - Main CTA */}
         <motion.div
@@ -827,36 +896,38 @@ const Dashboard: React.FC = () => {
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
 
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mr-4">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center flex-1 min-w-0">
+                    {/* Hide emoji on mobile, show on desktop */}
+                    <div className="hidden md:flex w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl items-center justify-center mr-4">
                       <span className="text-3xl">
                         {selectedBusinessModel.icon}
                       </span>
                     </div>
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold mr-3">
-                          {selectedBusinessModel.fitScore}% MATCH
-                        </span>
-                        <span className="text-blue-100 text-sm font-medium">
-                          AI Recommended
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2">
+                        <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold inline-block w-fit whitespace-nowrap">
+                          {selectedBusinessModel.fitScore}% Match
                         </span>
                       </div>
-                      <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                        Start Your Journey
+                      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 pr-4">
+                        {selectedBusinessModel.name}
                       </h2>
-                      <p className="text-blue-100 text-lg">
-                        Complete Guide for {selectedBusinessModel.name}
+                      <p className="text-blue-100 text-base sm:text-lg">
+                        Start your journey to financial freedom today.
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleChangeBusinessModel}
-                    className="flex items-center text-blue-100 hover:text-white transition-colors text-sm font-medium"
+                    className="flex flex-col sm:flex-row items-center text-blue-100 hover:text-white transition-colors text-xs sm:text-sm font-medium ml-2 whitespace-nowrap"
                   >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Change Model
+                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-1" />
+                    <span className="text-center">
+                      Change<span className="hidden sm:inline"> </span>
+                      <br className="sm:hidden" />
+                      Model
+                    </span>
                   </button>
                 </div>
 
@@ -904,12 +975,15 @@ const Dashboard: React.FC = () => {
                     View Complete Guide
                     <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </button>
-                  <Link
-                    to="/results"
+                  <button
+                    onClick={() => {
+                      // Navigate to results page with query parameter to show full report
+                      navigate("/results?showFullReport=true");
+                    }}
                     className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-all duration-300 flex items-center justify-center"
                   >
                     View Full Analysis
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>

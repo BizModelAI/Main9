@@ -1,3 +1,4 @@
+// AI Cache Manager - 1-hour cache for current session, cleared between new quiz attempts
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
 
 interface AIInsights {
@@ -24,13 +25,9 @@ interface CachedAIData {
 
 export class AICacheManager {
   private static instance: AICacheManager;
-  private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  private static readonly CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
   private static readonly CACHE_KEY_PREFIX = "ai-cache-";
-  private static readonly INSIGHTS_KEY = "ai-insights";
-  private static readonly ANALYSIS_KEY = "ai-analysis";
-  private static readonly CACHE_VERSION = "v2.1"; // Increment when prompts change
-
-  private constructor() {}
+  private static readonly CACHE_VERSION = "v3.0"; // Updated for 1-hour session cache
 
   static getInstance(): AICacheManager {
     if (!AICacheManager.instance) {
@@ -40,38 +37,38 @@ export class AICacheManager {
   }
 
   /**
-   * Generate a simple hash of quiz data for cache key
+   * Generate a hash of quiz data for cache key
    */
   private generateQuizDataHash(quizData: QuizData): string {
     const key = JSON.stringify({
-      version: AICacheManager.CACHE_VERSION, // Include version in hash
+      version: AICacheManager.CACHE_VERSION,
       mainMotivation: quizData.mainMotivation,
       successIncomeGoal: quizData.successIncomeGoal,
       weeklyTimeCommitment: quizData.weeklyTimeCommitment,
       techSkillsRating: quizData.techSkillsRating,
       riskComfortLevel: quizData.riskComfortLevel,
-      workStructurePreference: quizData.workStructurePreference,
-      decisionMakingStyle: quizData.decisionMakingStyle,
-      // Add other key fields that affect AI analysis
+      directCommunicationEnjoyment: quizData.directCommunicationEnjoyment,
+      socialMediaInterest: quizData.socialMediaInterest,
     });
-    return btoa(key).substring(0, 16); // Simple hash
+    return btoa(key).substring(0, 16);
   }
 
   /**
-   * Check if cached data is still valid
+   * Check if cached data is still valid (within 1 hour)
    */
   private isCacheValid(timestamp: number): boolean {
-    // Check if cache has been force reset
-    const resetTimestamp = localStorage.getItem("ai-cache-reset-timestamp");
-    if (resetTimestamp && parseInt(resetTimestamp) > timestamp) {
-      return false; // Cache was reset after this item was cached
-    }
+    const now = Date.now();
+    const isWithinTimeLimit = now - timestamp < AICacheManager.CACHE_DURATION;
 
-    return Date.now() - timestamp < AICacheManager.CACHE_DURATION;
+    // Check if cache has been force reset for new quiz
+    const resetTimestamp = localStorage.getItem("ai-cache-reset-timestamp");
+    const wasReset = resetTimestamp && parseInt(resetTimestamp) > timestamp;
+
+    return isWithinTimeLimit && !wasReset;
   }
 
   /**
-   * Get cached AI insights and analysis
+   * Get cached AI content if valid (for page refreshes within 1 hour)
    */
   getCachedAIContent(quizData: QuizData): {
     insights: AIInsights | null;
@@ -80,40 +77,40 @@ export class AICacheManager {
   } {
     try {
       const quizHash = this.generateQuizDataHash(quizData);
-      const cachedData = localStorage.getItem(
-        `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`,
-      );
+      const cacheKey = `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`;
+      const cachedData = localStorage.getItem(cacheKey);
 
       if (!cachedData) {
+        console.log("� No cached AI data found for this quiz");
         return { insights: null, analysis: null, topPath: null };
       }
 
       const parsedData: CachedAIData = JSON.parse(cachedData);
 
-      // Check if cache is valid and quiz data hasn't changed
+      // Check if cache is valid and quiz data matches
       if (
         parsedData.quizDataHash === quizHash &&
         this.isCacheValid(parsedData.timestamp)
       ) {
-        console.log("Using cached AI content");
+        console.log("✅ Using cached AI content (valid for 1 hour)");
         return {
           insights: parsedData.insights,
           analysis: parsedData.analysis,
           topPath: parsedData.topPath,
         };
+      } else {
+        console.log("� Cached AI data is stale (>1 hour), removing...");
+        localStorage.removeItem(cacheKey);
+        return { insights: null, analysis: null, topPath: null };
       }
-
-      // Cache is invalid or expired, remove it
-      this.clearCacheForQuiz(quizData);
-      return { insights: null, analysis: null, topPath: null };
     } catch (error) {
-      console.error("Error retrieving cached AI content:", error);
+      console.error("❌ Error retrieving cached AI data:", error);
       return { insights: null, analysis: null, topPath: null };
     }
   }
 
   /**
-   * Cache AI insights and analysis
+   * Cache AI content for 1 hour (for page refreshes)
    */
   cacheAIContent(
     quizData: QuizData,
@@ -131,175 +128,149 @@ export class AICacheManager {
         topPath,
       };
 
-      localStorage.setItem(
-        `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`,
-        JSON.stringify(cacheData),
-      );
-      console.log("AI content cached successfully");
+      const cacheKey = `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`;
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log("� AI content cached for 1 hour (allows page refresh)");
     } catch (error) {
-      console.error("Error caching AI content:", error);
+      console.error("❌ Error caching AI content:", error);
     }
   }
 
   /**
-   * Get cached business model analysis (existing functionality)
+   * Clear all AI cache (called when starting a NEW quiz)
    */
-  getCachedBusinessAnalysis(businessId: string): AIAnalysis | null {
-    try {
-      const cachedAnalysis = localStorage.getItem(`ai-analysis-${businessId}`);
-      if (cachedAnalysis) {
-        return JSON.parse(cachedAnalysis);
+  clearAllCache(): void {
+    console.log("� Clearing all AI cache for new quiz session");
+
+    // Set reset timestamp to invalidate existing caches
+    localStorage.setItem("ai-cache-reset-timestamp", Date.now().toString());
+
+    // Remove all cache keys
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith("ai-cache-") ||
+          key.startsWith("ai-analysis-") ||
+          key.startsWith("skills-analysis-") ||
+          key.startsWith("quiz-completion-ai-insights"))
+      ) {
+        keysToRemove.push(key);
       }
-      return null;
-    } catch (error) {
-      console.error("Error retrieving cached business analysis:", error);
-      return null;
     }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    console.log(`� Removed ${keysToRemove.length} cache entries`);
   }
 
   /**
-   * Cache business model analysis (existing functionality)
+   * Force reset cache (called when starting a NEW quiz)
    */
-  cacheBusinessAnalysis(businessId: string, analysis: AIAnalysis): void {
-    try {
-      localStorage.setItem(
-        `ai-analysis-${businessId}`,
-        JSON.stringify(analysis),
+  forceResetCache(): void {
+    // Check if we've already reset cache recently (prevents double-reset in React StrictMode)
+    const lastReset = localStorage.getItem("ai-cache-reset-timestamp");
+    if (lastReset && Date.now() - parseInt(lastReset) < 3000) {
+      // 3 second window
+      console.log(
+        "� AI cache already reset recently, skipping duplicate reset",
       );
-      console.log(`Business analysis cached for ${businessId}`);
-    } catch (error) {
-      console.error("Error caching business analysis:", error);
+      return;
     }
+
+    console.log("� Force resetting AI cache for new quiz attempt");
+    this.clearAllCache();
   }
 
   /**
-   * Get cached skills analysis
+   * Check if data is cached for current quiz
+   */
+  isCacheHit(quizData: QuizData): boolean {
+    const cached = this.getCachedAIContent(quizData);
+    return cached.insights !== null;
+  }
+
+  /**
+   * Skills analysis caching (1-hour cache)
    */
   getCachedSkillsAnalysis(businessId: string): any | null {
     try {
-      const cachedSkills = localStorage.getItem(
-        `skills-analysis-${businessId}`,
-      );
-      if (cachedSkills) {
-        return JSON.parse(cachedSkills);
+      const cacheKey = `skills-analysis-${businessId}`;
+      const cached = localStorage.getItem(cacheKey);
+
+      if (!cached) {
+        return null;
       }
+
+      const parsedData = JSON.parse(cached);
+
+      // Check if cache is valid (1 hour)
+      if (this.isCacheValid(parsedData.timestamp)) {
+        console.log(`✅ Using cached skills analysis for ${businessId}`);
+        return parsedData.skills;
+      } else {
+        console.log(
+          `� Cached skills analysis for ${businessId} is stale, removing...`,
+        );
+        localStorage.removeItem(cacheKey);
+        return null;
+      }
+    } catch (error) {
+      console.error("❌ Error retrieving cached skills analysis:", error);
       return null;
-    } catch (error) {
-      console.error("Error retrieving cached skills analysis:", error);
-      return null;
     }
   }
 
   /**
-   * Cache skills analysis
+   * Cache skills analysis for 1 hour
    */
-  cacheSkillsAnalysis(businessId: string, skillsAnalysis: any): void {
+  cacheSkillsAnalysis(businessId: string, skills: any): void {
     try {
-      localStorage.setItem(
-        `skills-analysis-${businessId}`,
-        JSON.stringify(skillsAnalysis),
-      );
-      console.log(`Skills analysis cached for ${businessId}`);
+      const cacheKey = `skills-analysis-${businessId}`;
+      const cacheData = {
+        skills,
+        timestamp: Date.now(),
+      };
+
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log(`� Skills analysis cached for ${businessId} (1 hour)`);
     } catch (error) {
-      console.error("Error caching skills analysis:", error);
+      console.error("❌ Error caching skills analysis:", error);
     }
   }
 
   /**
-   * Clear cache for specific quiz data
+   * Get cache status for debugging
    */
-  clearCacheForQuiz(quizData: QuizData): void {
-    try {
-      const quizHash = this.generateQuizDataHash(quizData);
-      localStorage.removeItem(`${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`);
-      console.log("Quiz-specific cache cleared");
-    } catch (error) {
-      console.error("Error clearing quiz cache:", error);
-    }
-  }
+  getCacheStatus(): any {
+    const status = {
+      cacheType: "1-hour session cache",
+      duration: "1 hour",
+      entries: [] as any[],
+      totalSize: 0,
+    };
 
-  /**
-   * Clear all AI caches
-   */
-  clearAllCache(): void {
-    try {
-      const keys = Object.keys(localStorage);
-      keys.forEach((key) => {
-        if (
-          key.startsWith(AICacheManager.CACHE_KEY_PREFIX) ||
-          key.startsWith("ai-analysis-") ||
-          key.startsWith("skills-analysis-")
-        ) {
-          localStorage.removeItem(key);
-        }
-      });
-      console.log("All AI caches cleared");
-    } catch (error) {
-      console.error("Error clearing all caches:", error);
-    }
-  }
-
-  /**
-   * Force clear cache and restart with fresh API responses
-   */
-  forceResetCache(): void {
-    this.clearAllCache();
-    // Add a timestamp to force fresh responses
-    localStorage.setItem("ai-cache-reset-timestamp", Date.now().toString());
-    console.log("AI cache force reset - all responses will be fresh");
-  }
-
-  /**
-   * Get cache status information
-   */
-  getCacheStatus(): {
-    totalCacheSize: number;
-    cacheCount: number;
-    oldestCache: number | null;
-  } {
-    try {
-      const keys = Object.keys(localStorage);
-      const cacheKeys = keys.filter(
-        (key) =>
-          key.startsWith(AICacheManager.CACHE_KEY_PREFIX) ||
-          key.startsWith("ai-analysis-") ||
-          key.startsWith("skills-analysis-"),
-      );
-
-      let totalSize = 0;
-      let oldestTimestamp: number | null = null;
-
-      cacheKeys.forEach((key) => {
+    // Count all cache entries
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith("ai-cache-") || key.startsWith("skills-analysis-"))
+      ) {
         const value = localStorage.getItem(key);
-        if (value) {
-          totalSize += value.length;
-          try {
-            const parsed = JSON.parse(value);
-            if (parsed.timestamp) {
-              if (!oldestTimestamp || parsed.timestamp < oldestTimestamp) {
-                oldestTimestamp = parsed.timestamp;
-              }
-            }
-          } catch (e) {
-            // Ignore parsing errors for cache status
-          }
-        }
-      });
-
-      return {
-        totalCacheSize: totalSize,
-        cacheCount: cacheKeys.length,
-        oldestCache: oldestTimestamp,
-      };
-    } catch (error) {
-      console.error("Error getting cache status:", error);
-      return {
-        totalCacheSize: 0,
-        cacheCount: 0,
-        oldestCache: null,
-      };
+        const size = value ? value.length : 0;
+        status.entries.push({
+          key,
+          size,
+          sizeKB: Math.round((size / 1024) * 100) / 100,
+        });
+        status.totalSize += size;
+      }
     }
+
+    status.totalSize = Math.round((status.totalSize / 1024) * 100) / 100; // KB
+    return status;
   }
 }
 
+// Export singleton instance
 export const aiCacheManager = AICacheManager.getInstance();

@@ -32,14 +32,14 @@ import {
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
 import { businessPaths } from "../data/businessPaths";
 import { businessModels } from "../data/businessModels";
-import { calculateAdvancedBusinessModelMatches } from "../../../shared/scoring";
+import { businessModelService } from "../utils/businessModelService";
 import { calculateBusinessModelTraits } from "../../../shared/businessModelTraits";
 import {
   getIdealTraits,
   traitDescriptions,
 } from "../../../shared/businessModelIdealTraits";
 import { AIService } from "../utils/aiService";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 import { usePaywall } from "../contexts/PaywallContext";
 import { useAuth } from "../contexts/AuthContext";
 import { PaywallModal } from "./PaywallModals";
@@ -154,8 +154,10 @@ const BusinessModelDetail: React.FC<BusinessModelDetailProps> = ({
   const fitCategory = useMemo(() => {
     if (!quizData || !businessId) return "Best Fit";
 
-    const businessMatches = calculateAdvancedBusinessModelMatches(quizData);
-    const matchingBusiness = businessMatches.find((b) => b.id === businessId);
+    const matchingBusiness = businessModelService.getBusinessModelMatch(
+      quizData,
+      businessId,
+    );
     const fitScore = matchingBusiness?.score || 0;
 
     console.log(`Fit score for ${businessId}: ${fitScore}%`);
@@ -241,6 +243,7 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
     async (data: QuizData, model: any) => {
       if (!businessId || !model) return;
 
+      const aiCacheManager = AICacheManager.getInstance();
       const cachedSkills = aiCacheManager.getCachedSkillsAnalysis(businessId);
 
       if (cachedSkills) {
@@ -258,6 +261,7 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
           model.title || businessId,
         );
 
+        const aiCacheManager = AICacheManager.getInstance();
         aiCacheManager.cacheSkillsAnalysis(businessId, skills);
         setSkillsAnalysis(skills);
       } catch (error) {
@@ -303,9 +307,9 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
     if (path) {
       // Calculate fit score if quiz data is available
       if (quizData) {
-        const businessMatches = calculateAdvancedBusinessModelMatches(quizData);
-        const matchingBusiness = businessMatches.find(
-          (b) => b.id === businessId,
+        const matchingBusiness = businessModelService.getBusinessModelMatch(
+          quizData,
+          businessId,
         );
         const fitScore = matchingBusiness?.score || 0;
         setBusinessPath({ ...path, fitScore });

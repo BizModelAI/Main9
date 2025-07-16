@@ -21,29 +21,94 @@ import {
   OrdersController,
 } from "@paypal/paypal-server-sdk";
 
-// Simple rate limiter for OpenAI requests
+// Secure session/user-based rate limiter for OpenAI requests
 class OpenAIRateLimiter {
   private requests = new Map<string, number[]>();
-  private readonly maxRequestsPerIP = 20; // Max requests per IP per minute
-  private readonly windowMs = 60000; // 1 minute window
+  private readonly maxRequestsPerUser = 50; // Max requests per user/session per hour
+  private readonly windowMs = 60 * 60 * 1000; // 1 hour window
+  private readonly maxAnonymousRequests = 10; // Lower limit for anonymous users
+  private readonly cleanupInterval = 5 * 60 * 1000; // Clean up every 5 minutes
 
-  canMakeRequest(ip: string): boolean {
+  constructor() {
+    // Periodic cleanup to prevent memory leaks
+    setInterval(() => {
+      this.cleanup();
+    }, this.cleanupInterval);
+  }
+
+  private cleanup(): void {
     const now = Date.now();
-    const userRequests = this.requests.get(ip) || [];
+    let totalCleaned = 0;
+
+    for (const [key, timestamps] of this.requests.entries()) {
+      const validRequests = timestamps.filter(
+        (time) => now - time < this.windowMs,
+      );
+      if (validRequests.length === 0) {
+        this.requests.delete(key);
+        totalCleaned++;
+      } else if (validRequests.length < timestamps.length) {
+        this.requests.set(key, validRequests);
+      }
+    }
+
+    if (totalCleaned > 0) {
+      console.log(
+        `� Rate limiter cleanup: removed ${totalCleaned} expired entries`,
+      );
+    }
+  }
+
+  canMakeRequest(userId?: number, sessionId?: string): boolean {
+    // Use userId if authenticated, otherwise use sessionId
+    const identifier = userId
+      ? `user_${userId}`
+      : `session_${sessionId || "anonymous"}`;
+    const isAuthenticated = !!userId;
+    const maxRequests = isAuthenticated
+      ? this.maxRequestsPerUser
+      : this.maxAnonymousRequests;
+
+    const now = Date.now();
+    const userRequests = this.requests.get(identifier) || [];
 
     // Remove old requests outside the window
     const recentRequests = userRequests.filter(
       (time) => now - time < this.windowMs,
     );
-    this.requests.set(ip, recentRequests);
 
-    if (recentRequests.length >= this.maxRequestsPerIP) {
+    if (recentRequests.length >= maxRequests) {
+      console.warn(
+        `� Rate limit exceeded for ${identifier}: ${recentRequests.length}/${maxRequests} requests`,
+      );
       return false;
     }
 
     recentRequests.push(now);
-    this.requests.set(ip, recentRequests);
+    this.requests.set(identifier, recentRequests);
+
+    console.log(
+      `✅ Rate limit check passed for ${identifier}: ${recentRequests.length}/${maxRequests} requests`,
+    );
     return true;
+  }
+
+  getRemainingRequests(userId?: number, sessionId?: string): number {
+    const identifier = userId
+      ? `user_${userId}`
+      : `session_${sessionId || "anonymous"}`;
+    const isAuthenticated = !!userId;
+    const maxRequests = isAuthenticated
+      ? this.maxRequestsPerUser
+      : this.maxAnonymousRequests;
+
+    const now = Date.now();
+    const userRequests = this.requests.get(identifier) || [];
+    const recentRequests = userRequests.filter(
+      (time) => now - time < this.windowMs,
+    );
+
+    return Math.max(0, maxRequests - recentRequests.length);
   }
 }
 
@@ -92,7 +157,7 @@ function getIncomeGoalRange(value: number): string {
 function getTimeCommitmentRange(value: number): string {
   if (value <= 3) return "Less than 5 hours/week";
   if (value <= 7) return "5–10 hours/week";
-  if (value <= 17) return "10–25 hours/week";
+  if (value <= 17) return "10-25 hours/week";
   return "25+ hours/week";
 }
 
@@ -118,17 +183,13 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.sendStatus(200);
   });
 
-  // Debug endpoint to check OpenAI configuration
+  // OpenAI configuration status (secure - no sensitive info exposed)
   app.get("/api/openai-status", (req: Request, res: Response) => {
     const hasApiKey = !!process.env.OPENAI_API_KEY;
-    const keyLength = hasApiKey ? process.env.OPENAI_API_KEY!.length : 0;
 
     res.json({
       configured: hasApiKey,
-      keyLength: keyLength,
-      keyPrefix: hasApiKey
-        ? process.env.OPENAI_API_KEY!.substring(0, 7) + "..."
-        : "none",
+      status: hasApiKey ? "ready" : "not_configured",
     });
   });
 
@@ -140,17 +201,19 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.header("Access-Control-Allow-Headers", "Content-Type");
 
     try {
-      console.log("🔍 OpenAI API request received:", {
+      console.log("� OpenAI API request received:", {
         hasBody: !!req.body,
         promptLength: req.body?.prompt?.length || 0,
         maxTokens: req.body?.maxTokens,
         responseFormat: req.body?.responseFormat,
       });
 
-      // Rate limiting for concurrent users
-      const clientIP = req.ip || req.connection.remoteAddress || "unknown";
-      if (!openaiRateLimiter.canMakeRequest(clientIP)) {
-        console.log("�� Rate limit exceeded for IP:", clientIP);
+      // Secure rate limiting based on user/session instead of IP
+      const userId = await getUserIdFromRequest(req);
+      const sessionId = req.sessionID || getSessionKey(req);
+
+      if (!openaiRateLimiter.canMakeRequest(userId, sessionId)) {
+        console.log("Rate limit exceeded for IP:", clientIP);
         return res.status(429).json({
           error: "Too many requests. Please wait a moment before trying again.",
         });
@@ -158,42 +221,48 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Check if OpenAI API key is configured
       if (!process.env.OPENAI_API_KEY) {
-        console.error("❌ OpenAI API key not configured");
+        console.error("OpenAI API key not configured");
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
       const {
         prompt,
+        messages: directMessages,
         maxTokens = 1200,
+        max_tokens,
         temperature = 0.7,
         responseFormat = null,
         systemMessage,
       } = req.body;
 
-      if (!prompt) {
-        return res.status(400).json({ error: "Prompt is required" });
-      }
+      let messages = [];
 
-      const messages = [];
-
-      // Add system message if provided
-      if (systemMessage) {
+      // Support both old format (prompt + systemMessage) and new format (messages array)
+      if (directMessages && Array.isArray(directMessages)) {
+        // New format: messages array passed directly
+        messages = directMessages;
+      } else if (prompt) {
+        // Old format: prompt + optional systemMessage
+        if (systemMessage) {
+          messages.push({
+            role: "system",
+            content: systemMessage,
+          });
+        }
         messages.push({
-          role: "system",
-          content: systemMessage,
+          role: "user",
+          content: prompt,
         });
+      } else {
+        return res
+          .status(400)
+          .json({ error: "Either 'messages' array or 'prompt' is required" });
       }
-
-      // Add user prompt
-      messages.push({
-        role: "user",
-        content: prompt,
-      });
 
       const requestBody: any = {
         model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
         messages,
-        max_tokens: maxTokens,
+        max_tokens: max_tokens || maxTokens,
         temperature: temperature,
       };
 
@@ -250,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Handle rate limit errors specifically
       if (error instanceof Error && error.message.includes("429")) {
-        console.warn("🚫 Rate limited by OpenAI");
+        console.warn("� Rate limited by OpenAI");
         res.status(429).json({
           error: "Rate limited by OpenAI",
           details: "Please try again in a few seconds",
@@ -340,6 +409,33 @@ export async function registerRoutes(app: Express): Promise<void> {
       const content = data.choices[0].message.content;
       const result = JSON.parse(content);
 
+      // Store skills analysis in database if user is authenticated
+      try {
+        const userId = await getUserIdFromRequest(req);
+        if (userId) {
+          const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+          if (quizAttemptId) {
+            await storage.saveAIContentToQuizAttempt(
+              quizAttemptId,
+              `skills_${businessModel}`,
+              result,
+            );
+            console.log(
+              `✅ Skills analysis for ${businessModel} stored in database`,
+            );
+          }
+        }
+      } catch (dbError) {
+        // Import error handler dynamically to avoid circular dependencies
+        const { ErrorHandler } = await import("./utils/errorHandler.js");
+        await ErrorHandler.handleStorageError(dbError as Error, {
+          operation: "store_skills_analysis",
+          context: { quizAttemptId, businessModel, userId },
+          isCritical: false, // Non-critical as the main result is still returned
+          shouldThrow: false,
+        });
+      }
+
       res.json(result);
     } catch (error) {
       console.error("Error in skills analysis:", error);
@@ -374,6 +470,33 @@ export async function registerRoutes(app: Express): Promise<void> {
         ],
       };
 
+      // Store fallback skills analysis in database if user is authenticated
+      try {
+        const userId = await getUserIdFromRequest(req);
+        if (userId) {
+          const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+          if (quizAttemptId) {
+            const { businessModel } = req.body;
+            await storage.saveAIContentToQuizAttempt(
+              quizAttemptId,
+              `skills_${businessModel}`,
+              fallbackResult,
+            );
+            console.log(
+              `✅ Fallback skills analysis for ${businessModel} stored in database`,
+            );
+          }
+        }
+      } catch (dbError) {
+        const { ErrorHandler } = await import("./utils/errorHandler.js");
+        await ErrorHandler.handleStorageError(dbError as Error, {
+          operation: "store_fallback_skills_analysis",
+          context: { quizAttemptId, businessModel, userId },
+          isCritical: false,
+          shouldThrow: false,
+        });
+      }
+
       res.json(fallbackResult);
     }
   });
@@ -382,7 +505,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post(
     "/api/ai-business-fit-analysis",
     async (req: Request, res: Response) => {
-      console.log("📥 AI business fit analysis request received");
+      console.log("� AI business fit analysis request received");
 
       try {
         // Rate limiting for concurrent quiz takers
@@ -412,10 +535,10 @@ export async function registerRoutes(app: Express): Promise<void> {
         );
 
         const analysis = await Promise.race([analysisPromise, timeoutPromise]);
-        console.log("✅ AI business fit analysis completed successfully");
+        console.log("AI business fit analysis completed successfully");
         res.json(analysis);
       } catch (error) {
-        console.error("❌ Error in AI business fit analysis:", {
+        console.error("Error in AI business fit analysis:", {
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : "No stack trace",
         });
@@ -625,7 +748,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         res.json({
           canRetake: true, // Everyone can always retake
           attemptsCount,
-          hasAccessPass: false, // No longer used
+
           quizRetakesRemaining: 999, // Unlimited for everyone
           totalQuizRetakesUsed: 0, // Not used in new system, always 0
           isFirstQuiz,
@@ -738,14 +861,16 @@ export async function registerRoutes(app: Express): Promise<void> {
     async (req: Request, res: Response) => {
       try {
         const quizAttemptId = parseInt(req.params.quizAttemptId);
-        const { aiContent } = req.body;
+        const { contentType, content, aiContent } = req.body;
         const currentUserId = getUserIdFromRequest(req);
 
         if (!currentUserId) {
           return res.status(401).json({ error: "Not authenticated" });
         }
 
-        if (!aiContent) {
+        // Support both new format (contentType + content) and old format (aiContent)
+        const contentToSave = aiContent || content;
+        if (!contentToSave) {
           return res.status(400).json({ error: "AI content is required" });
         }
 
@@ -759,13 +884,46 @@ export async function registerRoutes(app: Express): Promise<void> {
             .json({ error: "Quiz attempt not found or unauthorized" });
         }
 
-        await storage.saveAIContentToQuizAttempt(quizAttemptId, aiContent);
+        // If using new format with contentType, save content by type using new table
+        if (contentType) {
+          await storage.saveAIContentToQuizAttempt(
+            quizAttemptId,
+            contentType,
+            contentToSave,
+          );
+        } else {
+          // Old format - save as generic content type
+          await storage.saveAIContentToQuizAttempt(
+            quizAttemptId,
+            "legacy",
+            contentToSave,
+          );
+        }
 
-        console.log(`AI content saved for quiz attempt ${quizAttemptId}`);
+        console.log(
+          `AI content (${contentType || "full"}) saved for quiz attempt ${quizAttemptId}`,
+        );
         res.json({ success: true, message: "AI content saved successfully" });
       } catch (error) {
         console.error("Error saving AI content:", error);
-        res.status(500).json({ error: "Internal server error" });
+
+        // Provide more specific error messages
+        if (
+          error instanceof Error &&
+          error.message.includes("ai_content table is missing")
+        ) {
+          res.status(500).json({
+            error: "Database migration required",
+            details:
+              "The ai_content table is missing. Please run database migration.",
+            migration_endpoint: "/api/admin/fix-database-schema",
+          });
+        } else {
+          res.status(500).json({
+            error: "Failed to save AI content",
+            details: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
       }
     },
   );
@@ -794,12 +952,27 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         const aiContent =
           await storage.getAIContentForQuizAttempt(quizAttemptId);
+        const contentType = req.query.type as string;
 
         console.log(
           `AI content retrieved for quiz attempt ${quizAttemptId}:`,
           !!aiContent,
         );
-        res.json({ aiContent });
+
+        // If specific content type requested, return just that part
+        if (contentType && aiContent && typeof aiContent === "object") {
+          const specificContent = aiContent[contentType];
+          if (specificContent) {
+            res.json({ content: specificContent });
+          } else {
+            res
+              .status(404)
+              .json({ error: `Content type '${contentType}' not found` });
+          }
+        } else {
+          // Return full content for backward compatibility
+          res.json({ aiContent });
+        }
       } catch (error) {
         console.error("Error getting AI content:", error);
         res.status(500).json({ error: "Internal server error" });
@@ -938,85 +1111,178 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   );
 
-  // Save quiz data for authenticated user (pay-per-quiz model)
-  app.post("/api/auth/save-quiz-data", async (req: Request, res: Response) => {
-    console.log("API: POST /api/auth/save-quiz-data", {
+  // Save quiz data with 3-tier caching system
+  app.post("/api/save-quiz-data", async (req: Request, res: Response) => {
+    console.log("API: POST /api/save-quiz-data", {
       sessionId: req.sessionID,
       userId: req.session?.userId,
       hasCookie: !!req.headers.cookie,
     });
 
     try {
-      const sessionKey = getSessionKey(req);
-      console.log("Save quiz data: Session debug", {
-        sessionUserId: req.session?.userId,
-        sessionKey: sessionKey,
-      });
-
-      const userId = getUserIdFromRequest(req);
-      console.log("Save quiz data: getUserIdFromRequest returned", userId);
-
-      if (!userId) {
-        console.log("Save quiz data: Not authenticated - returning 401", {
-          sessionUserId: req.session?.userId,
-          cacheUserId: userId,
-          sessionKey: getSessionKey(req),
-        });
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const { quizData, paymentId } = req.body;
+      const { quizData, email, paymentId } = req.body;
       if (!quizData) {
         console.log("Save quiz data: No quiz data provided");
         return res.status(400).json({ error: "Quiz data is required" });
       }
 
-      // Check if this is the user's first quiz attempt
-      const existingAttempts = await storage.getQuizAttempts(userId);
-      const isFirstQuiz = existingAttempts.length === 0;
+      const sessionKey = getSessionKey(req);
+      const userId = getUserIdFromRequest(req);
+
+      console.log("Save quiz data: Processing with", {
+        sessionKey,
+        userId,
+        hasEmail: !!email,
+        userType: userId
+          ? "authenticated"
+          : email
+            ? "email-provided"
+            : "anonymous",
+      });
+
+      // TIER 1: Authenticated paid users - permanent database storage
+      if (userId) {
+        const user = await storage.getUser(userId);
+        const isPaid = await storage.isPaidUser(userId);
+
+        console.log(
+          `Save quiz data: Authenticated user ${userId}, isPaid: ${isPaid}`,
+        );
+
+        // Save quiz data to user's account (permanent storage)
+        const attempt = await storage.recordQuizAttempt({
+          userId: userId,
+          quizData,
+        });
+
+        console.log(
+          `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for authenticated user ${userId}`,
+        );
+
+        return res.json({
+          success: true,
+          attemptId: attempt.id,
+          message: "Quiz data saved permanently",
+          quizAttemptId: attempt.id,
+          storageType: "permanent",
+          userType: isPaid ? "paid" : "authenticated",
+        });
+      }
+
+      // TIER 2: Users with email (unpaid) - 3-month database storage with expiration
+      if (email) {
+        console.log(
+          `Save quiz data: Creating temporary user for email: ${email}`,
+        );
+
+        // Check if temporary user already exists for this email
+        let tempUser = await storage.getTemporaryUserByEmail(email);
+
+        if (!tempUser) {
+          // Create new temporary user with 3-month expiration
+          tempUser = await storage.storeTemporaryUser(sessionKey, email, {
+            quizData,
+            password: "", // No password for email-only users
+          });
+        } else {
+          // Update existing temporary user's quiz data
+          await storage.updateUser(tempUser.id, {
+            tempQuizData: quizData,
+            sessionId: sessionKey, // Update session to current one
+            updatedAt: new Date(),
+          });
+        }
+
+        // Save quiz attempt to database (will auto-delete when user expires)
+        const attempt = await storage.recordQuizAttempt({
+          userId: tempUser.id,
+          quizData,
+        });
+
+        console.log(
+          `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for temporary user ${tempUser.id} (${email})`,
+        );
+
+        return res.json({
+          success: true,
+          attemptId: attempt.id,
+          message: "Quiz data saved for 3 months",
+          quizAttemptId: attempt.id,
+          storageType: "temporary",
+          userType: "email-provided",
+          expiresAt: tempUser.expiresAt,
+          warning:
+            "Your data will be automatically deleted after 3 months unless you upgrade to a paid account.",
+        });
+      }
+
+      // TIER 3: Anonymous users (no email) - localStorage only, no database storage
+      console.log(
+        "Save quiz data: Anonymous user - returning localStorage instruction",
+      );
+
+      return res.json({
+        success: true,
+        message: "Quiz data should be stored in localStorage",
+        storageType: "localStorage",
+        userType: "anonymous",
+        expiresInHours: 1,
+        warning:
+          "Your data is only stored locally and will be lost if you clear your browser data. Provide an email to save your results for 3 months.",
+      });
+    } catch (error: any) {
+      console.error("Error saving quiz data:", error);
+      return res.status(500).json({
+        error: "Failed to save quiz data",
+        details: error.message,
+      });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility
+  app.post("/api/auth/save-quiz-data", async (req: Request, res: Response) => {
+    console.log(
+      "API: Legacy /api/auth/save-quiz-data redirecting to new endpoint",
+    );
+
+    // Ensure user is authenticated for legacy endpoint
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    // Add userId to body and forward to new endpoint
+    req.body.userId = userId;
+
+    // Call new endpoint logic
+    const { quizData, paymentId } = req.body;
+    if (!quizData) {
+      return res.status(400).json({ error: "Quiz data is required" });
+    }
+
+    try {
       const user = await storage.getUser(userId);
+      const isPaid = await storage.isPaidUser(userId);
 
-      console.log(`Save quiz data: User ${userId}, first quiz: ${isFirstQuiz}`);
-
-      // In pure pay-per-report model, quiz attempts are always free
-      // Payment is only required for report unlocks
-      // Quiz payment verification removed - all quizzes are now free
-
-      console.log(`Save quiz data: Saving quiz data for user ${userId}`);
-
-      // Save quiz data to user's account
       const attempt = await storage.recordQuizAttempt({
         userId: userId,
         quizData,
       });
 
       console.log(
-        `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for user ${userId}`,
-      );
-
-      // Payment linking disabled in pure pay-per-report model
-      if (false && paymentId) {
-        // This logic is disabled
-        await storage.linkPaymentToQuizAttempt(paymentId, attempt.id);
-        console.log(
-          `Save quiz data: Linked payment ${paymentId} to quiz attempt ${attempt.id}`,
-        );
-      }
-
-      console.log(
-        `Save quiz data: Successfully saved quiz data for user ${userId}`,
+        `Legacy save quiz data: Quiz attempt recorded with ID ${attempt.id} for user ${userId}`,
       );
 
       res.json({
         success: true,
         attemptId: attempt.id,
         message: "Quiz data saved successfully",
-        isFirstQuiz,
-        requiresPayment: false, // Always false in pay-per-report model
+        isFirstQuiz: (await storage.getQuizAttempts(userId)).length === 1,
+        requiresPayment: false,
         quizAttemptId: attempt.id,
       });
     } catch (error) {
-      console.error("Error saving quiz data:", error);
+      console.error("Error in legacy save quiz data:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -1141,62 +1407,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   );
 
-  // Create payment for anonymous users unlocking full report (always $9.99)
-  app.post(
-    "/api/create-anonymous-report-unlock-payment",
-    async (req: Request, res: Response) => {
-      try {
-        const { sessionId, email } = req.body;
-
-        if (!sessionId) {
-          return res
-            .status(400)
-            .json({ error: "Missing sessionId for anonymous user" });
-        }
-
-        // Verify temporary user data exists
-        const tempData = await storage.getUnpaidUserEmail(sessionId);
-        if (!tempData) {
-          return res
-            .status(404)
-            .json({ error: "Temporary account data not found or expired" });
-        }
-
-        // Anonymous users always pay $9.99 (first-time pricing)
-        const amount = 999; // $9.99 in cents
-        const amountDollar = "9.99";
-
-        // Create Stripe Payment Intent
-        if (!stripe) {
-          return res
-            .status(500)
-            .json({ error: "Payment processing not configured" });
-        }
-
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount,
-          currency: "usd",
-          metadata: {
-            sessionId,
-            type: "anonymous_report_unlock",
-            email: email || tempData.email,
-          },
-          description: "BizModelAI Anonymous Report Unlock - First time $9.99",
-        });
-
-        res.json({
-          success: true,
-          clientSecret: paymentIntent.client_secret,
-          amount: amountDollar,
-          isFirstReport: true, // Always true for anonymous users
-        });
-      } catch (error) {
-        console.error("Error creating anonymous report unlock payment:", error);
-        res.status(500).json({ error: "Internal server error" });
-      }
-    },
-  );
-
   // Quiz attempts are now free for everyone - no payment needed
 
   // Check if report is unlocked for a specific quiz attempt
@@ -1225,7 +1435,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   );
 
-  // PayPal payment creation endpoint
+  // PayPal payment creation endpoint for report unlock
   app.post(
     "/api/create-paypal-payment",
     async (req: Request, res: Response) => {
@@ -1234,64 +1444,42 @@ export async function registerRoutes(app: Express): Promise<void> {
           return res.status(500).json({ error: "PayPal not configured" });
         }
 
-        const { userId, sessionId } = req.body;
+        const { userId, quizAttemptId } = req.body;
 
-        // Handle temporary users (sessionId provided) vs permanent users (userId provided)
-        let userIdentifier;
-        let isTemporaryUser = false;
-
-        if (sessionId) {
-          // This is a temporary user
-          isTemporaryUser = true;
-          userIdentifier = sessionId;
-
-          // Verify temporary user data exists
-          const tempData = await storage.getUnpaidUserEmail(sessionId);
-          if (!tempData) {
-            return res
-              .status(404)
-              .json({ error: "Temporary account data not found or expired" });
-          }
-        } else if (userId) {
-          // This is a permanent user
-          const user = await storage.getUser(parseInt(userId));
-          if (!user) {
-            return res.status(404).json({ error: "User not found" });
-          }
-
-          // Access pass concept removed - users pay per report instead
-
-          userIdentifier = userId.toString();
-        } else {
-          return res.status(400).json({ error: "Missing userId or sessionId" });
+        if (!userId || !quizAttemptId) {
+          return res
+            .status(400)
+            .json({ error: "Missing userId or quizAttemptId" });
         }
 
-        // Determine payment amount and type
-        let amount, retakesGranted, paymentType, description;
-
-        if (!isTemporaryUser && userId) {
-          const user = await storage.getUser(parseInt(userId));
-          if (false) {
-            // Access pass logic removed
-            // Old logic removed
-            amount = "4.99";
-            retakesGranted = "2";
-            paymentType = "retakes";
-            description = "BizModelAI Quiz Retakes - 2 additional attempts";
-          } else {
-            // New user needs full access - $9.99
-            amount = "9.99";
-            retakesGranted = "3";
-            paymentType = "access_pass";
-            description = "BizModelAI Access Pass - Unlock all features";
-          }
-        } else {
-          // Temporary user always gets full access - $9.99
-          amount = "9.99";
-          retakesGranted = "3";
-          paymentType = "access_pass";
-          description = "BizModelAI Access Pass - Unlock all features";
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
         }
+
+        // Check if report is already unlocked
+        const payments = await storage.getPaymentsByUser(userId);
+        const existingPayment = payments.find(
+          (p) =>
+            p.quizAttemptId === quizAttemptId &&
+            p.type === "report_unlock" &&
+            p.status === "completed",
+        );
+
+        if (existingPayment) {
+          return res.status(400).json({
+            error: "Report is already unlocked for this quiz attempt",
+          });
+        }
+
+        // Determine pricing: $9.99 for first report, $4.99 for subsequent reports
+        const completedPayments = payments.filter(
+          (p) => p.status === "completed",
+        );
+        const isFirstReport = completedPayments.length === 0;
+        const amount = isFirstReport ? "9.99" : "4.99";
+        const paymentType = "report_unlock";
+        const description = `BizModelAI Report Unlock - ${isFirstReport ? "First report" : "Additional report"}`;
 
         // Create PayPal order
         const request = {
@@ -1305,11 +1493,10 @@ export async function registerRoutes(app: Express): Promise<void> {
                 },
                 description: description,
                 customId: JSON.stringify({
-                  userIdentifier,
+                  userId: userId.toString(),
                   type: paymentType,
-                  retakesGranted,
-                  isTemporaryUser: isTemporaryUser.toString(),
-                  sessionId: sessionId || "",
+                  quizAttemptId: quizAttemptId.toString(),
+                  isFirstReport: isFirstReport.toString(),
                 }),
               },
             ],
@@ -1326,25 +1513,21 @@ export async function registerRoutes(app: Express): Promise<void> {
           throw new Error("Failed to create PayPal order");
         }
 
-        // For temporary users, we don't create a payment record yet
-        // For permanent users, create payment record
-        let paymentId = null;
-        if (!isTemporaryUser) {
-          const payment = await storage.createPayment({
-            userId: parseInt(userId),
-            amount: amount,
-            currency: "usd",
-            type: paymentType,
-            status: "pending",
-            stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
-          });
-          paymentId = payment.id;
-        }
+        // Create payment record in our database
+        const payment = await storage.createPayment({
+          userId,
+          amount: amount,
+          currency: "usd",
+          type: paymentType,
+          status: "pending",
+          quizAttemptId: quizAttemptId,
+          paypalOrderId: order.result.id,
+        });
 
         res.json({
           success: true,
           orderID: order.result.id,
-          paymentId,
+          paymentId: payment.id,
         });
       } catch (error) {
         console.error("Error creating PayPal payment:", error);
@@ -1388,82 +1571,28 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         const metadata = JSON.parse(purchaseUnit.customId);
         const {
-          userIdentifier,
+          userId,
           type: paymentType,
-          retakesGranted,
-          isTemporaryUser,
-          sessionId,
+          quizAttemptId,
+          isFirstReport,
         } = metadata;
 
-        // Process the payment similar to Stripe webhook
-        if (isTemporaryUser === "true") {
-          // Handle temporary user payment
-          if (!sessionId) {
-            throw new Error("Missing session ID for temporary user");
-          }
+        // Find the payment record in our database using PayPal order ID
+        const userIdInt = parseInt(userId);
+        const payments = await storage.getPaymentsByUser(userIdInt);
+        const payment = payments.find((p) => p.paypalOrderId === orderID);
 
-          // Get the temporary user data
-          const tempData = await storage.getUnpaidUserEmail(sessionId);
-          if (!tempData) {
-            throw new Error("Temporary user data not found");
-          }
-
-          // Extract signup data from tempData.quizData (which contains signup info)
-          const signupData = tempData.quizData as any;
-
-          // Create the actual user account
-          const user = await storage.createUser({
-            username: tempData.email, // Use email as username
-            password: signupData.passwordHash || "temp_password",
-          });
-
-          // Update the user with additional fields
-          await storage.updateUser(user.id, {
-            email: tempData.email,
-          });
-
-          // Create payment record
-          const payment = await storage.createPayment({
-            userId: user.id,
-            amount: purchaseUnit.amount?.value || "9.99",
-            currency: "usd",
-            type: paymentType,
-            stripePaymentIntentId: orderID, // Using this field for PayPal order ID
-          });
-
-          // Complete the payment
-          await storage.completePayment(payment.id);
-
-          // Temporary data cleanup happens automatically via expiration
-
-          console.log(
-            `PayPal payment completed: ${paymentType} for temporary user converted to user ${user.id}`,
-          );
-        } else {
-          // Handle permanent user payment
-          const userId = parseInt(userIdentifier);
-
-          // Find the payment record in our database
-          const payments = await storage.getPaymentsByUser(userId);
-          const payment = payments.find(
-            (p) => p.stripePaymentIntentId === orderID,
-          );
-
-          if (!payment) {
-            console.error(
-              "Payment record not found for PayPal order:",
-              orderID,
-            );
-            throw new Error("Payment record not found");
-          }
-
-          // Complete the payment in our system
-          await storage.completePayment(payment.id);
-
-          console.log(
-            `PayPal payment completed: ${paymentType} for user ${userId}`,
-          );
+        if (!payment) {
+          console.error("Payment record not found for PayPal order:", orderID);
+          throw new Error("Payment record not found");
         }
+
+        // Complete the payment in our system
+        await storage.completePayment(payment.id);
+
+        console.log(
+          `PayPal payment completed: ${paymentType} for user ${userIdInt}, quiz attempt ${quizAttemptId}`,
+        );
 
         res.json({
           success: true,
@@ -1542,7 +1671,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             // Handle temporary user - convert to permanent account
             try {
               // Get temporary account data
-              const tempData = await storage.getUnpaidUserEmail(sessionId);
+              const tempData = await storage.getTemporaryUser(sessionId);
               if (!tempData) {
                 console.error(
                   "Temporary account data not found for session:",
@@ -1551,11 +1680,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                 break;
               }
 
-              // Get signup data from tempData.quizData
-              const signupData = tempData.quizData as any;
-              const email = signupData.email || tempData.email;
-              const password = signupData.password;
-              const name = signupData.name;
+              // Get signup data from tempData.tempQuizData
+              const signupData = tempData.tempQuizData as any;
+              const email = signupData?.email || tempData.email;
+              const password = signupData?.password || tempData.password;
+              const name = signupData?.name || tempData.name;
 
               if (!password) {
                 console.error(
@@ -1698,22 +1827,29 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const payments = await storage.getAllPayments();
+      // Get query parameters for pagination and filtering
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); // Max 1000 records
+      const offset = parseInt(req.query.offset as string) || 0;
+      const status = req.query.status as string;
 
-      // Join with user data for better admin experience
-      const paymentsWithUsers = await Promise.all(
-        payments.map(async (payment) => {
-          const user = await storage.getUser(payment.userId);
-          return {
-            ...payment,
-            user: user
-              ? { id: user.id, email: user.email, username: user.username }
-              : null,
-          };
-        }),
-      );
+      // Use optimized query that JOINs payments with users (fixes N+1 problem)
+      const paymentsWithUsers = await storage.getPaymentsWithUsers({
+        limit,
+        offset,
+        status,
+      });
 
-      res.json(paymentsWithUsers);
+      res.json({
+        payments: paymentsWithUsers,
+        pagination: {
+          limit,
+          offset,
+          total:
+            paymentsWithUsers.length === limit
+              ? "more_available"
+              : paymentsWithUsers.length + offset,
+        },
+      });
     } catch (error) {
       console.error("Error fetching payments:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -1852,8 +1988,24 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const refunds = await storage.getAllRefunds();
-      res.json(refunds);
+      // Get query parameters for pagination
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); // Max 1000 records
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const refunds = await storage.getAllRefunds(limit + offset);
+      const paginatedRefunds = refunds.slice(offset, offset + limit);
+
+      res.json({
+        refunds: paginatedRefunds,
+        pagination: {
+          limit,
+          offset,
+          total:
+            refunds.length === limit + offset
+              ? "more_available"
+              : refunds.length,
+        },
+      });
     } catch (error) {
       console.error("Error fetching refunds:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -2099,6 +2251,38 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           });
         }
 
+        // Store business fit descriptions in database if user is authenticated
+        try {
+          const userId = await getUserIdFromRequest(req);
+          if (userId) {
+            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            if (quizAttemptId) {
+              const descriptionsMap: { [key: string]: string } = {};
+              descriptions.forEach((desc: any) => {
+                descriptionsMap[desc.businessId] = desc.description;
+              });
+              await storage.saveAIContentToQuizAttempt(
+                quizAttemptId,
+                "businessFitDescriptions",
+                descriptionsMap,
+              );
+              console.log("Business fit descriptions stored in database");
+            }
+          }
+        } catch (dbError) {
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_business_fit_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              descriptionsCount: descriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
+        }
+
         res.json({ descriptions });
       } catch (error) {
         console.error("Error generating business fit descriptions:", error);
@@ -2112,6 +2296,40 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
 ${index === 0 ? "As your top match, this path offers the best alignment with your goals and preferences." : index === 1 ? "This represents a strong secondary option that complements your primary strengths." : "This provides a solid alternative path that matches your core capabilities."} Your ${req.body.quizData.learningPreference?.replace("-", " ")} learning style and ${req.body.quizData.workStructurePreference?.replace("-", " ")} work preference make this business model particularly suitable for your success.`,
           }),
         );
+
+        // Store fallback business fit descriptions in database if user is authenticated
+        try {
+          const userId = await getUserIdFromRequest(req);
+          if (userId) {
+            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            if (quizAttemptId) {
+              const descriptionsMap: { [key: string]: string } = {};
+              fallbackDescriptions.forEach((desc: any) => {
+                descriptionsMap[desc.businessId] = desc.description;
+              });
+              await storage.saveAIContentToQuizAttempt(
+                quizAttemptId,
+                "businessFitDescriptions",
+                descriptionsMap,
+              );
+              console.log(
+                "✅ Fallback business fit descriptions stored in database",
+              );
+            }
+          }
+        } catch (dbError) {
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_fallback_business_fit_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              fallbackDescriptionsCount: fallbackDescriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
+        }
 
         res.json({ descriptions: fallbackDescriptions });
       }
@@ -2223,6 +2441,38 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           });
         }
 
+        // Store business avoid descriptions in database if user is authenticated
+        try {
+          const userId = await getUserIdFromRequest(req);
+          if (userId) {
+            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            if (quizAttemptId) {
+              const descriptionsMap: { [key: string]: string } = {};
+              descriptions.forEach((desc: any) => {
+                descriptionsMap[desc.businessId] = desc.description;
+              });
+              await storage.saveAIContentToQuizAttempt(
+                quizAttemptId,
+                "businessAvoidDescriptions",
+                descriptionsMap,
+              );
+              console.log("Business avoid descriptions stored in database");
+            }
+          }
+        } catch (dbError) {
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_business_avoid_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              descriptionsCount: descriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
+        }
+
         res.json({ descriptions });
       } catch (error) {
         console.error("Error generating business avoid descriptions:", error);
@@ -2235,7 +2485,67 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           }),
         );
 
+        // Store fallback business avoid descriptions in database if user is authenticated
+        try {
+          const userId = await getUserIdFromRequest(req);
+          if (userId) {
+            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            if (quizAttemptId) {
+              const descriptionsMap: { [key: string]: string } = {};
+              fallbackDescriptions.forEach((desc: any) => {
+                descriptionsMap[desc.businessId] = desc.description;
+              });
+              await storage.saveAIContentToQuizAttempt(
+                quizAttemptId,
+                "businessAvoidDescriptions",
+                descriptionsMap,
+              );
+              console.log(
+                "✅ Fallback business avoid descriptions stored in database",
+              );
+            }
+          }
+        } catch (dbError) {
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_fallback_business_avoid_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              fallbackDescriptionsCount: fallbackDescriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
+        }
+
         res.json({ descriptions: fallbackDescriptions });
+      }
+    },
+  );
+
+  // AI Content Migration Endpoint
+  app.post(
+    "/api/admin/migrate-ai-content",
+    async (req: Request, res: Response) => {
+      try {
+        console.log("� Starting AI content migration...");
+
+        const result = await storage.migrateAIContentToNewTable();
+
+        console.log("AI content migration completed successfully");
+        res.json({
+          success: true,
+          message: "AI content migration completed",
+          ...result,
+        });
+      } catch (error) {
+        console.error("❌ AI content migration failed:", error);
+        res.status(500).json({
+          success: false,
+          error: "Migration failed",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     },
   );
@@ -2264,12 +2574,12 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
       }
 
       // For unpaid users, check if email already exists for this session
-      const existingEmail = await storage.getUnpaidUserEmail(sessionId);
+      const existingUser = await storage.getTemporaryUser(sessionId);
 
-      if (existingEmail) {
+      if (existingUser) {
         // Email already stored, just send again
         const success = await emailService.sendQuizResults(
-          existingEmail.email,
+          existingUser.email,
           quizData,
         );
         if (success) {
@@ -2292,20 +2602,20 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
 
       // Store the email and send results
       // Check if there's existing signup data to preserve
-      const existingData = await storage.getUnpaidUserEmail(sessionId);
+      const existingData = await storage.getTemporaryUser(sessionId);
       let dataToStore;
 
       if (
         existingData &&
-        existingData.quizData &&
-        typeof existingData.quizData === "object"
+        existingData.tempQuizData &&
+        typeof existingData.tempQuizData === "object"
       ) {
         // Preserve existing signup data (email, password, name) and update quiz data
-        const existingQuizData = existingData.quizData as any;
+        const existingQuizData = existingData.tempQuizData as any;
         dataToStore = {
           email: existingQuizData.email || email,
-          password: existingQuizData.password,
-          name: existingQuizData.name,
+          password: existingQuizData.password || existingData.password,
+          name: existingQuizData.name || existingData.name,
           quizData,
         };
       } else {
@@ -2316,7 +2626,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         };
       }
 
-      await storage.storeUnpaidUserEmail(sessionId, email, dataToStore);
+      await storage.storeTemporaryUser(sessionId, email, dataToStore);
       const success = await emailService.sendQuizResults(email, quizData);
 
       if (success) {
@@ -2336,10 +2646,10 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
     async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
-        const storedEmail = await storage.getUnpaidUserEmail(sessionId);
+        const storedUser = await storage.getTemporaryUser(sessionId);
 
-        if (storedEmail) {
-          res.json({ email: storedEmail.email });
+        if (storedUser) {
+          res.json({ email: storedUser.email });
         } else {
           res.json({ email: null });
         }
@@ -2368,15 +2678,16 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         .from(users)
         .where(sql`${users.email} IS NOT NULL`);
 
-      // Get emails from unpaid users (including expired ones for marketing)
+      // Get emails from unpaid/temporary users (including expired ones for marketing)
       const unpaidUsers = await db
         .select({
-          email: unpaidUserEmails.email,
+          email: users.email,
           source: sql<string>`'unpaid_user'`,
-          createdAt: unpaidUserEmails.createdAt,
-          expiresAt: unpaidUserEmails.expiresAt,
+          createdAt: users.createdAt,
+          expiresAt: users.expiresAt,
         })
-        .from(unpaidUserEmails);
+        .from(users)
+        .where(sql`${users.isTemporary} = true`);
 
       // Combine and deduplicate emails
       const allEmails = [...paidUsers, ...unpaidUsers];
@@ -2428,14 +2739,15 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         .from(users)
         .where(sql`${users.email} IS NOT NULL`);
 
-      // Get emails from unpaid users
+      // Get emails from unpaid/temporary users
       const unpaidUsers = await db
         .select({
-          email: unpaidUserEmails.email,
+          email: users.email,
           source: sql<string>`'unpaid_user'`,
-          createdAt: unpaidUserEmails.createdAt,
+          createdAt: users.createdAt,
         })
-        .from(unpaidUserEmails);
+        .from(users)
+        .where(sql`${users.isTemporary} = true`);
 
       // Combine and deduplicate
       const allEmails = [...paidUsers, ...unpaidUsers];
@@ -2544,7 +2856,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           dataRetentionPolicy: isPaid
             ? "permanent"
             : "24_hours_from_quiz_completion",
-          hasAccessPass: false, // Access pass concept removed
+
           accountCreatedAt: user?.createdAt,
           dataWillBeDeletedIfUnpaid: !isPaid,
         });
@@ -2582,7 +2894,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
       console.log("Before quiz attempt:", {
         userId: testUser.id,
         isPaid,
-        hasAccessPass: false, // Access pass concept removed
+
         attemptsCount,
       });
 
@@ -2604,7 +2916,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
 
       console.log("After quiz attempt:", {
         userId: testUser.id,
-        hasAccessPass: false, // Access pass concept removed
+
         attemptsCount: finalAttemptsCount,
       });
 
@@ -2613,11 +2925,10 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         testUserId: testUser.id,
         before: {
           isPaid,
-          hasAccessPass: false, // Access pass concept removed
+
           attemptsCount,
         },
         after: {
-          hasAccessPass: false, // Access pass concept removed
           attemptsCount: finalAttemptsCount,
         },
       });
@@ -2628,6 +2939,61 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
       });
     }
   });
+
+  // Emergency database schema fix endpoint
+  app.post(
+    "/api/admin/fix-database-schema",
+    async (req: Request, res: Response) => {
+      try {
+        console.log("� Emergency database schema fix requested...");
+
+        // Add missing columns to users table
+        await storage.ensureDb().execute(sql`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS session_id TEXT,
+        ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE NOT NULL,
+        ADD COLUMN IF NOT EXISTS is_temporary BOOLEAN DEFAULT FALSE NOT NULL,
+        ADD COLUMN IF NOT EXISTS temp_quiz_data JSONB,
+        ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP
+      `);
+
+        // Add missing PayPal column to payments table
+        await storage.ensureDb().execute(sql`
+        ALTER TABLE payments
+        ADD COLUMN IF NOT EXISTS paypal_order_id VARCHAR UNIQUE
+      `);
+
+        // Create ai_content table if it doesn't exist
+        await storage.ensureDb().execute(sql`
+        CREATE TABLE IF NOT EXISTS ai_content (
+          id SERIAL PRIMARY KEY,
+          quiz_attempt_id INTEGER NOT NULL REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+          content_type VARCHAR(100) NOT NULL,
+          content JSONB NOT NULL,
+          content_hash VARCHAR(64),
+          generated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          UNIQUE(quiz_attempt_id, content_type)
+        )
+      `);
+
+        // Mark all existing users as paid
+        await storage.ensureDb().execute(sql`
+        UPDATE users
+        SET is_paid = TRUE, is_temporary = FALSE
+        WHERE is_paid IS NULL OR is_temporary IS NULL
+      `);
+
+        console.log("Database schema fixed!");
+        res.json({ success: true, message: "Database schema fixed" });
+      } catch (error) {
+        console.error("❌ Database schema fix failed:", error);
+        res
+          .status(500)
+          .json({ error: "Schema fix failed", details: error.message });
+      }
+    },
+  );
 
   // Routes registered successfully
 }

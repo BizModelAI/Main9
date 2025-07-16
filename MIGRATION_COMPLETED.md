@@ -65,7 +65,7 @@ window.debugAIContent.simulateQuizAttemptClick(4);
 2. **When switching quiz attempts:**
    - ✅ Fetches AI content from database (not localStorage fallback)
    - ✅ Instant switching without page reload
-   - �� Preserved state across sessions
+     - ✅ Preserved state across sessions
 
 3. **No more error logs:**
    - ✅ AI content saving will succeed

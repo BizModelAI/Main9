@@ -1,7 +1,8 @@
 import React from "react";
 import { QuizData } from "../types";
-import { generatePersonalizedPaths } from "../utils/quizLogic";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { businessModelService } from "../utils/businessModelService";
+import { businessPaths } from "../data/businessPaths";
+import { AICacheManager } from "../utils/aiCacheManager";
 import { renderMarkdownContent } from "../utils/markdownUtils";
 import {
   TrendingUp,
@@ -40,8 +41,11 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
   aiAnalysis: passedAIAnalysis,
   topBusinessPath: passedTopBusinessPath,
 }) => {
-  const paths = generatePersonalizedPaths(quizData);
-  const topThreePaths = paths.slice(0, 3);
+  const matches = businessModelService.getBusinessModelMatches(quizData);
+  const topThreePaths = matches.slice(0, 3).map((match) => {
+    const businessPath = businessPaths.find((path) => path.id === match.id);
+    return { ...businessPath!, fitScore: match.score };
+  });
   const userName = userEmail?.split("@")[0] || "User";
 
   // Use passed AI data if available, otherwise fall back to cache
@@ -51,6 +55,7 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
     aiAnalysis = passedAIAnalysis;
   } else {
     // Fallback to cached data if no AI data was passed
+    const aiCacheManager = AICacheManager.getInstance();
     const cachedData = aiCacheManager.getCachedAIContent(quizData);
     aiInsights = cachedData.insights;
     aiAnalysis = cachedData.analysis;
@@ -815,7 +820,7 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
 
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <h3 className="font-semibold text-blue-900 mb-2">
-              💡 Future Consideration
+              � Future Consideration
             </h3>
             <p className="text-blue-800 text-sm">
               As you develop your skills and gain experience, some of these

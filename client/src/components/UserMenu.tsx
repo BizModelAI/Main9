@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const UserMenu: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSettingsOpen(false);
       }
     };
 
@@ -49,13 +51,15 @@ const UserMenu: React.FC = () => {
           icon: LayoutDashboard,
           label: "Dashboard",
           href: "/dashboard",
-          onClick: () => setIsOpen(false),
+          onClick: () => {
+            setIsOpen(false);
+            setSettingsOpen(false);
+          },
         },
         {
           icon: Settings,
           label: "Settings",
-          href: "/settings",
-          onClick: () => setIsOpen(false),
+          isSettings: true,
         },
         {
           icon: LogOut,
@@ -69,15 +73,18 @@ const UserMenu: React.FC = () => {
           icon: LogIn,
           label: "Log In",
           href: "/login",
-          onClick: () => setIsOpen(false),
-        },
-        {
-          icon: Settings,
-          label: "Settings",
-          href: "/settings",
-          onClick: () => setIsOpen(false),
+          onClick: () => {
+            setIsOpen(false);
+            setSettingsOpen(false);
+          },
         },
       ];
+
+  const settingsMenu = [
+    { label: "Profile", path: "/settings?tab=profile" },
+    { label: "Notifications", path: "/settings?tab=notifications" },
+    { label: "Account Management", path: "/settings?tab=account" },
+  ];
 
   return (
     <div className="relative" ref={menuRef}>
@@ -115,8 +122,48 @@ const UserMenu: React.FC = () => {
             {/* Menu Items */}
             <div className="py-1">
               {menuItems.map((item, index) => (
-                <div key={index}>
-                  {item.href ? (
+                <div key={index} className="relative">
+                  {item.isSettings ? (
+                    <>
+                      <button
+                        onClick={() => setSettingsOpen((open) => !open)}
+                        className={`flex items-center w-full px-4 py-2 text-sm transition-colors text-gray-700 hover:text-blue-600 hover:bg-gray-50 ${settingsOpen ? "bg-blue-50 text-blue-700" : ""}`}
+                      >
+                        <Settings className="h-4 w-4 mr-3" />
+                        Settings
+                        <svg
+                          className={`ml-auto h-4 w-4 transition-transform ${settingsOpen ? "rotate-180" : ""}`}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+                      {settingsOpen && (
+                        <div className="pl-8 py-1 space-y-1">
+                          {settingsMenu.map((sub) => (
+                            <Link
+                              key={sub.path}
+                              to={sub.path}
+                              onClick={() => {
+                                setIsOpen(false);
+                                setSettingsOpen(false);
+                              }}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl"
+                            >
+                              {sub.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : item.href ? (
                     <Link
                       to={item.href}
                       onClick={item.onClick}

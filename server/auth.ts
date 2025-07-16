@@ -13,6 +13,28 @@ const tempSessionCache = new Map<
   { userId: number; timestamp: number }
 >();
 
+// Periodic cleanup to prevent memory leaks in session cache
+const SESSION_CLEANUP_INTERVAL = 15 * 60 * 1000; // Clean up every 15 minutes
+const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+
+  for (const [key, session] of tempSessionCache.entries()) {
+    if (now - session.timestamp > SESSION_MAX_AGE) {
+      tempSessionCache.delete(key);
+      cleanedCount++;
+    }
+  }
+
+  if (cleanedCount > 0) {
+    console.log(
+      `� Session cache cleanup: removed ${cleanedCount} expired sessions`,
+    );
+  }
+}, SESSION_CLEANUP_INTERVAL);
+
 // Helper function to get session key from request
 export function getSessionKey(req: any): string {
   // Use a combination of IP and User-Agent as session key
@@ -190,8 +212,8 @@ export function setupAuthRoutes(app: Express) {
           .json({ error: "Email and password are required" });
       }
 
-      // Find user by email (using username field for now)
-      const user = await storage.getUserByUsername(email);
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
@@ -297,7 +319,7 @@ export function setupAuthRoutes(app: Express) {
       // Check if user already exists as a paid user
       let existingUser;
       try {
-        existingUser = await storage.getUserByUsername(email);
+        existingUser = await storage.getUserByEmail(email);
       } catch (dbError) {
         console.error("Database error checking existing user:", dbError);
         return res.status(500).json({
@@ -340,9 +362,9 @@ export function setupAuthRoutes(app: Express) {
         });
       }
 
-      console.log("Storing unpaid user email...");
+      console.log("Storing temporary user...");
       try {
-        await storage.storeUnpaidUserEmail(sessionId, email, {
+        await storage.storeTemporaryUser(sessionId, email, {
           email,
           password: hashedPassword,
           name,
@@ -365,7 +387,6 @@ export function setupAuthRoutes(app: Express) {
       // Return a temporary user object for frontend
       res.json({
         id: `temp_${sessionId}`,
-        username: email,
         email: email,
         name: name,
         isTemporary: true,
@@ -496,7 +517,7 @@ export function setupAuthRoutes(app: Express) {
       }
 
       // Find user by email
-      const user = await storage.getUserByUsername(email);
+      const user = await storage.getUserByEmail(email);
       if (!user) {
         // Don't reveal whether the email exists or not for security
         return res.json({
@@ -592,7 +613,7 @@ export function setupAuthRoutes(app: Express) {
       }
 
       // Find user by email
-      const user = await storage.getUserByUsername(email);
+      const user = await storage.getUserByEmail(email);
       if (user) {
         // Update user to mark as unsubscribed
         await storage.updateUser(user.id, { isUnsubscribed: true });
@@ -652,6 +673,152 @@ export function setupAuthRoutes(app: Express) {
       res.json({ message: "Password reset successfully" });
     } catch (error) {
       console.error("Error in /api/auth/reset-password:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Change password (authenticated users)
+  app.post("/api/auth/change-password", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          error: "Current password and new password are required",
+        });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          error: "New password must be at least 8 characters long",
+        });
+      }
+
+      // Get current user to verify current password
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Verify current password
+      const validCurrentPassword = await bcrypt.compare(
+        currentPassword,
+        user.password,
+      );
+      if (!validCurrentPassword) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+
+      // Hash new password and update
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUserPassword(userId, hashedNewPassword);
+
+      console.log(
+        `Password changed successfully for user ${userId} (${user.email})`,
+      );
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error in /api/auth/change-password:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Contact form endpoint
+  app.post("/api/contact", async (req: Request, res: Response) => {
+    try {
+      const { name, email, subject, message, category } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !subject || !message || !category) {
+        return res.status(400).json({
+          error: "All fields are required",
+        });
+      }
+
+      // Basic email validation
+      if (!email.includes("@") || email.length < 5) {
+        return res.status(400).json({
+          error: "Please enter a valid email address",
+        });
+      }
+
+      console.log(`New contact form submission from: ${email}`);
+
+      const { emailService } = await import("./services/emailService.js");
+
+      // Send notification to team@bizmodelai.com
+      let notificationSent = false;
+      try {
+        notificationSent = await emailService.sendContactFormNotification({
+          name,
+          email,
+          subject,
+          message,
+          category,
+        });
+      } catch (emailError) {
+        console.error("Error sending contact form notification:", emailError);
+        return res.status(500).json({
+          error: "Failed to send notification email. Please try again later.",
+        });
+      }
+
+      if (!notificationSent) {
+        console.error("Failed to send contact form notification");
+
+        // In development, just log the form data instead of failing
+        if (process.env.NODE_ENV === "development") {
+          console.log("=== CONTACT FORM SUBMISSION (Development Mode) ===");
+          console.log("Name:", name);
+          console.log("Email:", email);
+          console.log("Category:", category);
+          console.log("Subject:", subject);
+          console.log("Message:", message);
+          console.log("=== END CONTACT FORM ===");
+
+          // Continue to success even if email fails in development
+        } else {
+          return res.status(500).json({
+            error: "Failed to send notification to team",
+          });
+        }
+      }
+
+      // Send confirmation email to user
+      let confirmationSent = false;
+      try {
+        confirmationSent = await emailService.sendContactFormConfirmation(
+          email,
+          name,
+        );
+      } catch (emailError) {
+        console.log(
+          "Failed to send confirmation email to user, but notification was sent:",
+          emailError,
+        );
+        // Don't fail the request if confirmation email fails
+      }
+
+      if (!confirmationSent) {
+        console.log(
+          "Confirmation email failed to send, but notification was sent successfully",
+        );
+        // Don't fail the request if confirmation email fails
+      }
+
+      console.log(`Contact form processed successfully for: ${email}`);
+      res.json({
+        success: true,
+        message: "Your message has been sent successfully!",
+      });
+    } catch (error) {
+      console.error("Error in /api/contact:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

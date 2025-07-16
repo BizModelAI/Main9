@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import {
   User,
   Mail,
@@ -7,14 +8,19 @@ import {
   AlertCircle,
   CheckCircle,
   Bell,
-  Upload,
   Trash2,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const Settings: React.FC = () => {
   const { user, updateProfile, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("profile");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get("tab") || "profile";
+  });
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
@@ -31,6 +37,20 @@ const Settings: React.FC = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+
   // Sync form data when user data changes
   useEffect(() => {
     console.log("Settings: User data changed:", user);
@@ -44,6 +64,14 @@ const Settings: React.FC = () => {
       setFormData(newFormData);
     }
   }, [user]);
+
+  // Update active tab when URL changes
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["profile", "notifications", "account"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
@@ -108,6 +136,70 @@ const Settings: React.FC = () => {
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);
     }, 1000);
+  };
+
+  const handlePasswordChange = async () => {
+    // Clear previous errors
+    setPasswordError("");
+
+    // Validation
+    if (
+      !passwordData.currentPassword ||
+      !passwordData.newPassword ||
+      !passwordData.confirmPassword
+    ) {
+      setPasswordError("All password fields are required");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters long");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setSaveStatus("saving");
+
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+
+      if (response.ok) {
+        setSaveStatus("success");
+        // Clear password fields
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      } else {
+        const data = await response.json();
+        setPasswordError(data.error || "Failed to change password");
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      }
+    } catch (error) {
+      setPasswordError("Network error. Please try again.");
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -194,10 +286,10 @@ const Settings: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center px-4 py-3 text-left rounded-xl transition-colors ${
+                    className={`w-full flex items-center px-4 py-3 text-left transition-colors ${
                       activeTab === tab.id
-                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-r-lg"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-xl"
+                        : "text-gray-700 hover:bg-gray-50 rounded-xl"
                     }`}
                   >
                     <tab.icon className="h-5 w-5 mr-3" />
@@ -260,32 +352,6 @@ const Settings: React.FC = () => {
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">
                     Profile Information
                   </h2>
-
-                  {/* Profile Photo Section */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Profile Photo
-                    </h3>
-                    <div className="flex items-center space-x-6">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden">
-                        <User className="h-12 w-12 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Upload a photo for your profile.
-                        </p>
-                        <label className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Photo
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Form Fields */}
                   <div className="space-y-6">
@@ -412,6 +478,182 @@ const Settings: React.FC = () => {
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">
                     Account Management
                   </h2>
+
+                  {/* Password Change Section */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Lock className="h-5 w-5 mr-2" />
+                      Change Password
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Update your password to keep your account secure. Use a
+                      strong password with at least 8 characters.
+                    </p>
+
+                    {/* Password Error Display */}
+                    {passwordError && (
+                      <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-center">
+                          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                          <span className="text-sm font-medium text-red-700">
+                            {passwordError}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      {/* Current Password */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Current Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.current ? "text" : "password"}
+                            value={passwordData.currentPassword}
+                            onChange={(e) =>
+                              setPasswordData((prev) => ({
+                                ...prev,
+                                currentPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter your current password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPasswords((prev) => ({
+                                ...prev,
+                                current: !prev.current,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPasswords.current ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* New Password */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          New Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.new ? "text" : "password"}
+                            value={passwordData.newPassword}
+                            onChange={(e) =>
+                              setPasswordData((prev) => ({
+                                ...prev,
+                                newPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter your new password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPasswords((prev) => ({
+                                ...prev,
+                                new: !prev.new,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPasswords.new ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordData.newPassword &&
+                          passwordData.newPassword.length < 8 && (
+                            <p className="text-sm text-red-600 mt-1">
+                              Password must be at least 8 characters long
+                            </p>
+                          )}
+                      </div>
+
+                      {/* Confirm New Password */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Confirm New Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.confirm ? "text" : "password"}
+                            value={passwordData.confirmPassword}
+                            onChange={(e) =>
+                              setPasswordData((prev) => ({
+                                ...prev,
+                                confirmPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Confirm your new password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPasswords((prev) => ({
+                                ...prev,
+                                confirm: !prev.confirm,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPasswords.confirm ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordData.confirmPassword &&
+                          passwordData.newPassword !==
+                            passwordData.confirmPassword && (
+                            <p className="text-sm text-red-600 mt-1">
+                              Passwords do not match
+                            </p>
+                          )}
+                      </div>
+
+                      <button
+                        onClick={handlePasswordChange}
+                        disabled={
+                          isChangingPassword ||
+                          !passwordData.currentPassword ||
+                          !passwordData.newPassword ||
+                          !passwordData.confirmPassword ||
+                          passwordData.newPassword !==
+                            passwordData.confirmPassword ||
+                          passwordData.newPassword.length < 8
+                        }
+                        className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isChangingPassword ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Changing Password...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="h-5 w-5 mr-2" />
+                            Change Password
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
                   {/* Danger Zone */}
                   <div className="border-2 border-red-200 rounded-xl p-6 bg-red-50">

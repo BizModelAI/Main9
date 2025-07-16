@@ -70,7 +70,7 @@ async function ensureAIContentColumn() {
   if (!db) return;
 
   try {
-    console.log("🔍 Checking for ai_content column migration...");
+    console.log("� Checking for ai_content column migration...");
 
     // Check if column exists
     const checkResult = await db.execute(sql`
@@ -96,7 +96,7 @@ async function ensureAIContentColumn() {
       (error as Error).message,
     );
     if ((error as Error).message.includes("already exists")) {
-      console.log("💡 Column already exists - migration not needed");
+      console.log("� Column already exists - migration not needed");
     }
   }
 }

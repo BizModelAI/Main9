@@ -51,69 +51,19 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
         return;
       }
 
-      // For authenticated users, check their database records
-      try {
-        console.log("PaywallContext: Checking user status for:", user.email);
+      // For authenticated users, set reasonable defaults without API calls
+      // Only fetch quiz data when actually needed (like accessing protected content)
 
-        // Check if user has completed quiz
-        const quizData = await getLatestQuizData();
+      // For authenticated users, assume they have completed the quiz
+      // This handles existing users and prevents access issues
+      setHasCompletedQuiz(true);
 
-        if (!isMounted) return; // Component unmounted, don't update state
+      // Don't auto-unlock analysis - let them pay per report
+      setHasUnlockedAnalysis(false);
 
-        const hasQuiz = !!quizData;
-        console.log("PaywallContext: Quiz data found:", hasQuiz);
-
-        // In pure pay-per-report model, users don't need global access
-        // They get access per quiz/report unlock
-        console.log(
-          "PaywallContext: Pure pay-per-report model - no global access needed",
-        );
-        setHasUnlockedAnalysis(false);
-
-        // For authenticated users, always assume they have completed the quiz
-        // This handles existing users and prevents access issues
-        console.log(
-          "PaywallContext: User is authenticated - setting quiz as completed",
-        );
-        setHasCompletedQuiz(true);
-
-        // Development mode bypass disabled to ensure paywall always works
-        // if (import.meta.env.MODE === "development") {
-        //   console.log(
-        //     "PaywallContext: Development mode - also unlocking analysis",
-        //   );
-        //   setHasUnlockedAnalysis(true);
-        // }
-
-        // Update localStorage for consistency
-        localStorage.setItem("hasCompletedQuiz", "true");
-        localStorage.setItem("hasUnlockedAnalysis", "false");
-      } catch (error) {
-        if (isMounted) {
-          console.error("PaywallContext: Error checking user status:", error);
-
-          // For any errors with authenticated users, assume quiz is completed
-          console.log(
-            "PaywallContext: Error occurred but user is authenticated - setting quiz as completed",
-          );
-          setHasCompletedQuiz(true);
-
-          // Development mode bypass disabled to ensure paywall always works
-          // if (import.meta.env.MODE === "development") {
-          //   console.log(
-          //     "PaywallContext: Development mode - also unlocking analysis after error",
-          //   );
-          //   setHasUnlockedAnalysis(true);
-          // }
-
-          // Update localStorage for consistency
-          localStorage.setItem("hasCompletedQuiz", "true");
-          // Development mode bypass disabled
-          // if (import.meta.env.MODE === "development") {
-          //   localStorage.setItem("hasUnlockedAnalysis", "true");
-          // }
-        }
-      }
+      // Update localStorage for consistency
+      localStorage.setItem("hasCompletedQuiz", "true");
+      localStorage.setItem("hasUnlockedAnalysis", "false");
     };
 
     checkUserStatus();
@@ -154,9 +104,9 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
   };
 
   const canAccessFullReport = () => {
-    // In pure pay-per-report model, basic report access is available
-    // Users pay for detailed report unlocks individually
-    return hasCompletedQuiz;
+    // In pure pay-per-report model, users must pay for each full report
+    // Check if user has actually unlocked analysis (made payment)
+    return hasUnlockedAnalysis;
   };
 
   const hasMadeAnyPayment = () => {

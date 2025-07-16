@@ -2,11 +2,11 @@
 import { storage } from "./server/storage.js";
 
 async function applyMigrationNow() {
-  console.log("🚀 Applying AI content migration immediately...");
+  console.log("� Applying AI content migration immediately...");
 
   try {
     // Test if we can save AI content (this will trigger migration if needed)
-    console.log("🧪 Testing AI content functionality...");
+    console.log("� Testing AI content functionality...");
 
     const testData = {
       migration_test: true,
@@ -22,17 +22,17 @@ async function applyMigrationNow() {
 
     // Clean up test data
     await storage.saveAIContentToQuizAttempt(4, null);
-    console.log("🧹 Test data cleaned up");
+    console.log("� Test data cleaned up");
 
     // Test retrieval
     const retrieved = await storage.getAIContentForQuizAttempt(4);
     console.log(
-      "🔍 Retrieval test:",
+      "� Retrieval test:",
       retrieved === null ? "Success (null as expected)" : "Data found",
     );
 
     console.log(
-      "🎉 Migration verification complete - AI content system fully functional!",
+      "� Migration verification complete - AI content system fully functional!",
     );
   } catch (error) {
     console.error("❌ Migration still needed - error occurred:", error.message);
@@ -41,8 +41,8 @@ async function applyMigrationNow() {
       error.message.includes("ai_content") ||
       error.message.includes("column")
     ) {
-      console.log("💡 The ai_content column needs to be added to the database");
-      console.log("🔧 This needs to be done at the database level");
+      console.log("� The ai_content column needs to be added to the database");
+      console.log("� This needs to be done at the database level");
     }
   }
 }

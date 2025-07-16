@@ -769,7 +769,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
                     className="w-full bg-gray-600 text-white py-2 rounded-xl font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     style={{ display: "none" }}
                   >
-                    🔧 DEV: Bypass Payment (Remove in Prod)
+                    � DEV: Bypass Payment (Remove in Prod)
                   </button>
                 )}
               </form>
@@ -887,7 +887,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
                     className="w-full bg-gray-600 text-white py-2 rounded-xl font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     style={{ display: "none" }}
                   >
-                    🔧 DEV: Bypass Payment (Remove in Prod)
+                    � DEV: Bypass Payment (Remove in Prod)
                   </button>
                 )}
               </div>

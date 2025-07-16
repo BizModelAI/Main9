@@ -21,6 +21,7 @@ interface EnhancedPaymentFormProps {
   setIsProcessing: (processing: boolean) => void;
   amount?: number;
   isFirstReport?: boolean;
+  quizAttemptId?: number; // Required for report unlock payments
 }
 
 const PaymentMethodSelector: React.FC<{
@@ -226,30 +227,33 @@ const PayPalForm: React.FC<{
   isProcessing: boolean;
   setIsProcessing: (processing: boolean) => void;
   amount: number;
-}> = ({ onSuccess, onError, isProcessing, setIsProcessing, amount }) => {
+  quizAttemptId: number;
+}> = ({
+  onSuccess,
+  onError,
+  isProcessing,
+  setIsProcessing,
+  amount,
+  quizAttemptId,
+}) => {
   const { user } = useAuth();
 
   const createOrder = async () => {
     setIsProcessing(true);
     try {
-      // Determine if this is a temporary user
-      const isTemporaryUser =
-        user?.isTemporary || user?.id.toString().startsWith("temp_");
-
-      const requestBody: any = {};
-
-      if (isTemporaryUser) {
-        // Extract session ID from temporary user ID
-        const sessionId = user?.id.toString().replace("temp_", "");
-        requestBody.sessionId = sessionId;
-      } else {
-        requestBody.userId = parseInt(user?.id || "0");
+      if (!quizAttemptId) {
+        throw new Error(
+          "Quiz attempt ID is required for report unlock payment",
+        );
       }
 
-      // Use appropriate endpoint based on user type
-      const endpoint = isTemporaryUser
-        ? "/api/create-paypal-anonymous-report-unlock-payment"
-        : "/api/create-paypal-report-unlock-payment";
+      const requestBody = {
+        userId: parseInt(user?.id || "0"),
+        quizAttemptId: quizAttemptId,
+      };
+
+      // Use PayPal endpoint for report unlock payments
+      const endpoint = "/api/create-paypal-payment";
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -347,6 +351,7 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
   setIsProcessing,
   amount = 9.99,
   isFirstReport = true,
+  quizAttemptId,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -362,24 +367,32 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
       if (!user || selectedMethod !== "card") return;
 
       try {
-        // Determine if this is a temporary user
-        const isTemporaryUser =
-          user.isTemporary || user.id.toString().startsWith("temp_");
-
-        const requestBody: any = {};
-
-        if (isTemporaryUser) {
-          // Extract session ID from temporary user ID
-          const sessionId = user.id.toString().replace("temp_", "");
-          requestBody.sessionId = sessionId;
-        } else {
-          requestBody.userId = parseInt(user.id);
+        // Pay-per-report model: Users must have accounts before paying
+        if (!user.id || user.isTemporary) {
+          throw new Error("User must create an account before making payments");
         }
 
-        // Use appropriate endpoint based on user type
-        const endpoint = isTemporaryUser
-          ? "/api/create-anonymous-report-unlock-payment"
-          : "/api/create-report-unlock-payment";
+        // Get quiz attempt ID from prop or localStorage
+        const currentQuizAttemptId =
+          quizAttemptId ||
+          (() => {
+            const stored = localStorage.getItem("currentQuizAttemptId");
+            return stored ? parseInt(stored) : null;
+          })();
+
+        if (!currentQuizAttemptId) {
+          throw new Error(
+            "Quiz attempt ID is required for report unlock payment",
+          );
+        }
+
+        const requestBody = {
+          userId: parseInt(user.id),
+          quizAttemptId: currentQuizAttemptId,
+        };
+
+        // Use report unlock payment endpoint
+        const endpoint = "/api/create-report-unlock-payment";
 
         const response = await fetch(endpoint, {
           method: "POST",
@@ -482,6 +495,7 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
           isProcessing={isProcessing}
           setIsProcessing={setIsProcessing}
           amount={amount}
+          quizAttemptId={quizAttemptId!}
         />
       )}
 
