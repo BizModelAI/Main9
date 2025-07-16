@@ -330,6 +330,26 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
         Array.isArray(parsed.characteristics) &&
         parsed.characteristics.length === 6
       ) {
+        // Store the characteristics in database
+        const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+        if (quizAttemptId) {
+          try {
+            const { AIService } = await import("../utils/aiService");
+            const aiService = AIService.getInstance();
+            await aiService.saveAIContentToDatabase(
+              quizAttemptId,
+              "characteristics",
+              { characteristics: parsed.characteristics },
+            );
+            console.log("✅ Characteristics stored in database");
+          } catch (dbError) {
+            console.warn(
+              "⚠️ Failed to store characteristics in database:",
+              dbError,
+            );
+          }
+        }
+
         return parsed.characteristics;
       } else {
         console.error("Invalid response format:", parsed);
