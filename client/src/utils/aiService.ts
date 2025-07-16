@@ -41,9 +41,9 @@ ${topMatch ? `- Top Business Match: ${topMatch.name} (${topMatch.fitScore}% matc
 
 Work Preferences:
 - Time Availability: ${quizData.weeklyTimeCommitment}
-- Learning Style: ${quizData.learningPreference || quizData.learningStyle || "self_directed"}
-- Work Structure: ${quizData.workStructurePreference || "flexible"}
-- Collaboration Style: ${quizData.workCollaborationPreference || "independent"}
+- Learning Style: ${quizData.learningPreference || quizData.learningStyle || 'self_directed'}
+- Work Structure: ${quizData.workStructurePreference || 'flexible'}
+- Collaboration Style: ${quizData.workCollaborationPreference || 'independent'}
 - Decision-Making Style: ${quizData.decisionMakingStyle}
 
 Personality Traits (0–5 scale):
@@ -615,6 +615,37 @@ ${userProfile}`,
     }
 
     return null;
+  }
+}
+
+  // BACKWARD COMPATIBILITY WRAPPER METHODS
+  // These methods are still used by some components
+
+  async generateBusinessFitDescriptions(
+    quizData: QuizData,
+    businessModels: BusinessPath[],
+  ): Promise<{ [key: string]: string }> {
+    console.warn(
+      "⚠️ generateBusinessFitDescriptions is deprecated. Use generateModelInsights instead.",
+    );
+    const descriptions: { [key: string]: string } = {};
+
+    for (const model of businessModels.slice(0, 3)) {
+      try {
+        const insights = await this.generateModelInsights(
+          quizData,
+          model.name,
+          "best",
+        );
+        descriptions[model.id] = insights.modelFitReason;
+      } catch (error) {
+        console.error(`Error generating description for ${model.name}:`, error);
+        descriptions[model.id] =
+          `This business model aligns well with your profile based on your quiz responses.`;
+      }
+    }
+
+    return descriptions;
   }
 }
 
