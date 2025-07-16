@@ -812,12 +812,27 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         const aiContent =
           await storage.getAIContentForQuizAttempt(quizAttemptId);
+        const contentType = req.query.type as string;
 
         console.log(
           `AI content retrieved for quiz attempt ${quizAttemptId}:`,
           !!aiContent,
         );
-        res.json({ aiContent });
+
+        // If specific content type requested, return just that part
+        if (contentType && aiContent && typeof aiContent === "object") {
+          const specificContent = aiContent[contentType];
+          if (specificContent) {
+            res.json({ content: specificContent });
+          } else {
+            res
+              .status(404)
+              .json({ error: `Content type '${contentType}' not found` });
+          }
+        } else {
+          // Return full content for backward compatibility
+          res.json({ aiContent });
+        }
       } catch (error) {
         console.error("Error getting AI content:", error);
         res.status(500).json({ error: "Internal server error" });
