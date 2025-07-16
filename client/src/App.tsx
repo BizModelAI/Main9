@@ -395,10 +395,16 @@ const AIReportLoadingWrapper: React.FC<{
     }
   };
 
+  // Handle navigation in useEffect to avoid setState during render
+  React.useEffect(() => {
+    if (!quizData) {
+      console.log("No quiz data found, redirecting to quiz");
+      navigate("/quiz");
+    }
+  }, [quizData, navigate]);
+
   if (!quizData) {
-    // Fallback if no quiz data
-    navigate("/quiz");
-    return null;
+    return <div>Redirecting...</div>;
   }
 
   return (
