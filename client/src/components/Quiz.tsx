@@ -614,7 +614,7 @@ const ExitWarningModal: React.FC<ExitWarningModalProps> = ({
             className="text-center mt-8"
           >
             <p className="text-sm text-gray-500">
-              � Tip: Your results will be personalized based on all your
+              💡 Tip: Your results will be personalized based on all your
               answers
             </p>
           </motion.div>
