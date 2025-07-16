@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface QuizRetakeStatus {
   canRetake: boolean;
@@ -16,7 +16,11 @@ interface QuizRetakeStatus {
 export const useQuizRetake = (userId: number | null) => {
   const queryClient = useQueryClient();
 
-  const { data: retakeStatus, isLoading, refetch } = useQuery<QuizRetakeStatus>({
+  const {
+    data: retakeStatus,
+    isLoading,
+    refetch,
+  } = useQuery<QuizRetakeStatus>({
     queryKey: [`/api/quiz-retake-status/${userId}`],
     enabled: !!userId,
     retry: false,
@@ -24,38 +28,44 @@ export const useQuizRetake = (userId: number | null) => {
 
   const recordAttemptMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      if (!userId) throw new Error('User ID is required');
-      return await apiRequest('POST', '/api/quiz-attempt', {
+      if (!userId) throw new Error("User ID is required");
+      return await apiRequest("POST", "/api/quiz-attempt", {
         userId,
         quizData,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/quiz-retake-status/${userId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/quiz-retake-status/${userId}`],
+      });
     },
   });
 
+  // DEPRECATED: Access pass and retake bundle payments no longer exist
+  // The new pay-per-report model uses /api/create-report-unlock-payment instead
   const purchaseAccessPassMutation = useMutation({
     mutationFn: async () => {
-      if (!userId) throw new Error('User ID is required');
-      return await apiRequest('POST', '/api/create-access-pass-payment', {
-        userId,
-      });
+      throw new Error(
+        "Access pass payments are deprecated. Use report unlock payments instead.",
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/quiz-retake-status/${userId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/quiz-retake-status/${userId}`],
+      });
     },
   });
 
   const purchaseRetakeBundleMutation = useMutation({
     mutationFn: async () => {
-      if (!userId) throw new Error('User ID is required');
-      return await apiRequest('POST', '/api/create-retake-bundle-payment', {
-        userId,
-      });
+      throw new Error(
+        "Retake bundle payments are deprecated. Quizzes are now free, pay per report unlock.",
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/quiz-retake-status/${userId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/quiz-retake-status/${userId}`],
+      });
     },
   });
 
@@ -102,7 +112,9 @@ export const useQuizRetake = (userId: number | null) => {
     purchaseAccessPass: purchaseAccessPassMutation.mutateAsync,
     purchaseRetakeBundle: purchaseRetakeBundleMutation.mutateAsync,
     isRecordingAttempt: recordAttemptMutation.isPending,
-    isPurchasing: purchaseAccessPassMutation.isPending || purchaseRetakeBundleMutation.isPending,
+    isPurchasing:
+      purchaseAccessPassMutation.isPending ||
+      purchaseRetakeBundleMutation.isPending,
     refetch,
     isGuestUser: !userId,
   };
