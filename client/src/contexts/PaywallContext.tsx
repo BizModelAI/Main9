@@ -53,10 +53,6 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
 
       // For authenticated users, set reasonable defaults without API calls
       // Only fetch quiz data when actually needed (like accessing protected content)
-      console.log(
-        "PaywallContext: Setting defaults for authenticated user:",
-        user.email,
-      );
 
       // For authenticated users, assume they have completed the quiz
       // This handles existing users and prevents access issues
