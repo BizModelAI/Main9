@@ -2365,6 +2365,32 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
     },
   );
 
+  // AI Content Migration Endpoint
+  app.post(
+    "/api/admin/migrate-ai-content",
+    async (req: Request, res: Response) => {
+      try {
+        console.log("🔄 Starting AI content migration...");
+
+        const result = await storage.migrateAIContentToNewTable();
+
+        console.log("✅ AI content migration completed successfully");
+        res.json({
+          success: true,
+          message: "AI content migration completed",
+          ...result,
+        });
+      } catch (error) {
+        console.error("❌ AI content migration failed:", error);
+        res.status(500).json({
+          success: false,
+          error: "Migration failed",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+  );
+
   // Enhanced email functionality for unpaid users
   app.post("/api/email-results", async (req: Request, res: Response) => {
     try {
