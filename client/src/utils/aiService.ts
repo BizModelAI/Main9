@@ -49,7 +49,7 @@ Work Preferences:
 Personality Traits (0–5 scale):
 - Social Comfort: ${quizData.salesComfort || 3}
 - Self-Motivation: ${quizData.selfMotivationLevel || quizData.selfMotivation || 3}
-- Risk Tolerance: ${quizData.riskComfortLevel || quizData.riskComfort || 3}
+- Risk Tolerance: ${quizData.riskComfortLevel || 3}
 - Tech Comfort: ${quizData.techSkillsRating || 3}
 - Structure Preference: ${quizData.workStructurePreference || 3}
 - Feedback Response: ${quizData.feedbackRejectionResponse || 3}
