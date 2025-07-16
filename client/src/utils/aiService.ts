@@ -534,7 +534,7 @@ ${userProfile}`,
   private async shouldSaveToDatabase(): Promise<boolean> {
     try {
       // Check if user is authenticated (paid users always save)
-      const response = await fetch("/api/auth/check", {
+      const response = await fetch("/api/auth/me", {
         method: "GET",
         credentials: "include",
       });
