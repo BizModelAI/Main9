@@ -57,6 +57,68 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
     setError("");
 
     try {
+      // First, create temporary account and save data for 3 months if user provided email
+      if (quizData && !isPaidUser) {
+        console.log(
+          "EmailResultsModal: Creating temporary account for 3-month storage",
+        );
+
+        try {
+          const saveResponse = await fetch("/api/save-quiz-data", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quizData: quizData,
+              email: email.trim(),
+            }),
+          });
+
+          if (saveResponse.ok) {
+            const saveResult = await saveResponse.json();
+            console.log(
+              "EmailResultsModal: Quiz data saved for 3 months",
+              saveResult,
+            );
+
+            // Store email in localStorage so AI service knows user provided email
+            localStorage.setItem("userEmail", email.trim());
+
+            // Store quiz attempt ID for future reference
+            if (saveResult.attemptId) {
+              localStorage.setItem(
+                "currentQuizAttemptId",
+                saveResult.attemptId.toString(),
+              );
+            }
+
+            // Retroactively save any existing AI content to database
+            try {
+              const { AIService } = await import("../utils/aiService");
+              const aiService = AIService.getInstance();
+              await aiService.saveExistingAIContentToDatabase();
+            } catch (aiError) {
+              console.error(
+                "Error saving existing AI content to database:",
+                aiError,
+              );
+            }
+          } else {
+            console.warn(
+              "Failed to save quiz data for 3-month storage, but continuing with email...",
+            );
+          }
+        } catch (saveError) {
+          console.warn(
+            "Error saving quiz data for 3-month storage:",
+            saveError,
+          );
+          // Continue with email sending even if save fails
+        }
+      }
+
+      // Then send the preview email
       const sessionId = getSessionId();
       const response = await fetch("/api/email-results", {
         method: "POST",
