@@ -465,6 +465,86 @@ ${userProfile}`,
     }
   }
 
+  // Database helper methods for AI content storage
+  private async saveAIContentToDatabase(
+    quizAttemptId: string,
+    contentType: string,
+    content: any,
+  ): Promise<void> {
+    try {
+      console.log(
+        `💾 Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
+      );
+
+      const response = await fetch(
+        `/api/quiz-attempts/${quizAttemptId}/ai-content`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            contentType,
+            content,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        console.log(`✅ ${contentType} AI content saved to database`);
+      } else {
+        console.error(
+          `❌ Failed to save ${contentType} AI content to database:`,
+          response.status,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `❌ Error saving ${contentType} AI content to database:`,
+        error,
+      );
+    }
+  }
+
+  private async getAIContentFromDatabase(
+    quizAttemptId: string,
+    contentType: string,
+  ): Promise<any | null> {
+    try {
+      const response = await fetch(
+        `/api/quiz-attempts/${quizAttemptId}/ai-content?type=${contentType}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.content) {
+          console.log(`📖 Retrieved ${contentType} AI content from database`);
+          return data.content;
+        }
+      } else if (response.status !== 404) {
+        console.error(
+          `❌ Failed to get ${contentType} AI content from database:`,
+          response.status,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `❌ Error getting ${contentType} AI content from database:`,
+        error,
+      );
+    }
+
+    return null;
+  }
+
   // DEPRECATED METHODS - for backward compatibility only
   // These should be replaced with the new 3-call structure
 
