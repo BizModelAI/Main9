@@ -92,13 +92,13 @@ export const payments = pgTable(
     version: integer("version").default(1).notNull(),
   },
   (table) => ({
-    // Ensure only one payment per quiz attempt can be completed
-    uniqueCompletedPaymentPerQuiz: unique()
-      .on(table.quizAttemptId, table.status)
-      .where(sql`${table.status} = 'completed'`),
     // Index for faster payment lookups
     paymentStatusIndex: index("idx_payment_status").on(table.status),
     paymentUserIndex: index("idx_payment_user").on(table.userId),
+    paymentStripeIndex: index("idx_payment_stripe").on(
+      table.stripePaymentIntentId,
+    ),
+    paymentPaypalIndex: index("idx_payment_paypal").on(table.paypalOrderId),
   }),
 );
 
