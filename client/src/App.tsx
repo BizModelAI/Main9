@@ -527,13 +527,20 @@ const clearQuizRelatedCache = () => {
   localStorage.removeItem("hasEverSelectedModel");
   localStorage.removeItem("selectedBusinessModel");
 
+  // Clear AI service caches (this is the key fix!)
+  const aiCacheManager = AICacheManager.getInstance();
+  aiCacheManager.forceResetCache();
+
   // Clear any AI cache keys
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (
       key &&
-      (key.startsWith("ai-analysis-") ||
+      (key.startsWith("ai_insights_") || // AI service cache keys
+        key.startsWith("preview_") || // Preview cache keys
+        key.startsWith("fullreport_") || // Full report cache keys
+        key.startsWith("ai-analysis-") ||
         key.startsWith("skills-analysis-") ||
         key.startsWith("ai-cache-") ||
         key.startsWith("confetti_shown_"))
@@ -544,7 +551,7 @@ const clearQuizRelatedCache = () => {
   keysToRemove.forEach((key) => localStorage.removeItem(key));
 
   console.log(
-    `✅ Cleared ${keysToRemove.length + 12} cache entries for new quiz session`,
+    `✅ Cleared AI caches and ${keysToRemove.length + 12} cache entries for new quiz session`,
   );
 };
 
