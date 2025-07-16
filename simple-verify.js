@@ -64,7 +64,7 @@ async function simpleVerify() {
       SET ai_content = ${JSON.stringify(testData)}
       WHERE id = ${testId}
     `);
-    console.log("��� AI content save successful");
+    console.log("AI content save successful");
 
     // Test retrieve
     const retrieved = await db.execute(sql`
