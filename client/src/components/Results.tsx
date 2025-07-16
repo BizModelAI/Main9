@@ -1731,19 +1731,19 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     </motion.div>
                   )}
 
-                  <div className="h-full p-4 md:p-8 flex flex-col md:flex-row">
-                    {/* Left Column - Main Info */}
-                    <div className="flex-1 md:pr-6 mb-6 md:mb-0">
-                      <div className="flex items-center mb-4">
+                  <div className="h-full p-4 md:p-8 flex flex-col">
+                    {/* Mobile Header: Title + Percentage on Same Line */}
+                    <div className="md:hidden flex items-center justify-between mb-4">
+                      <div className="flex items-center">
                         <div
-                          className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center mr-3 md:mr-4 ${
+                          className={`w-10 h-10 rounded-2xl flex items-center justify-center mr-3 ${
                             index === 0 ? "bg-yellow-500" : "bg-blue-600"
                           }`}
                         >
-                          <IconComponent className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                          <IconComponent className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                          <h3 className="text-xl font-bold text-gray-900">
                             {path.name}
                           </h3>
                           <div
@@ -1759,108 +1759,221 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           </div>
                         </div>
                       </div>
-
-                      <p className="text-gray-600 mb-4 md:mb-6 leading-relaxed text-sm md:text-base">
-                        {path.description}
-                      </p>
-
-                      {/* Key Metrics in compact grid */}
-                      <div className="grid grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
+                      {/* Fit Score on Mobile */}
+                      <div className="text-right">
                         <div
-                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2 md:p-3`}
-                        >
-                          <div className="flex items-center mb-1">
-                            <Clock className="h-3 w-3 md:h-4 md:w-4 text-gray-500 mr-1" />
-                            <span className="text-xs font-medium text-gray-700">
-                              Time to Profit
-                            </span>
-                          </div>
-                          <div className="font-bold text-gray-900 text-xs md:text-sm">
-                            {path.timeToProfit}
-                          </div>
-                        </div>
-                        <div
-                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2 md:p-3`}
-                        >
-                          <div className="flex items-center mb-1">
-                            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-gray-500 mr-1" />
-                            <span className="text-xs font-medium text-gray-700">
-                              Startup Cost
-                            </span>
-                          </div>
-                          <div className="font-bold text-gray-900 text-xs md:text-sm">
-                            {path.startupCost}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Elements */}
-                      <div className="space-y-2 md:space-y-3 mt-4 md:mt-auto">
-                        {/* Primary CTA - Only show if card is not locked */}
-                        {!(index > 0 && !canViewFullReport) && (
-                          <button
-                            onClick={() => handleViewFullReport(path)}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 md:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-sm md:text-base"
-                          >
-                            <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                            View Full Report
-                          </button>
-                        )}
-
-                        {/* Secondary CTA - Only show if card is not locked */}
-                        {!(index > 0 && !canViewFullReport) && (
-                          <div className="text-center space-y-2 md:space-y-3">
-                            <button
-                              onClick={() => handleLearnMore(path)}
-                              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs md:text-sm font-bold flex items-center justify-center group"
-                            >
-                              Learn more about {path.name} for you
-                              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                            </button>
-
-                            <button
-                              onClick={() => handleStartBusinessModel(path)}
-                              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs md:text-sm font-bold flex items-center justify-center group"
-                            >
-                              Complete Guide to {path.name}
-                              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right Column - Score & Highlights */}
-                    <div className="md:w-48 flex flex-col md:flex-col w-full">
-                      {/* Fit Score */}
-                      <div className="text-center mb-4 md:mb-6">
-                        <div
-                          className={`text-3xl md:text-5xl font-bold mb-1 ${
+                          className={`text-2xl font-bold ${
                             index === 0 ? "text-yellow-600" : "text-blue-600"
                           }`}
                         >
                           {path.fitScore}%
                         </div>
-                        <div className="text-sm text-gray-500 font-medium">
+                        <div className="text-xs text-gray-500 font-medium">
                           AI Match
                         </div>
                       </div>
+                    </div>
 
-                      {/* Potential Income */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
+                    {/* Desktop Layout: Flex Row */}
+                    <div className="hidden md:flex md:flex-row">
+                      {/* Left Column - Main Info */}
+                      <div className="flex-1 md:pr-6 mb-6 md:mb-0">
+                        <div className="flex items-center mb-4">
+                          <div
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center mr-4 ${
+                              index === 0 ? "bg-yellow-500" : "bg-blue-600"
+                            }`}
+                          >
+                            <IconComponent className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold text-gray-900">
+                              {path.name}
+                            </h3>
+                            <div
+                              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                                path.difficulty === "Easy"
+                                  ? "bg-green-100 text-green-800"
+                                  : path.difficulty === "Medium"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {path.difficulty}
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="text-gray-600 mb-6 leading-relaxed text-base">
+                          {path.description}
+                        </p>
+
+                        {/* Key Metrics in compact grid */}
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                          <div
+                            className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-3`}
+                          >
+                            <div className="flex items-center mb-1">
+                              <Clock className="h-4 w-4 text-gray-500 mr-1" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Time to Profit
+                              </span>
+                            </div>
+                            <div className="font-bold text-gray-900 text-sm">
+                              {path.timeToProfit}
+                            </div>
+                          </div>
+                          <div
+                            className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-3`}
+                          >
+                            <div className="flex items-center mb-1">
+                              <DollarSign className="h-4 w-4 text-gray-500 mr-1" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Startup Cost
+                              </span>
+                            </div>
+                            <div className="font-bold text-gray-900 text-sm">
+                              {path.startupCost}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Desktop Action Elements */}
+                        <div className="space-y-3 mt-auto">
+                          {/* Primary CTA - Only show if card is not locked */}
+                          {!(index > 0 && !canViewFullReport) && (
+                            <button
+                              onClick={() => handleViewFullReport(path)}
+                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-base"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              View Full Report
+                            </button>
+                          )}
+
+                          {/* Secondary CTA - Only show if card is not locked */}
+                          {!(index > 0 && !canViewFullReport) && (
+                            <div className="text-center space-y-3">
+                              <button
+                                onClick={() => handleLearnMore(path)}
+                                className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-sm font-bold flex items-center justify-center group"
+                              >
+                                Learn more about {path.name} for you
+                                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                              </button>
+
+                              <button
+                                onClick={() => handleStartBusinessModel(path)}
+                                className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-sm font-bold flex items-center justify-center group"
+                              >
+                                Complete Guide to {path.name}
+                                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Column - Score & Highlights (Desktop Only) */}
+                      <div className="md:w-48 flex flex-col">
+                        {/* Fit Score */}
+                        <div className="text-center mb-6">
+                          <div
+                            className={`text-5xl font-bold mb-1 ${
+                              index === 0 ? "text-yellow-600" : "text-blue-600"
+                            }`}
+                          >
+                            {path.fitScore}%
+                          </div>
+                          <div className="text-sm text-gray-500 font-medium">
+                            AI Match
+                          </div>
+                        </div>
+
+                        {/* Potential Income */}
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6">
+                          <div className="flex items-center mb-2">
+                            <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
+                            <span className="text-sm font-medium text-green-800">
+                              Potential Income
+                            </span>
+                          </div>
+                          <div className="text-xl font-bold text-green-700">
+                            {path.potentialIncome}
+                          </div>
+                        </div>
+
+                        {/* Top Pros */}
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                            Top Benefits
+                          </h4>
+                          <ul className="text-sm text-gray-600 space-y-2">
+                            {path.pros.slice(0, 3).map((pro, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="text-green-500 mr-2 text-xs">
+                                  •
+                                </span>
+                                <span className="leading-tight">{pro}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mobile Content */}
+                    <div className="md:hidden">
+                      <p className="text-gray-600 mb-4 leading-relaxed text-sm">
+                        {path.description}
+                      </p>
+
+                      {/* Mobile Key Metrics */}
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        <div
+                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2`}
+                        >
+                          <div className="flex items-center mb-1">
+                            <Clock className="h-3 w-3 text-gray-500 mr-1" />
+                            <span className="text-xs font-medium text-gray-700">
+                              Time to Profit
+                            </span>
+                          </div>
+                          <div className="font-bold text-gray-900 text-xs">
+                            {path.timeToProfit}
+                          </div>
+                        </div>
+                        <div
+                          className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-2`}
+                        >
+                          <div className="flex items-center mb-1">
+                            <DollarSign className="h-3 w-3 text-gray-500 mr-1" />
+                            <span className="text-xs font-medium text-gray-700">
+                              Startup Cost
+                            </span>
+                          </div>
+                          <div className="font-bold text-gray-900 text-xs">
+                            {path.startupCost}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mobile Potential Income */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 mb-4">
                         <div className="flex items-center mb-2">
-                          <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600 mr-2" />
-                          <span className="text-xs md:text-sm font-medium text-green-800">
+                          <TrendingUp className="h-3 w-3 text-green-600 mr-2" />
+                          <span className="text-xs font-medium text-green-800">
                             Potential Income
                           </span>
                         </div>
-                        <div className="text-lg md:text-xl font-bold text-green-700">
+                        <div className="text-lg font-bold text-green-700">
                           {path.potentialIncome}
                         </div>
                       </div>
 
-                      {/* Top Pros */}
-                      <div className="flex-1">
+                      {/* Mobile Top Pros */}
+                      <div className="mb-6">
                         <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
                           Top Benefits
@@ -1876,6 +1989,41 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           ))}
                         </ul>
                       </div>
+                    </div>
+
+                    {/* Mobile CTAs at Bottom */}
+                    <div className="md:hidden space-y-2 mt-auto">
+                      {/* Primary CTA - Only show if card is not locked */}
+                      {!(index > 0 && !canViewFullReport) && (
+                        <button
+                          onClick={() => handleViewFullReport(path)}
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-sm"
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          View Full Report
+                        </button>
+                      )}
+
+                      {/* Secondary CTA - Only show if card is not locked */}
+                      {!(index > 0 && !canViewFullReport) && (
+                        <div className="text-center space-y-2">
+                          <button
+                            onClick={() => handleLearnMore(path)}
+                            className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs font-bold flex items-center justify-center group"
+                          >
+                            Learn more about {path.name} for you
+                            <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                          </button>
+
+                          <button
+                            onClick={() => handleStartBusinessModel(path)}
+                            className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-xs font-bold flex items-center justify-center group"
+                          >
+                            Complete Guide to {path.name}
+                            <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
