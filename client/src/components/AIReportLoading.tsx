@@ -519,7 +519,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
             "businessAvoidDescriptions",
             descriptionsMap,
           );
-          console.log("✅ Business avoid descriptions stored in database");
+          console.log("Business avoid descriptions stored in database");
         } catch (dbError) {
           console.error(
             "❌ CRITICAL: Failed to store business avoid descriptions in database:",
