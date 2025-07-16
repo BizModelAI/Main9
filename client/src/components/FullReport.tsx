@@ -730,8 +730,8 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         const allMatches =
           businessModelService.getBusinessModelMatches(quizData);
 
-        // Get the bottom 3 business models (worst matches)
-        const bottomThree = businessModelService.getBottomMatches(quizData, 3);
+        // Get the bottom 3 business models (worst matches) from context
+        const bottomThree = getBottomMatches(3);
 
         const businessMatches = bottomThree.map((match) => {
           const pathData = businessPaths.find((path) => path.id === match.id);
