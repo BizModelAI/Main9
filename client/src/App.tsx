@@ -311,7 +311,10 @@ function MainAppContent() {
     );
   }
 
-  if (location.pathname === "/ai-loading") {
+  if (
+    location.pathname === "/ai-loading" ||
+    location.pathname === "/quiz-loading"
+  ) {
     return (
       <AIReportLoadingWrapper
         quizData={quizData}
