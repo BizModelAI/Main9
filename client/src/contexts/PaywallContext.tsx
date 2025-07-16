@@ -51,31 +51,16 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
         return;
       }
 
-      // For authenticated users, check their database records
-      try {
-        console.log("PaywallContext: Checking user status for:", user.email);
+            // For authenticated users, set reasonable defaults without API calls
+      // Only fetch quiz data when actually needed (like accessing protected content)
+      console.log("PaywallContext: Setting defaults for authenticated user:", user.email);
 
-        // Check if user has completed quiz
-        const quizData = await getLatestQuizData();
+      // For authenticated users, assume they have completed the quiz
+      // This handles existing users and prevents access issues
+      setHasCompletedQuiz(true);
 
-        if (!isMounted) return; // Component unmounted, don't update state
-
-        const hasQuiz = !!quizData;
-        console.log("PaywallContext: Quiz data found:", hasQuiz);
-
-        // For authenticated users who have completed a quiz, give them access
-        // This prevents blocking existing users who have already paid
-        console.log(
-          "PaywallContext: Authenticated user with quiz data - granting access",
-        );
-        setHasUnlockedAnalysis(hasQuiz);
-
-        // For authenticated users, always assume they have completed the quiz
-        // This handles existing users and prevents access issues
-        console.log(
-          "PaywallContext: User is authenticated - setting quiz as completed",
-        );
-        setHasCompletedQuiz(true);
+      // Don't auto-unlock analysis - let them pay per report
+      setHasUnlockedAnalysis(false);
 
         // Development mode bypass disabled to ensure paywall always works
         // if (import.meta.env.MODE === "development") {
