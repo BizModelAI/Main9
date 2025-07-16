@@ -429,6 +429,66 @@ ${userProfile}`,
     return `ai_insights_${quizKey}_${pathsKey}`;
   }
 
+  // Method to retroactively save AI content when unpaid user provides email
+  async saveExistingAIContentToDatabase(): Promise<void> {
+    try {
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      if (!quizAttemptId) {
+        console.log(
+          "No currentQuizAttemptId found - nothing to save retroactively",
+        );
+        return;
+      }
+
+      console.log(
+        "🔄 Retroactively saving existing AI content to database after email provided",
+      );
+
+      // Check for existing AI content in localStorage that needs to be saved
+      const quizCompletionInsights = localStorage.getItem(
+        "quiz-completion-ai-insights",
+      );
+
+      if (quizCompletionInsights) {
+        try {
+          const aiData = JSON.parse(quizCompletionInsights);
+          if (aiData && aiData.insights) {
+            console.log("💾 Saving quiz completion insights to database");
+            await this.saveAIContentToDatabase(
+              quizAttemptId,
+              "preview",
+              aiData.insights,
+            );
+          }
+        } catch (error) {
+          console.error("Error parsing quiz completion insights:", error);
+        }
+      }
+
+      // Check for any other AI content that might be in localStorage
+      const loadedReportData = localStorage.getItem("loadedReportData");
+      if (loadedReportData) {
+        try {
+          const reportData = JSON.parse(loadedReportData);
+          if (reportData && reportData.aiInsights) {
+            console.log("💾 Saving loaded report data to database");
+            await this.saveAIContentToDatabase(
+              quizAttemptId,
+              "fullReport",
+              reportData.aiInsights,
+            );
+          }
+        } catch (error) {
+          console.error("Error parsing loaded report data:", error);
+        }
+      }
+
+      console.log("✅ Finished retroactively saving AI content to database");
+    } catch (error) {
+      console.error("Error retroactively saving AI content:", error);
+    }
+  }
+
   // Cache methods removed - now using database storage instead of localStorage
 
   // Database helper methods for AI content storage
@@ -449,7 +509,7 @@ ${userProfile}`,
       }
 
       console.log(
-        `💾 Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
+        `�� Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
       );
 
       const response = await fetch(
