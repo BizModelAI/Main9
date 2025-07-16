@@ -115,6 +115,22 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
 
         if (response.ok) {
           setEmailSent(true);
+
+          // Store email in localStorage so AI service knows user provided email
+          localStorage.setItem("userEmail", email.trim());
+
+          // Retroactively save any existing AI content to database
+          try {
+            const { AIService } = await import("../utils/aiService");
+            const aiService = AIService.getInstance();
+            await aiService.saveExistingAIContentToDatabase();
+          } catch (error) {
+            console.error(
+              "Error saving existing AI content to database:",
+              error,
+            );
+          }
+
           // Wait a moment to show success message
           setTimeout(() => {
             onStartAIGeneration(email);
