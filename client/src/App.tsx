@@ -13,6 +13,7 @@ import { PaywallProvider } from "./contexts/PaywallContext";
 // Import debug utilities (available as window.debugOpenAI and window.debugAIContent)
 import "./utils/debugOpenAI";
 import "./utils/debugAIContent";
+import "./utils/clearAllCaches";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
