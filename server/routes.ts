@@ -538,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         console.log("AI business fit analysis completed successfully");
         res.json(analysis);
       } catch (error) {
-        console.error("��� Error in AI business fit analysis:", {
+        console.error("Error in AI business fit analysis:", {
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : "No stack trace",
         });
