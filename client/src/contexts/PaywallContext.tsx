@@ -51,9 +51,12 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
         return;
       }
 
-            // For authenticated users, set reasonable defaults without API calls
+      // For authenticated users, set reasonable defaults without API calls
       // Only fetch quiz data when actually needed (like accessing protected content)
-      console.log("PaywallContext: Setting defaults for authenticated user:", user.email);
+      console.log(
+        "PaywallContext: Setting defaults for authenticated user:",
+        user.email,
+      );
 
       // For authenticated users, assume they have completed the quiz
       // This handles existing users and prevents access issues
@@ -62,43 +65,9 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
       // Don't auto-unlock analysis - let them pay per report
       setHasUnlockedAnalysis(false);
 
-        // Development mode bypass disabled to ensure paywall always works
-        // if (import.meta.env.MODE === "development") {
-        //   console.log(
-        //     "PaywallContext: Development mode - also unlocking analysis",
-        //   );
-        //   setHasUnlockedAnalysis(true);
-        // }
-
-        // Update localStorage for consistency
-        localStorage.setItem("hasCompletedQuiz", "true");
-        localStorage.setItem("hasUnlockedAnalysis", "false");
-      } catch (error) {
-        if (isMounted) {
-          console.error("PaywallContext: Error checking user status:", error);
-
-          // For any errors with authenticated users, assume quiz is completed
-          console.log(
-            "PaywallContext: Error occurred but user is authenticated - setting quiz as completed",
-          );
-          setHasCompletedQuiz(true);
-
-          // Development mode bypass disabled to ensure paywall always works
-          // if (import.meta.env.MODE === "development") {
-          //   console.log(
-          //     "PaywallContext: Development mode - also unlocking analysis after error",
-          //   );
-          //   setHasUnlockedAnalysis(true);
-          // }
-
-          // Update localStorage for consistency
-          localStorage.setItem("hasCompletedQuiz", "true");
-          // Development mode bypass disabled
-          // if (import.meta.env.MODE === "development") {
-          //   localStorage.setItem("hasUnlockedAnalysis", "true");
-          // }
-        }
-      }
+      // Update localStorage for consistency
+      localStorage.setItem("hasCompletedQuiz", "true");
+      localStorage.setItem("hasUnlockedAnalysis", "false");
     };
 
     checkUserStatus();
