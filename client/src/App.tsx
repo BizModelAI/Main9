@@ -265,7 +265,7 @@ function MainAppContent() {
     );
   }
 
-  if (location === "/results") {
+  if (location.pathname === "/results") {
     return (
       <Layout>
         <ResultsWrapperWithReset
@@ -279,7 +279,7 @@ function MainAppContent() {
     );
   }
 
-  if (location === "/ai-loading") {
+  if (location.pathname === "/ai-loading") {
     return (
       <AIReportLoadingWrapper
         quizData={quizData}
