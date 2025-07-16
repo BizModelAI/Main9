@@ -157,6 +157,22 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
     setError("");
 
     try {
+      // For resend, the data should already be saved, but ensure AI content is saved if needed
+      if (quizData && !isPaidUser) {
+        const userEmail = localStorage.getItem("userEmail");
+        if (userEmail && userEmail === email.trim()) {
+          // User already provided this email, just ensure AI content is saved
+          try {
+            const { AIService } = await import("../utils/aiService");
+            const aiService = AIService.getInstance();
+            await aiService.saveExistingAIContentToDatabase();
+          } catch (aiError) {
+            console.error("Error saving AI content during resend:", aiError);
+          }
+        }
+      }
+
+      // Send the preview email
       const sessionId = getSessionId();
       const response = await fetch("/api/email-results", {
         method: "POST",
