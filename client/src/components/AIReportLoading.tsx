@@ -907,7 +907,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
             const existingInsights = (currentAiResults as any).aiInsights;
 
             if (existingInsights) {
-              console.log("📦 Storing AI insights for Results component");
+              console.log("Storing AI insights for Results component");
 
               // Store in localStorage for Results component to use
               const aiData = {
