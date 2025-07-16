@@ -807,6 +807,18 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         setBusinessAvoidDescriptions(descriptionsMap);
       } catch (error) {
         console.error("Error generating business avoid descriptions:", error);
+
+        // Retry once on network errors
+        if (
+          retryCount === 0 &&
+          (error.name === "AbortError" ||
+            error.message.includes("Failed to fetch"))
+        ) {
+          console.log("Retrying business avoid descriptions request...");
+          setTimeout(() => generateBusinessAvoidDescriptions(1), 2000);
+          return;
+        }
+
         // Set fallback descriptions
         const fallbackDescriptions: { [key: string]: string } = {};
         const { businessModelService } = await import(
