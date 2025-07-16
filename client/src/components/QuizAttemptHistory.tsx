@@ -167,7 +167,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         );
         if (response.status === 500) {
           console.log(
-            "💡 This might be due to missing ai_content column in database",
+            "This might be due to missing ai_content column in database",
           );
         }
         localStorage.removeItem("loadedReportData");
