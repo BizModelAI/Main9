@@ -319,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Handle rate limit errors specifically
       if (error instanceof Error && error.message.includes("429")) {
-        console.warn("���� Rate limited by OpenAI");
+        console.warn("🚫 Rate limited by OpenAI");
         res.status(429).json({
           error: "Rate limited by OpenAI",
           details: "Please try again in a few seconds",
@@ -1521,7 +1521,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           type: paymentType,
           status: "pending",
           quizAttemptId: quizAttemptId,
-          stripePaymentIntentId: order.result.id, // Using this field for PayPal order ID
+          paypalOrderId: order.result.id,
         });
 
         res.json({
@@ -1580,9 +1580,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         // Find the payment record in our database using PayPal order ID
         const userIdInt = parseInt(userId);
         const payments = await storage.getPaymentsByUser(userIdInt);
-        const payment = payments.find(
-          (p) => p.stripePaymentIntentId === orderID,
-        );
+        const payment = payments.find((p) => p.paypalOrderId === orderID);
 
         if (!payment) {
           console.error("Payment record not found for PayPal order:", orderID);
