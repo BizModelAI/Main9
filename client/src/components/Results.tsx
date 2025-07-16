@@ -1369,6 +1369,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                             {/* Three paragraphs with seamless gradient fade */}
                             <div className="relative mb-8">
                               {(() => {
+                                // Safely handle potential undefined/null values
+                                if (!aiAnalysis?.fullAnalysis) {
+                                  return (
+                                    <div className="text-gray-600">
+                                      Loading analysis...
+                                    </div>
+                                  );
+                                }
+
                                 const sentences =
                                   aiAnalysis.fullAnalysis.split(". ");
                                 const thirdLength = Math.ceil(
