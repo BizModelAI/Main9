@@ -133,6 +133,7 @@ function MainAppContent() {
   // Clean up expired localStorage data for anonymous users
   React.useEffect(() => {
     const cleanupExpiredData = () => {
+      // Clean up expired quiz data
       const expiresAt = localStorage.getItem("quizDataExpires");
       if (expiresAt) {
         const expireTime = parseInt(expiresAt);
@@ -151,6 +152,14 @@ function MainAppContent() {
             console.log("Cleared expired quiz data from React state");
           }
         }
+      }
+
+      // Clean up expired AI content for anonymous users
+      try {
+        const { AIService } = require("./utils/aiService");
+        AIService.cleanupExpiredLocalStorageContent();
+      } catch (error) {
+        console.error("Error cleaning up AI content:", error);
       }
     };
 
