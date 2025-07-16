@@ -1782,22 +1782,29 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const payments = await storage.getAllPayments();
+      // Get query parameters for pagination and filtering
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); // Max 1000 records
+      const offset = parseInt(req.query.offset as string) || 0;
+      const status = req.query.status as string;
 
-      // Join with user data for better admin experience
-      const paymentsWithUsers = await Promise.all(
-        payments.map(async (payment) => {
-          const user = await storage.getUser(payment.userId);
-          return {
-            ...payment,
-            user: user
-              ? { id: user.id, email: user.email, username: user.username }
-              : null,
-          };
-        }),
-      );
+      // Use optimized query that JOINs payments with users (fixes N+1 problem)
+      const paymentsWithUsers = await storage.getPaymentsWithUsers({
+        limit,
+        offset,
+        status,
+      });
 
-      res.json(paymentsWithUsers);
+      res.json({
+        payments: paymentsWithUsers,
+        pagination: {
+          limit,
+          offset,
+          total:
+            paymentsWithUsers.length === limit
+              ? "more_available"
+              : paymentsWithUsers.length + offset,
+        },
+      });
     } catch (error) {
       console.error("Error fetching payments:", error);
       res.status(500).json({ error: "Internal server error" });
