@@ -488,10 +488,13 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
         }
       } catch (dbError) {
-        console.warn(
-          "⚠️ Failed to store fallback skills analysis in database:",
-          dbError,
-        );
+        const { ErrorHandler } = await import("./utils/errorHandler.js");
+        await ErrorHandler.handleStorageError(dbError as Error, {
+          operation: "store_fallback_skills_analysis",
+          context: { quizAttemptId, businessModel, userId },
+          isCritical: false,
+          shouldThrow: false,
+        });
       }
 
       res.json(fallbackResult);
