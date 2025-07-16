@@ -1,6 +1,7 @@
 import React from "react";
 import { QuizData } from "../types";
-import { generatePersonalizedPaths } from "../utils/quizLogic";
+import { businessModelService } from "../utils/businessModelService";
+import { businessPaths } from "../data/businessPaths";
 import {
   TrendingUp,
   Target,
