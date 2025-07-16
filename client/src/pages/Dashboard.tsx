@@ -417,6 +417,27 @@ const Dashboard: React.FC = () => {
 
   const handleQuizSelected = (quizData: QuizData, aiContent?: any) => {
     console.log("Quiz selected in Dashboard:", { quizData, aiContent });
+
+    // Check if this is a historical quiz by checking currentQuizAttemptId
+    const currentAttemptId = localStorage.getItem("currentQuizAttemptId");
+    if (currentAttemptId) {
+      // Find the attempt date from localStorage or estimate it
+      const savedData = localStorage.getItem("quizData");
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          // If we have a completion date or can derive it, use it
+          setHistoricalQuizDate(new Date().toLocaleDateString());
+        } catch (e) {
+          console.warn("Could not parse saved quiz data");
+        }
+      }
+    }
+
+    // Show success notification
+    setShowSuccessNotification(true);
+    setTimeout(() => setShowSuccessNotification(false), 3000);
+
     // Trigger a re-render of components that depend on localStorage data
     setRefreshKey((prev) => prev + 1);
     // Re-calculate business models with new quiz data
