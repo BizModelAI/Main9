@@ -16,6 +16,11 @@ export interface BusinessModelMatch {
  */
 export class BusinessModelService {
   private static instance: BusinessModelService;
+  private cache = new Map<
+    string,
+    { matches: BusinessModelMatch[]; timestamp: number }
+  >();
+  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
   static getInstance(): BusinessModelService {
     if (!BusinessModelService.instance) {
@@ -24,13 +29,36 @@ export class BusinessModelService {
     return BusinessModelService.instance;
   }
 
+  private getCacheKey(quizData: QuizData): string {
+    // Create a stable cache key based on quiz data
+    return JSON.stringify({
+      businessInterest: quizData.businessInterest,
+      selfMotivationLevel: quizData.selfMotivationLevel,
+      weeklyTimeCommitment: quizData.weeklyTimeCommitment,
+      financialSituation: quizData.financialSituation,
+      riskComfortLevel: quizData.riskComfortLevel,
+      techSkillsRating: quizData.techSkillsRating,
+      marketingSkillsRating: quizData.marketingSkillsRating,
+      previousExperience: quizData.previousExperience?.sort(),
+      primaryMotivation: quizData.primaryMotivation,
+      skillsAndExperience: quizData.skillsAndExperience?.sort(),
+    });
+  }
+
   /**
-   * Get business model matches for quiz data
-   * Always calculates fresh - no caching
+   * Get business model matches for quiz data with caching
    */
   getBusinessModelMatches(quizData: QuizData): BusinessModelMatch[] {
-    // Always calculate fresh matches - no caching
-    console.log("🔄 Calculating fresh business model matches (no cache)");
+    const cacheKey = this.getCacheKey(quizData);
+    const cached = this.cache.get(cacheKey);
+    const now = Date.now();
+
+    if (cached && now - cached.timestamp < this.CACHE_DURATION) {
+      console.log("✨ Using cached business model matches");
+      return cached.matches;
+    }
+
+    console.log("🔄 Calculating fresh business model matches");
     const rawMatches = calculateAdvancedBusinessModelMatches(quizData);
 
     // Transform to consistent format
