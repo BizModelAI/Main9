@@ -436,12 +436,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         keyInsights: analysisData.customRecommendations || [],
         successPredictors: analysisData.successStrategies || [],
         potentialChallenges: analysisData.potentialChallenges || [],
-        personalizedActionPlan: analysisData.personalizedActionPlan || {
-          week1: [],
-          month1: [],
-          month3: [],
-          month6: [],
-        },
+        personalizedRecommendations: analysisData.customRecommendations || [],
+        riskFactors: analysisData.potentialChallenges || [],
       };
 
       console.log("✅ Generated analysis:", analysis);
