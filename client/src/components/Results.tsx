@@ -192,6 +192,20 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Basic access shows the first result, but full reports require payment for both auth/non-auth users
   const canViewFullReport = user ? isReportUnlocked : false;
 
+  // Check for showFullReport query parameter and navigate to full report
+  useEffect(() => {
+    const shouldShowFullReport = searchParams.get("showFullReport");
+    if (shouldShowFullReport === "true" && canViewFullReport) {
+      console.log("🔗 Query parameter detected: showing full report directly");
+      setShowFullReport(true);
+      // Clear the query parameter to clean up the URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("showFullReport");
+      const newURL = `${window.location.pathname}${newSearchParams.toString() ? `?${newSearchParams.toString()}` : ""}`;
+      window.history.replaceState({}, "", newURL);
+    }
+  }, [searchParams, canViewFullReport]);
+
   useEffect(() => {
     const initializeResults = async () => {
       console.log("Results component received quizData:", quizData);
