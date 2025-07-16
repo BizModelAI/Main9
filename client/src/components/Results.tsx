@@ -343,7 +343,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       const aiCacheManager = AICacheManager.getInstance();
       const cachedContent = aiCacheManager.getCachedAIContent(quizData);
 
-      if (cachedContent.insights && cachedContent.analysis) {
+      if (
+        cachedContent.insights &&
+        validateAIAnalysis(cachedContent.analysis)
+      ) {
         console.log("✅ Using cached AI content from 1-hour session cache");
         setAiInsights(cachedContent.insights);
         setAiAnalysis(cachedContent.analysis);
