@@ -375,12 +375,12 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
     quizData: QuizData,
   ): Promise<{ [key: string]: string }> => {
     try {
-      const { calculateAdvancedBusinessModelMatches } = await import(
-        "../utils/advancedScoringAlgorithm"
+      const { businessModelService } = await import(
+        "../utils/businessModelService"
       );
-      const topThreeAdvanced = calculateAdvancedBusinessModelMatches(quizData);
+      const topThreeAdvanced = businessModelService.getTopMatches(quizData, 3);
 
-      const businessModels = topThreeAdvanced.slice(0, 3).map((match) => ({
+      const businessModels = topThreeAdvanced.map((match) => ({
         id: match.id,
         name: match.name,
         fitScore: match.score,
