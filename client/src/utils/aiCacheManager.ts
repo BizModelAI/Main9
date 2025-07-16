@@ -178,4 +178,53 @@ export class AICacheManager {
     const cached = this.getCachedAIContent(quizData);
     return cached.insights !== null;
   }
+
+  /**
+   * Skills analysis caching (1-hour cache)
+   */
+  getCachedSkillsAnalysis(businessId: string): any | null {
+    try {
+      const cacheKey = `skills-analysis-${businessId}`;
+      const cached = localStorage.getItem(cacheKey);
+
+      if (!cached) {
+        return null;
+      }
+
+      const parsedData = JSON.parse(cached);
+
+      // Check if cache is valid (1 hour)
+      if (this.isCacheValid(parsedData.timestamp)) {
+        console.log(`✅ Using cached skills analysis for ${businessId}`);
+        return parsedData.skills;
+      } else {
+        console.log(
+          `🕐 Cached skills analysis for ${businessId} is stale, removing...`,
+        );
+        localStorage.removeItem(cacheKey);
+        return null;
+      }
+    } catch (error) {
+      console.error("❌ Error retrieving cached skills analysis:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Cache skills analysis for 1 hour
+   */
+  cacheSkillsAnalysis(businessId: string, skills: any): void {
+    try {
+      const cacheKey = `skills-analysis-${businessId}`;
+      const cacheData = {
+        skills,
+        timestamp: Date.now(),
+      };
+
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log(`💾 Skills analysis cached for ${businessId} (1 hour)`);
+    } catch (error) {
+      console.error("❌ Error caching skills analysis:", error);
+    }
+  }
 }
