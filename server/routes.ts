@@ -1111,86 +1111,178 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   );
 
-  // Save quiz data for authenticated user (pay-per-quiz model)
-  app.post("/api/auth/save-quiz-data", async (req: Request, res: Response) => {
-    console.log("API: POST /api/auth/save-quiz-data", {
+  // Save quiz data with 3-tier caching system
+  app.post("/api/save-quiz-data", async (req: Request, res: Response) => {
+    console.log("API: POST /api/save-quiz-data", {
       sessionId: req.sessionID,
       userId: req.session?.userId,
       hasCookie: !!req.headers.cookie,
     });
 
     try {
-      const sessionKey = getSessionKey(req);
-      console.log("Save quiz data: Session debug", {
-        sessionUserId: req.session?.userId,
-        sessionKey: sessionKey,
-      });
-
-      const userId = getUserIdFromRequest(req);
-      console.log("Save quiz data: getUserIdFromRequest returned", userId);
-
-      if (!userId) {
-        console.log("Save quiz data: Not authenticated - returning 401", {
-          sessionUserId: req.session?.userId,
-          cacheUserId: userId,
-          sessionKey: getSessionKey(req),
-        });
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const { quizData, paymentId } = req.body;
+      const { quizData, email, paymentId } = req.body;
       if (!quizData) {
         console.log("Save quiz data: No quiz data provided");
         return res.status(400).json({ error: "Quiz data is required" });
       }
 
-      // Check if this is the user's first quiz attempt
-      const existingAttempts = await storage.getQuizAttempts(userId);
-      const isFirstQuiz = existingAttempts.length === 0;
+      const sessionKey = getSessionKey(req);
+      const userId = getUserIdFromRequest(req);
+
+      console.log("Save quiz data: Processing with", {
+        sessionKey,
+        userId,
+        hasEmail: !!email,
+        userType: userId
+          ? "authenticated"
+          : email
+            ? "email-provided"
+            : "anonymous",
+      });
+
+      // TIER 1: Authenticated paid users - permanent database storage
+      if (userId) {
+        const user = await storage.getUser(userId);
+        const isPaid = await storage.isPaidUser(userId);
+
+        console.log(
+          `Save quiz data: Authenticated user ${userId}, isPaid: ${isPaid}`,
+        );
+
+        // Save quiz data to user's account (permanent storage)
+        const attempt = await storage.recordQuizAttempt({
+          userId: userId,
+          quizData,
+        });
+
+        console.log(
+          `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for authenticated user ${userId}`,
+        );
+
+        return res.json({
+          success: true,
+          attemptId: attempt.id,
+          message: "Quiz data saved permanently",
+          quizAttemptId: attempt.id,
+          storageType: "permanent",
+          userType: isPaid ? "paid" : "authenticated",
+        });
+      }
+
+      // TIER 2: Users with email (unpaid) - 3-month database storage with expiration
+      if (email) {
+        console.log(
+          `Save quiz data: Creating temporary user for email: ${email}`,
+        );
+
+        // Check if temporary user already exists for this email
+        let tempUser = await storage.getTemporaryUserByEmail(email);
+
+        if (!tempUser) {
+          // Create new temporary user with 3-month expiration
+          tempUser = await storage.storeTemporaryUser(sessionKey, email, {
+            quizData,
+            password: "", // No password for email-only users
+          });
+        } else {
+          // Update existing temporary user's quiz data
+          await storage.updateUser(tempUser.id, {
+            tempQuizData: quizData,
+            sessionId: sessionKey, // Update session to current one
+            updatedAt: new Date(),
+          });
+        }
+
+        // Save quiz attempt to database (will auto-delete when user expires)
+        const attempt = await storage.recordQuizAttempt({
+          userId: tempUser.id,
+          quizData,
+        });
+
+        console.log(
+          `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for temporary user ${tempUser.id} (${email})`,
+        );
+
+        return res.json({
+          success: true,
+          attemptId: attempt.id,
+          message: "Quiz data saved for 3 months",
+          quizAttemptId: attempt.id,
+          storageType: "temporary",
+          userType: "email-provided",
+          expiresAt: tempUser.expiresAt,
+          warning:
+            "Your data will be automatically deleted after 3 months unless you upgrade to a paid account.",
+        });
+      }
+
+      // TIER 3: Anonymous users (no email) - localStorage only, no database storage
+      console.log(
+        "Save quiz data: Anonymous user - returning localStorage instruction",
+      );
+
+      return res.json({
+        success: true,
+        message: "Quiz data should be stored in localStorage",
+        storageType: "localStorage",
+        userType: "anonymous",
+        expiresInHours: 1,
+        warning:
+          "Your data is only stored locally and will be lost if you clear your browser data. Provide an email to save your results for 3 months.",
+      });
+    } catch (error: any) {
+      console.error("Error saving quiz data:", error);
+      return res.status(500).json({
+        error: "Failed to save quiz data",
+        details: error.message,
+      });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility
+  app.post("/api/auth/save-quiz-data", async (req: Request, res: Response) => {
+    console.log(
+      "API: Legacy /api/auth/save-quiz-data redirecting to new endpoint",
+    );
+
+    // Ensure user is authenticated for legacy endpoint
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    // Add userId to body and forward to new endpoint
+    req.body.userId = userId;
+
+    // Call new endpoint logic
+    const { quizData, paymentId } = req.body;
+    if (!quizData) {
+      return res.status(400).json({ error: "Quiz data is required" });
+    }
+
+    try {
       const user = await storage.getUser(userId);
+      const isPaid = await storage.isPaidUser(userId);
 
-      console.log(`Save quiz data: User ${userId}, first quiz: ${isFirstQuiz}`);
-
-      // In pure pay-per-report model, quiz attempts are always free
-      // Payment is only required for report unlocks
-      // Quiz payment verification removed - all quizzes are now free
-
-      console.log(`Save quiz data: Saving quiz data for user ${userId}`);
-
-      // Save quiz data to user's account
-      // Note: No expiration needed on quiz attempts - they expire when user expires via CASCADE delete
       const attempt = await storage.recordQuizAttempt({
         userId: userId,
         quizData,
       });
 
       console.log(
-        `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for user ${userId}`,
-      );
-
-      // Payment linking disabled in pure pay-per-report model
-      if (false && paymentId) {
-        // This logic is disabled
-        await storage.linkPaymentToQuizAttempt(paymentId, attempt.id);
-        console.log(
-          `Save quiz data: Linked payment ${paymentId} to quiz attempt ${attempt.id}`,
-        );
-      }
-
-      console.log(
-        `Save quiz data: Successfully saved quiz data for user ${userId}`,
+        `Legacy save quiz data: Quiz attempt recorded with ID ${attempt.id} for user ${userId}`,
       );
 
       res.json({
         success: true,
         attemptId: attempt.id,
         message: "Quiz data saved successfully",
-        isFirstQuiz,
-        requiresPayment: false, // Always false in pay-per-report model
+        isFirstQuiz: (await storage.getQuizAttempts(userId)).length === 1,
+        requiresPayment: false,
         quizAttemptId: attempt.id,
       });
     } catch (error) {
-      console.error("Error saving quiz data:", error);
+      console.error("Error in legacy save quiz data:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
