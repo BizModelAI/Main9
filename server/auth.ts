@@ -13,6 +13,28 @@ const tempSessionCache = new Map<
   { userId: number; timestamp: number }
 >();
 
+// Periodic cleanup to prevent memory leaks in session cache
+const SESSION_CLEANUP_INTERVAL = 15 * 60 * 1000; // Clean up every 15 minutes
+const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+
+  for (const [key, session] of tempSessionCache.entries()) {
+    if (now - session.timestamp > SESSION_MAX_AGE) {
+      tempSessionCache.delete(key);
+      cleanedCount++;
+    }
+  }
+
+  if (cleanedCount > 0) {
+    console.log(
+      `🧹 Session cache cleanup: removed ${cleanedCount} expired sessions`,
+    );
+  }
+}, SESSION_CLEANUP_INTERVAL);
+
 // Helper function to get session key from request
 export function getSessionKey(req: any): string {
   // Use a combination of IP and User-Agent as session key
