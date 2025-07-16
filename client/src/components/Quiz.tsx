@@ -636,9 +636,23 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
 
   // Everyone can take unlimited quizzes in the new pay-per-report system
 
-  // Clear previous quiz cache when starting a new quiz
+  // Clear previous quiz cache when starting a new quiz (idempotent for React StrictMode)
   useEffect(() => {
+    // Check if we've already cleared cache for this session to prevent double-clearing in StrictMode
+    const cacheCleared = sessionStorage.getItem("quiz-cache-cleared");
+    const currentSession = Date.now().toString();
+
+    if (cacheCleared && Date.now() - parseInt(cacheCleared) < 5000) {
+      console.log(
+        "🔄 Quiz component re-mounted (React StrictMode), skipping cache clear",
+      );
+      return;
+    }
+
     console.log("🧹 Quiz component mounted - clearing previous quiz cache");
+
+    // Mark that we've cleared cache for this session
+    sessionStorage.setItem("quiz-cache-cleared", currentSession);
 
     // Clear quiz data from previous sessions
     localStorage.removeItem("quizData");
