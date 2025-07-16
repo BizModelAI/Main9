@@ -525,7 +525,7 @@ ${userProfile}`,
       }
 
       const data = await response.json();
-      console.log("✅ OpenAI request successful");
+      console.log("OpenAI request successful");
 
       return { content: data.content || data.message || data.response };
     } catch (error) {
