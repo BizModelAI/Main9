@@ -1,7 +1,7 @@
 import { db } from "../server/db.js";
 import { sql } from "drizzle-orm";
 
-console.log("� Finalizing database schema...");
+console.log(" Finalizing database schema...");
 
 async function finalizeSchema() {
   try {
@@ -19,7 +19,7 @@ async function finalizeSchema() {
     `);
 
     if (columnCheck.rows.length === 0) {
-      console.log("� Adding quiz_attempt_id column to payments table...");
+      console.log(" Adding quiz_attempt_id column to payments table...");
       await db.execute(sql`
         ALTER TABLE payments 
         ADD COLUMN quiz_attempt_id INTEGER REFERENCES quiz_attempts(id) ON DELETE CASCADE
@@ -38,7 +38,7 @@ async function finalizeSchema() {
     `);
 
     if (retakesCheck.rows.length > 0) {
-      console.log("� Removing old retakes_granted column...");
+      console.log(" Removing old retakes_granted column...");
       await db.execute(sql`
         ALTER TABLE payments 
         DROP COLUMN retakes_granted
@@ -57,7 +57,7 @@ async function finalizeSchema() {
     `);
 
     if (userRetakeColumns.rows.length > 0) {
-      console.log("� Removing old quiz retake columns from users table...");
+      console.log(" Removing old quiz retake columns from users table...");
       await db.execute(sql`
         ALTER TABLE users 
         DROP COLUMN IF EXISTS quiz_retakes_remaining,
@@ -68,7 +68,7 @@ async function finalizeSchema() {
       console.log("✅ Old quiz retake columns already removed");
     }
 
-    console.log("� Schema finalization completed!");
+    console.log(" Schema finalization completed!");
   } catch (error) {
     console.error("❌ Schema finalization failed:", error);
     throw error;

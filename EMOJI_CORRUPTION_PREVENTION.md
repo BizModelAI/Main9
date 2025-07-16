@@ -2,7 +2,7 @@
 
 ## What Causes Emoji Corruption?
 
-Emoji corruption (displayed as `��`, `�`, or other placeholder characters) happens due to:
+Emoji corruption (displayed as `🚫🚫`, `🚫`, or other placeholder characters) happens due to:
 
 1. **File Encoding Issues**: Files not saved as UTF-8
 2. **Copy-Paste Issues**: Emojis copied between different systems with different encodings
@@ -60,7 +60,7 @@ import {
 const cleanText = autoFixCorruptedEmojis(userInput);
 
 // Or manually clean known corrupted text
-const cleanText = cleanCorruptedEmojis("Some text with �� corruption");
+const cleanText = cleanCorruptedEmojis("Some text with 🚫🚫 corruption");
 ```
 
 ### 3. Validate Before Display

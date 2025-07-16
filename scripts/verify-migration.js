@@ -1,7 +1,7 @@
 import { db } from "../server/db.js";
 import { sql } from "drizzle-orm";
 
-console.log("� Verifying migration and system functionality...");
+console.log(" Verifying migration and system functionality...");
 
 async function verifyMigration() {
   try {
@@ -11,7 +11,7 @@ async function verifyMigration() {
     }
 
     // 1. Check users table schema
-    console.log("� Checking users table schema...");
+    console.log(" Checking users table schema...");
     const userColumns = await db.execute(sql`
       SELECT column_name, data_type 
       FROM information_schema.columns 
@@ -32,7 +32,7 @@ async function verifyMigration() {
     }
 
     // 2. Check payments table schema
-    console.log("� Checking payments table schema...");
+    console.log(" Checking payments table schema...");
     const paymentColumns = await db.execute(sql`
       SELECT column_name, data_type 
       FROM information_schema.columns 
@@ -60,7 +60,7 @@ async function verifyMigration() {
     }
 
     // 3. Check user statistics
-    console.log("� Checking user statistics...");
+    console.log(" Checking user statistics...");
     const userStats = await db.execute(sql`
       SELECT 
         COUNT(*) as total_users,
@@ -69,7 +69,7 @@ async function verifyMigration() {
       FROM users
     `);
 
-    console.log("� User Statistics:");
+    console.log(" User Statistics:");
     console.log(`   Total users: ${userStats.rows[0].total_users}`);
     console.log(
       `   Access pass holders: ${userStats.rows[0].access_pass_users}`,
@@ -77,7 +77,7 @@ async function verifyMigration() {
     console.log(`   Regular users: ${userStats.rows[0].regular_users}`);
 
     // 4. Check payment statistics
-    console.log("� Checking payment statistics...");
+    console.log(" Checking payment statistics...");
     const paymentStats = await db.execute(sql`
       SELECT 
         COUNT(*) as total_payments,
@@ -88,7 +88,7 @@ async function verifyMigration() {
       FROM payments
     `);
 
-    console.log("� Payment Statistics:");
+    console.log(" Payment Statistics:");
     console.log(`   Total payments: ${paymentStats.rows[0].total_payments}`);
     console.log(
       `   Access pass payments: ${paymentStats.rows[0].access_pass_payments}`,
@@ -102,20 +102,20 @@ async function verifyMigration() {
     );
 
     // 5. Check quiz attempts
-    console.log("� Checking quiz attempt statistics...");
+    console.log(" Checking quiz attempt statistics...");
     const quizStats = await db.execute(sql`
       SELECT COUNT(*) as total_quiz_attempts
       FROM quiz_attempts
     `);
 
-    console.log("� Quiz Statistics:");
+    console.log(" Quiz Statistics:");
     console.log(
       `   Total quiz attempts: ${quizStats.rows[0].total_quiz_attempts}`,
     );
 
     // 6. Summary
-    console.log("\n� MIGRATION VERIFICATION COMPLETE!");
-    console.log("\n� SYSTEM STATUS:");
+    console.log("\n MIGRATION VERIFICATION COMPLETE!");
+    console.log("\n SYSTEM STATUS:");
 
     const allGood = !hasOldColumns && hasQuizAttemptId && !hasRetakesGranted;
 
@@ -125,12 +125,12 @@ async function verifyMigration() {
       console.log("✅ Users migrated to new system");
       console.log("✅ Payment system ready for per-report unlocks");
 
-      console.log("\n� SYSTEM FEATURES:");
-      console.log("� Access pass holders: Unlimited quiz attempts");
-      console.log("� Access pass holders: $4.99 per report unlock");
-      console.log("� Regular users: $4.99 per additional quiz attempt");
-      console.log("� All payments now trackable per quiz attempt");
-      console.log("� Full backward compatibility maintained");
+      console.log("\n SYSTEM FEATURES:");
+      console.log(" Access pass holders: Unlimited quiz attempts");
+      console.log(" Access pass holders: $4.99 per report unlock");
+      console.log(" Regular users: $4.99 per additional quiz attempt");
+      console.log(" All payments now trackable per quiz attempt");
+      console.log(" Full backward compatibility maintained");
     } else {
       console.log("️  Some issues detected - please review above");
     }

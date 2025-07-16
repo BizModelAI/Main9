@@ -21,11 +21,11 @@ const pool = new Pool({
 const db = drizzle({ client: pool });
 
 async function migrateToPayPerReport() {
-  console.log("� Starting migration to pay-per-report system...");
+  console.log(" Starting migration to pay-per-report system...");
 
   try {
     // 1. Remove old quiz retake columns if they still exist
-    console.log("� Step 1: Removing old quiz retake columns...");
+    console.log(" Step 1: Removing old quiz retake columns...");
 
     try {
       await db.execute(sql`
@@ -40,7 +40,7 @@ async function migrateToPayPerReport() {
 
     // 2. Remove old retakes_granted column from payments if it exists
     console.log(
-      "� Step 2: Removing old retakes_granted column from payments...",
+      " Step 2: Removing old retakes_granted column from payments...",
     );
 
     try {
@@ -56,7 +56,7 @@ async function migrateToPayPerReport() {
     }
 
     // 3. Add quiz_attempt_id column to payments if it doesn't exist
-    console.log("� Step 3: Adding quiz_attempt_id column to payments...");
+    console.log(" Step 3: Adding quiz_attempt_id column to payments...");
 
     try {
       await db.execute(sql`
@@ -69,7 +69,7 @@ async function migrateToPayPerReport() {
     }
 
     // 4. Update all existing users to ensure they work with the new system
-    console.log("� Step 4: Updating existing users...");
+    console.log(" Step 4: Updating existing users...");
 
     const userUpdateResult = await db.execute(sql`
       UPDATE users 
@@ -80,7 +80,7 @@ async function migrateToPayPerReport() {
     console.log(`✅ Updated ${userUpdateResult.rowCount || 0} users`);
 
     // 5. Get statistics about existing data
-    console.log("� Step 5: Gathering database statistics...");
+    console.log(" Step 5: Gathering database statistics...");
 
     const userStats = await db.execute(sql`
       SELECT 
@@ -105,13 +105,13 @@ async function migrateToPayPerReport() {
       FROM payments;
     `);
 
-    console.log("\n� DATABASE STATISTICS:");
+    console.log("\n DATABASE STATISTICS:");
     console.log("Users:", userStats.rows[0]);
     console.log("Quiz Attempts:", quizStats.rows[0]);
     console.log("Payments:", paymentStats.rows[0]);
 
     // 6. Clean up any orphaned data
-    console.log("\n� Step 6: Cleaning up orphaned data...");
+    console.log("\n Step 6: Cleaning up orphaned data...");
 
     const cleanupResult = await db.execute(sql`
       DELETE FROM payments 
@@ -123,7 +123,7 @@ async function migrateToPayPerReport() {
     );
 
     // 7. Update payment types for consistency
-    console.log("� Step 7: Updating payment types for consistency...");
+    console.log(" Step 7: Updating payment types for consistency...");
 
     const paymentTypeUpdate = await db.execute(sql`
       UPDATE payments 
@@ -135,7 +135,7 @@ async function migrateToPayPerReport() {
     console.log(`✅ Updated ${paymentTypeUpdate.rowCount || 0} payment types`);
 
     // 8. Verify the migration
-    console.log("\n� Step 8: Verifying migration...");
+    console.log("\n Step 8: Verifying migration...");
 
     const verifySchema = await db.execute(sql`
       SELECT column_name 
@@ -170,14 +170,14 @@ async function migrateToPayPerReport() {
       );
     }
 
-    console.log("\n� Migration completed successfully!");
-    console.log("\n� SUMMARY:");
+    console.log("\n Migration completed successfully!");
+    console.log("\n SUMMARY:");
     console.log("- Removed old quiz retake system columns");
     console.log("- Added quiz_attempt_id to payments for per-report tracking");
     console.log("- Updated payment types for consistency");
     console.log("- Cleaned up orphaned data");
     console.log("- All existing users are now compatible with the new system");
-    console.log("\n� NEXT STEPS:");
+    console.log("\n NEXT STEPS:");
     console.log("- Access pass holders can now take unlimited quizzes");
     console.log("- They pay $4.99 per report unlock");
     console.log("- Non-access pass holders pay $4.99 per additional quiz");

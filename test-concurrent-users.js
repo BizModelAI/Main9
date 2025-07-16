@@ -30,7 +30,7 @@ const mockQuizData = {
 
 async function simulateUser(userId) {
   const startTime = Date.now();
-  console.log(`� User ${userId}: Starting quiz...`);
+  console.log(` User ${userId}: Starting quiz...`);
 
   try {
     // Simulate taking the quiz
@@ -67,14 +67,14 @@ async function simulateUser(userId) {
   } catch (error) {
     const duration = Date.now() - startTime;
     console.log(
-      `� User ${userId}: Network error - ${error.message} - ${duration}ms`,
+      ` User ${userId}: Network error - ${error.message} - ${duration}ms`,
     );
     return { success: false, networkError: true, duration, userId };
   }
 }
 
 async function testConcurrentUsers() {
-  console.log("� Testing concurrent users taking the quiz...\n");
+  console.log(" Testing concurrent users taking the quiz...\n");
 
   // Test with different numbers of concurrent users
   const concurrentTests = [
@@ -87,7 +87,7 @@ async function testConcurrentUsers() {
   ];
 
   for (const test of concurrentTests) {
-    console.log(`\n� Testing ${test.description}:`);
+    console.log(`\n Testing ${test.description}:`);
     const startTime = Date.now();
 
     // Create promises for all concurrent users
@@ -106,12 +106,12 @@ async function testConcurrentUsers() {
     const avgDuration =
       results.reduce((sum, r) => sum + r.duration, 0) / results.length;
 
-    console.log(`\n� Results for ${test.description}:`);
+    console.log(`\n Results for ${test.description}:`);
     console.log(`   ✅ Successful: ${successful}/${test.users}`);
     console.log(`   ⏱️  Rate Limited: ${rateLimited}/${test.users}`);
     console.log(`   ❌ Failed: ${failed}/${test.users}`);
     console.log(`   ⏱️  Average Duration: ${Math.round(avgDuration)}ms`);
-    console.log(`   � Total Test Time: ${totalTime}ms`);
+    console.log(`    Total Test Time: ${totalTime}ms`);
 
     // Wait a bit between tests to avoid interference
     if (test !== concurrentTests[concurrentTests.length - 1]) {
@@ -120,8 +120,8 @@ async function testConcurrentUsers() {
     }
   }
 
-  console.log("\n� Concurrent user testing complete!");
-  console.log("\n� Summary:");
+  console.log("\n Concurrent user testing complete!");
+  console.log("\n Summary:");
   console.log("   - The application can handle multiple concurrent users");
   console.log("   - Rate limiting prevents system overload");
   console.log("   - Database transactions ensure data consistency");

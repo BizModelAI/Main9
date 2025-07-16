@@ -128,7 +128,7 @@ function Index() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                icon: "�",
+                icon: "🤯",
                 title: "Analysis Paralysis",
                 description: "Too many options, not enough clarity on what actually fits your lifestyle and goals."
               },
@@ -138,7 +138,7 @@ function Index() {
                 description: "Hours spent researching business ideas that aren't right for your situation or skills."
               },
               {
-                icon: "�",
+                icon: "😥",
                 title: "Fear of Wrong Choice",
                 description: "Worried about investing time and money into a business model that won't work for you."
               }

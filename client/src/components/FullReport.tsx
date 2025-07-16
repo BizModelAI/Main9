@@ -934,7 +934,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           "Analytics tools",
         ],
         skills: ["Basic business skills", "Communication", "Organization"],
-        icon: "�",
+        icon: "",
         marketSize: "Large",
         averageIncome: {
           beginner: "$1K-3K",
@@ -1079,7 +1079,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
             transition={{ duration: 0.8 }}
           >
             <div className="mx-auto mb-8">
-              <span className="text-6xl">�</span>
+              <span className="text-6xl"></span>
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
@@ -1461,7 +1461,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                             {index + 1}
                           </div>
                           <h3 className="text-xl font-bold text-gray-900">
-                            {path.name}
+                            {(path.emoji || '💼') + ' ' + path.name}
                           </h3>
                         </div>
                         <div className="text-2xl font-bold text-blue-600">
@@ -1522,7 +1522,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                         onClick={() => handleGetStarted(path.id)}
                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
                       >
-                        Learn More About {path.name}
+                        Learn More About {(path.emoji || '💼') + ' ' + path.name}
                       </button>
                     </div>
                   ))}
@@ -1564,7 +1564,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                             <AlertTriangle className="h-4 w-4" />
                           </div>
                           <h3 className="text-xl font-bold text-gray-900">
-                            {path.name}
+                            {(path.emoji || '💼') + ' ' + path.name}
                           </h3>
                         </div>
                         <div className="text-2xl font-bold text-red-600">
@@ -1603,7 +1603,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
 
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                   <h3 className="font-semibold text-blue-900 mb-2">
-                    � Future Consideration
+                     Future Consideration
                   </h3>
                   <p className="text-blue-800 text-sm">
                     As you develop your skills and gain experience, some of

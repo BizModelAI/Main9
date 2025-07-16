@@ -147,7 +147,7 @@ const LoggedInCongratulations: React.FC<LoggedInCongratulationsProps> = ({
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-center mb-6"
             >
-              <div className="text-5xl mb-4">�</div>
+              <div className="text-5xl mb-4"></div>
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -304,7 +304,7 @@ const LoggedInCongratulations: React.FC<LoggedInCongratulationsProps> = ({
               className="text-center mt-4"
             >
               <p className="text-xs text-gray-500">
-                � Your results are automatically saved to your account
+                 Your results are automatically saved to your account
                 dashboard
               </p>
             </motion.div>

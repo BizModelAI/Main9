@@ -536,7 +536,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] overflow-y-auto"
         onClick={handleClose}
       >
         <motion.div
@@ -769,7 +769,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
                     className="w-full bg-gray-600 text-white py-2 rounded-xl font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     style={{ display: "none" }}
                   >
-                    � DEV: Bypass Payment (Remove in Prod)
+                     DEV: Bypass Payment (Remove in Prod)
                   </button>
                 )}
               </form>
@@ -887,7 +887,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
                     className="w-full bg-gray-600 text-white py-2 rounded-xl font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     style={{ display: "none" }}
                   >
-                    � DEV: Bypass Payment (Remove in Prod)
+                     DEV: Bypass Payment (Remove in Prod)
                   </button>
                 )}
               </div>

@@ -2,7 +2,7 @@
 import { storage } from "./server/storage.js";
 
 async function testAIContentSystem() {
-  console.log("� Testing AI Content System...");
+  console.log(" Testing AI Content System...");
 
   try {
     // Test data
@@ -30,21 +30,21 @@ async function testAIContentSystem() {
     );
 
     if (retrievedContent) {
-      console.log("� Retrieved content preview:", {
+      console.log(" Retrieved content preview:", {
         hasInsights: !!retrievedContent.insights,
         hasRecommendations: !!retrievedContent.recommendations,
         timestamp: retrievedContent.timestamp,
       });
     }
 
-    console.log("� AI Content System test completed successfully!");
+    console.log(" AI Content System test completed successfully!");
   } catch (error) {
     console.error("❌ AI Content System test failed:", error);
 
     // Check if it's a database column issue
     if (error.message && error.message.includes("ai_content")) {
       console.log(
-        "� Hint: The ai_content column might not exist in the database yet",
+        " Hint: The ai_content column might not exist in the database yet",
       );
       console.log(
         "   Run the migration to add the column to quiz_attempts table",

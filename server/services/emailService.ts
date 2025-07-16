@@ -225,7 +225,7 @@ export class EmailService {
             
             <div class="content" style="padding: 50px 40px; background: #FFFFFF !important; color: #000000 !important;">
               <div class="section" style="margin-bottom: 40px;">
-                <h2 class="section-title" style="font-size: 22px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">� Your Best Fit Business Model</h2>
+                <h2 class="section-title" style="font-size: 22px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;"> Your Best Fit Business Model</h2>
                 <div class="top-match-card" style="background: #FFFFFF !important; border: 2px solid #E5E7EB; border-radius: 16px; padding: 30px; margin-bottom: 30px; position: relative; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
                   <div class="match-badge" style="background: linear-gradient(135deg, #10B981, #059669); color: white !important; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; display: inline-block; margin-bottom: 16px;">Perfect Match</div>
                   <h3 class="match-name" style="font-size: 24px; font-weight: 700; color: #000000 !important; margin-bottom: 12px;">${topBusinessModel.name}</h3>
@@ -306,7 +306,7 @@ export class EmailService {
               </div>
 
               <div class="data-retention-notice" style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 16px; margin: 16px 0; font-size: 13px; color: #92400E !important; line-height: 1.4;">
-                <strong>� Data Retention Notice:</strong><br>
+                <strong> Data Retention Notice:</strong><br>
                 Your quiz results and data will be stored securely for <strong>3 months</strong> from today. After this period, your data will be automatically deleted from our systems unless you create a paid account.<br><br>
                 <strong>Want to keep your results forever?</strong> <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" style="color: #92400E !important; text-decoration: underline;">Upgrade to unlock your full report</a> and your data will be saved permanently.
               </div>
@@ -790,7 +790,7 @@ export class EmailService {
               <!-- Top 3 Business Models Section -->
               <div class="section" style="margin-bottom: 40px;">
                 <h2 class="section-title" style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">
-                  � Your Top 3 Business Matches
+                   Your Top 3 Business Matches
                 </h2>
                 
                 ${top3Paths
@@ -838,12 +838,12 @@ export class EmailService {
               <!-- Key Recommendations Section -->
               <div class="section" style="margin-bottom: 40px;">
                 <h2 class="section-title" style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">
-                  � Key Recommendations
+                   Key Recommendations
                 </h2>
                 <div class="recommendations-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
                   <div class="recommendation-card" style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; padding: 20px;">
                     <h4 style="font-weight: 600; color: #0369A1 !important; margin-bottom: 8px; display: flex; align-items: center;">
-                      � Best Strategy
+                       Best Strategy
                     </h4>
                     <p style="color: #1E40AF !important; font-size: 14px; line-height: 1.5;">
                       ${quizData.techSkillsRating >= 4 ? "Leverage your strong technical skills to build automated systems and scalable solutions" : "Focus on proven, user-friendly methods that don't require advanced technical knowledge"}
@@ -859,7 +859,7 @@ export class EmailService {
                   </div>
                   <div class="recommendation-card" style="background: #FEF3C7; border: 1px solid #FDE047; border-radius: 12px; padding: 20px;">
                     <h4 style="font-weight: 600; color: #92400E !important; margin-bottom: 8px; display: flex; align-items: center;">
-                      � Growth Path
+                       Growth Path
                     </h4>
                     <p style="color: #78350F !important; font-size: 14px; line-height: 1.5;">
                       ${quizData.riskComfortLevel >= 4 ? "Your high risk tolerance allows for aggressive growth strategies and innovative approaches" : "Focus on steady, proven growth methods that minimize risk while building confidence"}
@@ -867,7 +867,7 @@ export class EmailService {
                   </div>
                   <div class="recommendation-card" style="background: #F3E8FF; border: 1px solid #D8B4FE; border-radius: 12px; padding: 20px;">
                     <h4 style="font-weight: 600; color: #7C2D12 !important; margin-bottom: 8px; display: flex; align-items: center;">
-                      � Timeline
+                       Timeline
                     </h4>
                     <p style="color: #6B21A8 !important; font-size: 14px; line-height: 1.5;">
                       With ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} weekly commitment, expect ${quizData.weeklyTimeCommitment >= 20 ? "accelerated progress and faster results" : "steady progress with sustainable growth"}
@@ -879,7 +879,7 @@ export class EmailService {
               <!-- Your Business Profile Section -->
               <div class="section" style="margin-bottom: 40px;">
                 <h2 class="section-title" style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px; display: flex; align-items: center;">
-                  � Your Business Profile
+                   Your Business Profile
                 </h2>
                 <div class="profile-card" style="background: #FFFFFF !important; border: 1px solid #E5E7EB; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);">
                   <div class="profile-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -1066,7 +1066,7 @@ export class EmailService {
 
             <div class="content" style="padding: 50px 40px; background: #FFFFFF !important; color: #000000 !important;">
               <div class="section" style="margin-bottom: 40px;">
-                <h2 style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px;">Hi ${userName}! �</h2>
+                <h2 style="font-size: 24px; font-weight: 600; color: #000000 !important; margin-bottom: 20px;">Hi ${userName}! </h2>
                 <p style="font-size: 16px; color: #374151 !important; line-height: 1.6; margin-bottom: 20px;">
                   We've successfully received your message and our team will review it shortly. We appreciate you taking the time to contact us.
                 </p>

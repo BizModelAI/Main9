@@ -12,11 +12,11 @@ const sqlClient = neon(dbUrl);
 const db = drizzle(sqlClient);
 
 async function consolidateUsersTables() {
-  console.log("� Starting user tables consolidation migration...");
+  console.log(" Starting user tables consolidation migration...");
 
   try {
     // Step 1: Add new columns to users table if they don't exist
-    console.log("� Adding new columns to users table...");
+    console.log(" Adding new columns to users table...");
 
     await db.execute(sql`
       ALTER TABLE users 
@@ -28,7 +28,7 @@ async function consolidateUsersTables() {
     `);
 
     // Step 2: Migrate data from unpaidUserEmails to users table
-    console.log("� Migrating unpaid user data to users table...");
+    console.log(" Migrating unpaid user data to users table...");
 
     // Get all unpaid user emails that haven't expired
     const unpaidUsers = await db
@@ -88,8 +88,8 @@ async function consolidateUsersTables() {
       .set({ isPaid: true, isTemporary: false })
       .where(sql`${users.isTemporary} = FALSE OR ${users.isTemporary} IS NULL`);
 
-    console.log("� User tables consolidation completed successfully!");
-    console.log("� Summary:");
+    console.log(" User tables consolidation completed successfully!");
+    console.log(" Summary:");
     console.log(`  - Migrated ${unpaidUsers.length} unpaid users`);
     console.log("  - Marked existing users as paid");
     console.log("  - Added new columns to users table");

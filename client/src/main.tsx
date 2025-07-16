@@ -5,6 +5,15 @@ import { queryClient } from './lib/queryClient';
 import App from './App.tsx';
 import './index.css';
 
+// Initialize emoji safeguards early
+import { initializeEmojiSafeguards, cleanCorruptedEmojisFromStorage } from './utils/emojiHelper';
+
+// Initialize emoji corruption prevention
+initializeEmojiSafeguards();
+
+// Clean any existing corrupted emojis in localStorage
+cleanCorruptedEmojisFromStorage();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

@@ -2,7 +2,7 @@ import { db } from "../server/db.js";
 import { users, payments, quizAttempts } from "../shared/schema.js";
 import { sql } from "drizzle-orm";
 
-console.log("� Starting user migration to new pay-per-report system...");
+console.log(" Starting user migration to new pay-per-report system...");
 
 async function migrateUsers() {
   try {
@@ -11,7 +11,7 @@ async function migrateUsers() {
       return;
     }
 
-    console.log("� Checking current database state...");
+    console.log(" Checking current database state...");
 
     // Get current statistics
     const userCount = await db.execute(
@@ -24,13 +24,13 @@ async function migrateUsers() {
       sql`SELECT COUNT(*) as count FROM quiz_attempts`,
     );
 
-    console.log("� Current state:");
+    console.log(" Current state:");
     console.log(`   - Users: ${userCount.rows[0].count}`);
     console.log(`   - Payments: ${paymentCount.rows[0].count}`);
     console.log(`   - Quiz Attempts: ${quizAttemptCount.rows[0].count}`);
 
     // Update all users to ensure they have proper timestamps
-    console.log("� Updating user timestamps...");
+    console.log(" Updating user timestamps...");
     const userUpdate = await db.execute(sql`
       UPDATE users 
       SET updated_at = NOW() 
@@ -39,7 +39,7 @@ async function migrateUsers() {
     console.log(`✅ Updated ${userUpdate.rowCount || 0} user records`);
 
     // Clean up any payment records that might have old data
-    console.log("� Cleaning up payment records...");
+    console.log(" Cleaning up payment records...");
     const paymentCleanup = await db.execute(sql`
       UPDATE payments 
       SET type = CASE 
@@ -53,7 +53,7 @@ async function migrateUsers() {
     );
 
     // Get final statistics with access pass breakdown
-    console.log("� Final statistics:");
+    console.log(" Final statistics:");
     const finalStats = await db.execute(sql`
       SELECT 
         COUNT(*) as total_users,
@@ -71,12 +71,12 @@ async function migrateUsers() {
       FROM payments
     `);
 
-    console.log("� Users: ${finalStats.rows[0].total_users} total");
+    console.log(" Users: ${finalStats.rows[0].total_users} total");
     console.log(
       `   - With access pass: ${finalStats.rows[0].access_pass_users}`,
     );
     console.log(`   - Regular users: ${finalStats.rows[0].regular_users}`);
-    console.log("� Payments: ${paymentStats.rows[0].total_payments} total");
+    console.log(" Payments: ${paymentStats.rows[0].total_payments} total");
     console.log(
       `   - Access pass: ${paymentStats.rows[0].access_pass_payments}`,
     );
@@ -85,8 +85,8 @@ async function migrateUsers() {
       `   - Report unlocks: ${paymentStats.rows[0].report_unlock_payments}`,
     );
 
-    console.log("\n� Migration completed successfully!");
-    console.log("\n� CHANGES APPLIED:");
+    console.log("\n Migration completed successfully!");
+    console.log("\n CHANGES APPLIED:");
     console.log("✅ All users are now compatible with the new system");
     console.log(
       "✅ Access pass holders: Unlimited quizzes + $4.99 per report unlock",

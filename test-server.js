@@ -4,7 +4,7 @@ const BASE_URL = "http://localhost:5000";
 
 async function testEndpoint(url, options = {}) {
   try {
-    console.log(`\n� Testing: ${url}`);
+    console.log(`\n Testing: ${url}`);
     const response = await fetch(url, options);
     const text = await response.text();
 
@@ -24,7 +24,7 @@ async function testEndpoint(url, options = {}) {
 }
 
 async function runTests() {
-  console.log("� Testing server endpoints...\n");
+  console.log(" Testing server endpoints...\n");
 
   // Test health endpoints
   await testEndpoint(`${BASE_URL}/api/health`);

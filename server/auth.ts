@@ -30,7 +30,7 @@ setInterval(() => {
 
   if (cleanedCount > 0) {
     console.log(
-      `� Session cache cleanup: removed ${cleanedCount} expired sessions`,
+      ` Session cache cleanup: removed ${cleanedCount} expired sessions`,
     );
   }
 }, SESSION_CLEANUP_INTERVAL);

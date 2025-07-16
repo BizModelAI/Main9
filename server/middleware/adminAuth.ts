@@ -33,7 +33,7 @@ setInterval(
 
     if (cleanedCount > 0) {
       console.log(
-        `� Admin session cleanup: removed ${cleanedCount} expired sessions`,
+        ` Admin session cleanup: removed ${cleanedCount} expired sessions`,
       );
     }
   },
@@ -55,7 +55,7 @@ export function requireAdminAuth(
 
     // Validate admin key
     if (!adminKey || adminKey !== process.env.ADMIN_API_KEY) {
-      console.warn(`� Unauthorized admin access attempt from ${req.ip}:`, {
+      console.warn(` Unauthorized admin access attempt from ${req.ip}:`, {
         headers: {
           userAgent: req.headers["user-agent"],
           origin: req.headers.origin,
@@ -120,7 +120,7 @@ export function requireAdminAuth(
 
     // Log admin action for audit trail
     console.log(
-      `� Admin action: ${req.method} ${req.path} by ${adminId} from ${req.ip}`,
+      ` Admin action: ${req.method} ${req.path} by ${adminId} from ${req.ip}`,
     );
 
     next();
@@ -143,7 +143,7 @@ export function requireAdminAuth(
  */
 export function logAdminAction(action: string) {
   return (req: AdminAuthRequest, res: Response, next: NextFunction) => {
-    console.log(`� Admin Action Log: ${action}`, {
+    console.log(` Admin Action Log: ${action}`, {
       adminId: req.admin?.id || "unknown",
       ip: req.ip,
       userAgent: req.headers["user-agent"],
@@ -175,7 +175,7 @@ export function adminRateLimit(
     const recentRequests = requests.filter((time) => now - time < windowMs);
 
     if (recentRequests.length >= maxRequests) {
-      console.warn(`� Admin rate limit exceeded for ${adminId}`);
+      console.warn(` Admin rate limit exceeded for ${adminId}`);
       return res
         .status(429)
         .json(

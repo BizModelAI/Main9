@@ -161,6 +161,24 @@ export class MemStorage implements IStorage {
     this.currentPaymentId = 1;
     this.currentUnpaidEmailId = 1;
     this.currentPasswordResetTokenId = 1;
+
+    // Add a test user for development
+    const testUser: User = {
+      id: 1,
+      email: "test@example.com",
+      password: "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // "password"
+      name: "Test User",
+      isUnsubscribed: false,
+      sessionId: null,
+      isPaid: true,
+      isTemporary: false,
+      tempQuizData: null,
+      expiresAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.users.set(1, testUser);
+    this.currentId = 2; // Set next ID to 2
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -910,7 +928,7 @@ export class DatabaseStorage implements IStorage {
     migratedAttempts: number;
     errors: string[];
   }> {
-    console.log("� Starting AI content migration from JSONB to new table...");
+    console.log(" Starting AI content migration from JSONB to new table...");
 
     const errors: string[] = [];
     let migratedAttempts = 0;
@@ -927,7 +945,7 @@ export class DatabaseStorage implements IStorage {
       );
 
     console.log(
-      `� Found ${attempts.length} quiz attempts with AI content to migrate`,
+      ` Found ${attempts.length} quiz attempts with AI content to migrate`,
     );
 
     for (const attempt of attempts) {
@@ -981,7 +999,7 @@ export class DatabaseStorage implements IStorage {
 
         if (migratedAttempts % 10 === 0) {
           console.log(
-            `� Migration progress: ${migratedAttempts}/${attempts.length} quiz attempts`,
+            ` Migration progress: ${migratedAttempts}/${attempts.length} quiz attempts`,
           );
         }
       } catch (error: any) {
@@ -1015,7 +1033,7 @@ export class DatabaseStorage implements IStorage {
   ): Promise<void> {
     // NEW BEHAVIOR: Use the new AI content table
     console.log(
-      `� Saving AI content via new table: ${contentType} for quiz attempt ${quizAttemptId}`,
+      ` Saving AI content via new table: ${contentType} for quiz attempt ${quizAttemptId}`,
     );
     await this.saveAIContent(quizAttemptId, contentType, content);
 

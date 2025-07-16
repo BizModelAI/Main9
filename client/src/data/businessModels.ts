@@ -13,6 +13,7 @@ export interface BusinessModel {
   timeCommitment: string;
   requiredSkills: string[];
   tools: string[];
+  emoji: string;
   resources: Array<{
     type: "Free" | "Paid";
     name: string;
@@ -52,6 +53,7 @@ export const businessModels: BusinessModel[] = [
       "Pricing strategy",
     ],
     tools: ["Upwork", "Fiverr", "LinkedIn", "Slack", "Zoom"],
+    emoji: "💼",
     resources: [
       {
         type: "Free",
@@ -123,6 +125,7 @@ export const businessModels: BusinessModel[] = [
       "Brand collaboration readiness",
     ],
     tools: ["CapCut", "Canva", "TikTok", "Instagram", "Notion"],
+    emoji: "📸",
     resources: [
       {
         type: "Free",
@@ -194,6 +197,7 @@ export const businessModels: BusinessModel[] = [
       "Scaling systems",
     ],
     tools: ["VidIQ", "Pictory", "Fiverr", "Google Docs"],
+    emoji: "📺",
     resources: [
       {
         type: "Free",
@@ -259,6 +263,7 @@ export const businessModels: BusinessModel[] = [
       "Operational thinking",
     ],
     tools: ["Google Ads", "Jobber", "Stripe", "Thumbtack"],
+    emoji: "🎯",
     resources: [
       {
         type: "Free",
@@ -318,6 +323,7 @@ export const businessModels: BusinessModel[] = [
       "Offer understanding",
     ],
     tools: ["Zoom", "Close.io", "Slack", "Calendly"],
+    emoji: "💰",
     resources: [
       {
         type: "Free",
@@ -377,6 +383,7 @@ export const businessModels: BusinessModel[] = [
       "Customer onboarding",
     ],
     tools: ["React", "Vercel", "Supabase", "Stripe", "Figma"],
+    emoji: "💻",
     resources: [
       {
         type: "Free",
@@ -442,6 +449,7 @@ export const businessModels: BusinessModel[] = [
       "Time management",
     ],
     tools: ["Meta Ads Manager", "GoHighLevel", "Canva", "Loom"],
+    emoji: "👥",
     resources: [
       {
         type: "Paid",
@@ -500,6 +508,7 @@ export const businessModels: BusinessModel[] = [
       "Adaptability",
     ],
     tools: ["ChatGPT", "Make", "Zapier", "Claude", "Notion"],
+    emoji: "🧠",
     resources: [
       {
         type: "Free",
@@ -556,6 +565,7 @@ export const businessModels: BusinessModel[] = [
       "Time management",
     ],
     tools: ["Trello", "Slack", "Canva", "Webflow", "Notion"],
+    emoji: "🖥️",
     resources: [
       {
         type: "Free",
@@ -612,6 +622,7 @@ export const businessModels: BusinessModel[] = [
       "Discipline",
     ],
     tools: ["TradingView", "Thinkorswim", "Binance", "Robinhood"],
+    emoji: "📊",
     resources: [
       {
         type: "Free",
@@ -668,6 +679,7 @@ export const businessModels: BusinessModel[] = [
       "Profit margin tracking",
     ],
     tools: ["eBay", "Mercari", "Facebook Marketplace", "Pirate Ship"],
+    emoji: "🛍️",
     resources: [
       {
         type: "Free",
@@ -725,6 +737,7 @@ export const businessModels: BusinessModel[] = [
       "Pricing strategy",
     ],
     tools: ["Etsy", "Shopify", "Canva", "Instagram", "Printful"],
+    emoji: "🎨",
     resources: [
       {
         type: "Free",
@@ -783,6 +796,7 @@ export const businessModels: BusinessModel[] = [
       "Adaptability across niches",
     ],
     tools: ["Google Docs", "Grammarly", "Notion", "Hemingway App", "Jasper"],
+    emoji: "✍️",
     resources: [
       {
         type: "Free",
@@ -840,6 +854,7 @@ export const businessModels: BusinessModel[] = [
       "Conversion tracking",
     ],
     tools: ["ClickFunnels", "ConvertKit", "WordPress", "Canva", "Ahrefs"],
+    emoji: "🔗",
     resources: [
       {
         type: "Free",
@@ -898,6 +913,7 @@ export const businessModels: BusinessModel[] = [
       "Customer support",
     ],
     tools: ["Google Workspace", "Notion", "Trello", "Slack", "Zoom"],
+    emoji: "🤝",
     resources: [
       {
         type: "Free",
@@ -956,6 +972,7 @@ export const businessModels: BusinessModel[] = [
       "Order fulfillment coordination",
     ],
     tools: ["Shopify", "Oberlo", "Facebook Ads", "Google Ads", "AliExpress"],
+    emoji: "📦",
     resources: [
       {
         type: "Free",
@@ -1013,6 +1030,7 @@ export const businessModels: BusinessModel[] = [
       "Time management",
     ],
     tools: ["Zoom", "Calendly", "Teachable", "Stripe", "Notion"],
+    emoji: "💡",
     resources: [
       {
         type: "Free",
@@ -1070,6 +1088,7 @@ export const businessModels: BusinessModel[] = [
       "Platform management",
     ],
     tools: ["Canva", "Photoshop", "Printful", "Etsy", "Amazon Merch"],
+    emoji: "🖼️",
     resources: [
       {
         type: "Free",

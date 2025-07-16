@@ -180,7 +180,7 @@ const BusinessReportContent: React.FC<BusinessReportContentProps> = ({
                   <span className="text-orange-600 font-semibold">AI Recommended</span>
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  {topBusinessPath.name}
+                  {(topBusinessPath.emoji || '💼') + ' ' + topBusinessPath.name}
                 </h2>
                 <p className="text-lg text-gray-700">
                   {topBusinessPath.description}

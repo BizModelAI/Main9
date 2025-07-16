@@ -1,10 +1,10 @@
-console.log("� Starting payment race condition protection migration...");
+console.log(" Starting payment race condition protection migration...");
 
 import { db } from "../server/db.js";
 import { sql } from "drizzle-orm";
 
 export async function up() {
-  console.log("� Adding payment race condition protection...");
+  console.log(" Adding payment race condition protection...");
 
   // Add new columns for race condition protection
   await db.execute(sql`
@@ -48,7 +48,7 @@ export async function up() {
 }
 
 export async function down() {
-  console.log("�️ Rolling back payment race condition protection...");
+  console.log("️ Rolling back payment race condition protection...");
 
   // Remove indexes
   await db.execute(sql`DROP INDEX IF EXISTS idx_payment_status;`);

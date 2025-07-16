@@ -376,6 +376,13 @@ function MainAppContent() {
     loadQuizData();
   }, [quizData, setQuizData, user]);
 
+  React.useEffect(() => {
+    // Clear AI insights when navigating to home page
+    if (location.pathname === "/") {
+      localStorage.removeItem("quiz-completion-ai-insights");
+    }
+  }, [location.pathname]);
+
   if (location.pathname === "/quiz") {
     return (
       <QuizWithNavigation
@@ -809,7 +816,7 @@ const QuizWithNavigation: React.FC<{
       const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
       const attemptId = quizAttemptId ? parseInt(quizAttemptId) : undefined;
 
-      console.log("� Calculating business model scores for completed quiz...");
+      console.log(" Calculating business model scores for completed quiz...");
       await calculateAndStoreScores(data, attemptId);
       console.log(
         "✅ Business model scores calculated and stored successfully",
@@ -917,7 +924,7 @@ const QuizWithNavigation: React.FC<{
           style={{ zIndex: 9999 }}
           hidden
         >
-          � SKIP TO RESULTS (DEV)
+           SKIP TO RESULTS (DEV)
         </button>
       </div>
 
@@ -1107,6 +1114,14 @@ function App() {
                 />
                 <Route
                   path="/business-explorer"
+                  element={
+                    <Layout>
+                      <BusinessExplorer />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/explore"
                   element={
                     <Layout>
                       <BusinessExplorer />

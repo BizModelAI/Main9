@@ -130,6 +130,7 @@ export interface BusinessPath {
   tools: string[];
   skills: string[];
   icon: string;
+  emoji: string;
   marketSize: string;
   averageIncome: {
     beginner: string;

@@ -81,7 +81,7 @@ export class AICacheManager {
       const cachedData = localStorage.getItem(cacheKey);
 
       if (!cachedData) {
-        console.log("� No cached AI data found for this quiz");
+        console.log(" No cached AI data found for this quiz");
         return { insights: null, analysis: null, topPath: null };
       }
 
@@ -99,7 +99,7 @@ export class AICacheManager {
           topPath: parsedData.topPath,
         };
       } else {
-        console.log("� Cached AI data is stale (>1 hour), removing...");
+        console.log(" Cached AI data is stale (>1 hour), removing...");
         localStorage.removeItem(cacheKey);
         return { insights: null, analysis: null, topPath: null };
       }
@@ -130,7 +130,7 @@ export class AICacheManager {
 
       const cacheKey = `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`;
       localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      console.log("� AI content cached for 1 hour (allows page refresh)");
+      console.log(" AI content cached for 1 hour (allows page refresh)");
     } catch (error) {
       console.error("❌ Error caching AI content:", error);
     }
@@ -140,7 +140,7 @@ export class AICacheManager {
    * Clear all AI cache (called when starting a NEW quiz)
    */
   clearAllCache(): void {
-    console.log("� Clearing all AI cache for new quiz session");
+    console.log(" Clearing all AI cache for new quiz session");
 
     // Set reset timestamp to invalidate existing caches
     localStorage.setItem("ai-cache-reset-timestamp", Date.now().toString());
@@ -160,7 +160,7 @@ export class AICacheManager {
       }
     }
     keysToRemove.forEach((key) => localStorage.removeItem(key));
-    console.log(`� Removed ${keysToRemove.length} cache entries`);
+    console.log(` Removed ${keysToRemove.length} cache entries`);
   }
 
   /**
@@ -172,12 +172,12 @@ export class AICacheManager {
     if (lastReset && Date.now() - parseInt(lastReset) < 3000) {
       // 3 second window
       console.log(
-        "� AI cache already reset recently, skipping duplicate reset",
+        " AI cache already reset recently, skipping duplicate reset",
       );
       return;
     }
 
-    console.log("� Force resetting AI cache for new quiz attempt");
+    console.log(" Force resetting AI cache for new quiz attempt");
     this.clearAllCache();
   }
 
@@ -209,7 +209,7 @@ export class AICacheManager {
         return parsedData.skills;
       } else {
         console.log(
-          `� Cached skills analysis for ${businessId} is stale, removing...`,
+          ` Cached skills analysis for ${businessId} is stale, removing...`,
         );
         localStorage.removeItem(cacheKey);
         return null;
@@ -232,7 +232,7 @@ export class AICacheManager {
       };
 
       localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      console.log(`� Skills analysis cached for ${businessId} (1 hour)`);
+      console.log(` Skills analysis cached for ${businessId} (1 hour)`);
     } catch (error) {
       console.error("❌ Error caching skills analysis:", error);
     }

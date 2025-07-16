@@ -50,14 +50,14 @@ async function checkPayments() {
 
     if (completedAccessPassPayments.length > 0 && !user.hasAccessPass) {
       console.log(
-        "\n� ISSUE FOUND: User has completed access_pass payments but hasAccessPass is still false!",
+        "\n ISSUE FOUND: User has completed access_pass payments but hasAccessPass is still false!",
       );
       console.log("This account needs to be fixed.");
     } else if (user.hasAccessPass) {
       console.log("\n✅ User access status is correct");
     } else {
       console.log(
-        "\n� User has no completed access_pass payments - they need to complete payment to get access",
+        "\n User has no completed access_pass payments - they need to complete payment to get access",
       );
     }
   } catch (error) {

@@ -3,7 +3,7 @@
 // Force remove old columns from production database
 import { db } from "../server/db.js";
 
-console.log("� Fixing production database schema...");
+console.log(" Fixing production database schema...");
 
 try {
   console.log("Database connection established");
@@ -42,7 +42,7 @@ try {
   `);
 
   if (remainingColumns.rows.length === 0) {
-    console.log("� Production database schema fixed successfully!");
+    console.log(" Production database schema fixed successfully!");
   } else {
     console.log("❌ Old columns still exist:", remainingColumns.rows);
   }

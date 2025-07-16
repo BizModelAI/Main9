@@ -17,6 +17,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { QuizData } from "../types";
 import { generateAIPersonalizedPaths } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
+import { getSafeEmoji } from '../utils/emojiHelper';
+import { Button } from "../components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "../components/ui/card";
 
 interface BusinessExplorerProps {
   quizData?: QuizData | null;
@@ -39,6 +42,8 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     propQuizData || null,
   );
   const [isLoadingQuizData, setIsLoadingQuizData] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedModelForModal, setSelectedModelForModal] = useState<BusinessModel | null>(null);
 
   const navigate = useNavigate();
   const {
@@ -231,6 +236,11 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     setExpandedCard((current) => (current === modelId ? null : modelId));
   };
 
+  const handleShowDetails = (model: BusinessModel) => {
+    setSelectedModelForModal(model);
+    setShowDetailsModal(true);
+  };
+
   const handleLearnMore = (businessId: string) => {
     // For logged-in users, allow direct access to basic features
     if (user) {
@@ -321,6 +331,11 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     setSelectedBusinessId("");
   };
 
+  const handleDetailsModalClose = () => {
+    setShowDetailsModal(false);
+    setSelectedModelForModal(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -382,24 +397,24 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
         </div>
 
         {/* Business Models Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="flex flex-wrap gap-6">
           {filteredModels.map((model) => (
-            <BusinessModelCard
-              key={model.id}
-              model={model}
-              onLearnMore={handleLearnMore}
-              isExpanded={expandedCard === model.id}
-              onToggleExpand={() => handleCardExpand(model.id)}
-              showFitBadge={
-                !!(
-                  hasUnlockedAnalysis &&
-                  (quizData || (import.meta.env.MODE === "development" && user))
-                )
-              }
-              fitCategory={model.fitCategory}
-              fitScore={model.fitScore}
-              getFitCategoryColor={getFitCategoryColor}
-            />
+            <div key={model.id} className="w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]">
+              <BusinessModelCard
+                model={model}
+                onLearnMore={handleLearnMore}
+                onShowDetails={() => handleShowDetails(model)}
+                showFitBadge={
+                  !!(
+                    hasUnlockedAnalysis &&
+                    (quizData || (import.meta.env.MODE === "development" && user))
+                  )
+                }
+                fitCategory={model.fitCategory}
+                fitScore={model.fitScore}
+                getFitCategoryColor={getFitCategoryColor}
+              />
+            </div>
           ))}
         </div>
 
@@ -437,6 +452,24 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
             : undefined
         }
       />
+
+      {/* Business Model Details Modal */}
+      {showDetailsModal && selectedModelForModal && (
+        <BusinessModelDetailsModal
+          model={selectedModelForModal}
+          onClose={handleDetailsModalClose}
+          onLearnMore={handleLearnMore}
+          showFitBadge={
+            !!(
+              hasUnlockedAnalysis &&
+              (quizData || (import.meta.env.MODE === "development" && user))
+            )
+          }
+          fitCategory={businessModelsWithFitScores.find(m => m.id === selectedModelForModal.id)?.fitCategory}
+          fitScore={businessModelsWithFitScores.find(m => m.id === selectedModelForModal.id)?.fitScore}
+          getFitCategoryColor={getFitCategoryColor}
+        />
+      )}
     </div>
   );
 };
@@ -444,8 +477,7 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
 const BusinessModelCard = ({
   model,
   onLearnMore,
-  isExpanded,
-  onToggleExpand,
+  onShowDetails,
   showFitBadge,
   fitCategory,
   fitScore,
@@ -453,8 +485,7 @@ const BusinessModelCard = ({
 }: {
   model: BusinessModel & { fitScore?: number; fitCategory?: string };
   onLearnMore: (businessId: string) => void;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
+  onShowDetails: () => void;
   showFitBadge?: boolean;
   fitCategory?: string | null;
   fitScore?: number;
@@ -496,17 +527,41 @@ const BusinessModelCard = ({
     setShowAllSkills(!showAllSkills);
   };
 
+  // Function to get abbreviated business model name
+  const getAbbreviatedName = (title: string): string => {
+    const abbreviations: { [key: string]: string } = {
+      "Freelancing": "Freelancing",
+      "Content Creation / UGC": "UGC",
+      "YouTube Automation Channels": "YouTube Automation",
+      "Local Service Arbitrage": "LSA",
+      "Social Media Marketing Agency (SMMA)": "SMMA",
+      "E-commerce Dropshipping": "Dropshipping",
+      "Digital Product Creation": "Digital Products",
+      "Affiliate Marketing": "Affiliate Marketing",
+      "Online Coaching": "Coaching",
+      "SaaS (Software as a Service)": "SaaS",
+      "Real Estate Investing": "Real Estate",
+      "Print on Demand": "POD",
+      "Amazon FBA": "FBA",
+      "Virtual Assistant Services": "Virtual Assistance",
+      "Web Design Agency": "Web Design",
+      "Podcasting": "Podcasting",
+      "Online Course Creation": "Course Creation",
+      "Consulting": "Consulting",
+      "App or SaaS Development": "App Development"
+    };
+    
+    return abbreviations[title] || title;
+  };
+
   return (
     <motion.div
-      className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col ${
-        isExpanded ? "md:col-span-2 lg:col-span-3" : ""
-      }`}
+      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col"
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{
         opacity: 1,
         y: 0,
-        scale: isExpanded ? 1.02 : 1,
       }}
       transition={{
         duration: 0.5,
@@ -514,12 +569,15 @@ const BusinessModelCard = ({
       }}
       whileHover={{ y: -5 }}
     >
-      <div className="p-6 flex flex-col h-full">
+      <div className="p-4 flex flex-col h-full">
         {/* Header */}
         <div className="flex justify-between items-start mb-4 relative">
-          <h3 className="text-xl font-bold text-gray-900 flex-1 mr-2 line-clamp-2">
-            {model.title}
-          </h3>
+          <div className="flex items-center flex-1 mr-2">
+            <span className="text-3xl mr-3">{getSafeEmoji(model.id)}</span>
+            <h3 className="text-xl font-bold text-gray-900 line-clamp-2">
+              {model.title}
+            </h3>
+          </div>
           <div className="flex flex-col gap-1 items-end">
             {/* Show fit percentage if user has paid and quiz data exists */}
             {showFitBadge && fitScore !== undefined && (
@@ -569,123 +627,14 @@ const BusinessModelCard = ({
           </div>
         </div>
 
-        {/* Expandable Content */}
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="overflow-hidden flex-grow"
-            >
-              {/* Detailed Description */}
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  About This Model
-                </h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {model.detailedDescription}
-                </p>
-              </div>
-
-              {/* Required Skills */}
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  Required Skills
-                </h4>
-                <div className="flex flex-wrap gap-1">
-                  {getSkillsToShow().map((skill, index) => (
-                    <motion.span
-                      key={`${skill}-${index}`}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.2, delay: index * 0.05 }}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
-                    >
-                      {skill}
-                    </motion.span>
-                  ))}
-
-                  {/* Show More/Less Skills Button */}
-                  {model.requiredSkills.length > 4 && (
-                    <button
-                      onClick={handleSkillsToggle}
-                      className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200 transition-colors"
-                    >
-                      {showAllSkills
-                        ? "Show less"
-                        : `+${remainingSkillsCount} more`}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Tools */}
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  Common Tools
-                </h4>
-                <div className="flex flex-wrap gap-1">
-                  {model.tools.map((tool, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs"
-                    >
-                      {tool}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pros */}
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                  Pros
-                </h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  {model.pros.slice(0, 4).map((pro, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-green-500 mr-2">✓</span>
-                      {pro}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Cons */}
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                  <AlertTriangle className="h-4 w-4 text-red-500 mr-1" />
-                  Cons
-                </h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  {model.cons.slice(0, 4).map((con, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-red-500 mr-2">×</span>
-                      {con}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="text-sm text-gray-600">
-                <strong>Time Commitment:</strong> {model.timeCommitment}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Action Buttons - Fixed at Bottom */}
         <div className="mt-auto pt-4 space-y-3">
-          {/* Expand/Collapse Button */}
+          {/* Show Details Button */}
           <button
-            onClick={onToggleExpand}
+            onClick={onShowDetails}
             className="w-full py-2 px-4 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-xl transition-colors duration-200 text-sm font-medium"
           >
-            {isExpanded ? "Show Less" : "Show Details"}
+            Show Details
           </button>
 
           {/* Learn More Link - Center Aligned */}
@@ -694,12 +643,363 @@ const BusinessModelCard = ({
               onClick={handleLearnMore}
               className="text-black hover:text-gray-700 font-medium text-sm transition-all duration-300 inline-flex items-center justify-center group"
             >
-              <span>Learn More About {model.title}</span>
+              <span className="font-semibold">Learn More About {getAbbreviatedName(model.title)}</span>
               <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
           </div>
         </div>
       </div>
+    </motion.div>
+  );
+};
+
+// Business Model Details Modal Component
+const BusinessModelDetailsModal = ({
+  model,
+  onClose,
+  onLearnMore,
+  showFitBadge,
+  fitCategory,
+  fitScore,
+  getFitCategoryColor,
+}: {
+  model: BusinessModel;
+  onClose: () => void;
+  onLearnMore: (businessId: string) => void;
+  showFitBadge?: boolean;
+  fitCategory?: string | null;
+  fitScore?: number;
+  getFitCategoryColor?: (category: string) => string;
+}) => {
+  // Function to get abbreviated business model name
+  const getAbbreviatedName = (title: string): string => {
+    const abbreviations: { [key: string]: string } = {
+      "Freelancing": "Freelancing",
+      "Content Creation / UGC": "UGC",
+      "YouTube Automation Channels": "YouTube Automation",
+      "Local Service Arbitrage": "LSA",
+      "Social Media Marketing Agency (SMMA)": "SMMA",
+      "E-commerce Dropshipping": "Dropshipping",
+      "Digital Product Creation": "Digital Products",
+      "Affiliate Marketing": "Affiliate Marketing",
+      "Online Coaching": "Coaching",
+      "SaaS (Software as a Service)": "SaaS",
+      "Real Estate Investing": "Real Estate",
+      "Print on Demand": "POD",
+      "Amazon FBA": "FBA",
+      "Virtual Assistant Services": "Virtual Assistance",
+      "Web Design Agency": "Web Design",
+      "Podcasting": "Podcasting",
+      "Online Course Creation": "Course Creation",
+      "Consulting": "Consulting",
+      "App or SaaS Development": "App Development"
+    };
+    
+    return abbreviations[title] || title;
+  };
+
+  const getScalabilityColor = (scalability: string) => {
+    switch (scalability) {
+      case "Low":
+        return "bg-red-100 text-red-800";
+      case "Medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "High":
+        return "bg-green-100 text-green-800";
+      case "Very High":
+        return "bg-emerald-100 text-emerald-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getSkillsToShow = () => {
+    return model.requiredSkills;
+  };
+
+  const handleLearnMore = () => {
+    onLearnMore(model.id);
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-6 z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-8 relative">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 text-xl"
+          >
+            ×
+          </button>
+
+          {/* Header */}
+          <Card className="mb-6 bg-white rounded-2xl shadow-lg mt-4">
+            <CardHeader className="flex-row items-center gap-4">
+              <span className="text-4xl mr-2 hover:scale-110 transition-transform duration-300 flex-shrink-0">{getSafeEmoji(model.id)}</span>
+              <div className="flex-1">
+                <CardTitle className="text-3xl font-semibold text-gray-900 mb-1">{model.title}</CardTitle>
+                <CardDescription className="text-lg text-gray-600 leading-relaxed">{model.description}</CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Fit Badge */}
+          {showFitBadge && fitScore !== undefined && (
+            <Card className="mb-6 bg-white rounded-2xl shadow-lg">
+              <CardContent className="flex items-center justify-between p-4">
+                <div>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {Math.round(fitScore)}%
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {fitCategory ? `${fitCategory} Fit` : "Fit"}
+                  </div>
+                </div>
+                {fitCategory && getFitCategoryColor && (
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getFitCategoryColor(fitCategory)}`}>
+                    {fitCategory}
+                  </span>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Main Content Grid */}
+          <div className="grid md:grid-cols-6 gap-6">
+            {/* Left Column - 70% */}
+            <div className="md:col-span-4 space-y-6">
+              {/* About This Model */}
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardHeader>
+                  <CardTitle>About This Model</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-w-prose">
+                    <p className="text-gray-600 leading-relaxed text-base mb-4">
+                      {model.detailedDescription}
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="text-green-500 mr-2">✅</span>
+                        Project-based work with flexible scheduling
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="text-green-500 mr-2">✅</span>
+                        Choose your own rates and clients
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="text-green-500 mr-2">✅</span>
+                        Build a portfolio and reputation
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Required Skills */}
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardHeader>
+                  <CardTitle>Required Skills</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {getSkillsToShow().map((skill, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pros and Cons */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg border border-green-200">
+                  <CardHeader>
+                    <CardTitle>Pros</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {model.pros.map((pro, index) => (
+                        <li key={index} className="flex items-center text-gray-700 text-sm">
+                          <span className="text-green-500 mr-2">✓</span>
+                          {pro}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl shadow-lg border border-orange-200">
+                  <CardHeader>
+                    <CardTitle>Cons</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {model.cons.map((con, index) => (
+                        <li key={index} className="flex items-center text-gray-700 text-sm">
+                          <span className="text-red-500 mr-2">×</span>
+                          {con}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Right Column - 30% */}
+            <div className="md:col-span-2 space-y-4">
+              {/* Info Cards */}
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Time to Start</div>
+                      <div className="font-semibold text-gray-900">{model.timeToStart}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                      <DollarSign className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Initial Investment</div>
+                      <div className="font-semibold text-gray-900">{model.initialInvestment}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Potential Income</div>
+                      <div className="font-semibold text-green-700">{model.potentialIncome}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                      <TrendingUp className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Scalability</div>
+                      <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getFitCategoryColor ? getFitCategoryColor(model.scalability) : ''}`}>{model.scalability}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                      <Clock className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Time Commitment</div>
+                      <div className="font-semibold text-gray-900">{model.timeCommitment}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Type Fit and Percentage - Only show for logged-in users */}
+              {showFitBadge && fitScore !== undefined && (
+                <Card className="bg-white rounded-2xl shadow-lg">
+                  <CardHeader>
+                    <CardTitle>Your Fit</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Match Score:</span>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-blue-600">
+                            {Math.round(fitScore)}%
+                          </div>
+                        </div>
+                      </div>
+                      {fitCategory && getFitCategoryColor && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Fit Level:</span>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getFitCategoryColor(fitCategory)}`}>
+                            {fitCategory}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Common Tools */}
+              <Card className="bg-white rounded-2xl shadow-lg">
+                <CardHeader>
+                  <CardTitle>Common Tools</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {model.tools.map((tool, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-white border border-gray-200 rounded-full text-sm shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        {tool}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Learn More Link */}
+          <div className="mt-8 pl-4">
+            <button
+              onClick={handleLearnMore}
+              className="text-black hover:text-gray-700 font-medium text-base transition-all duration-300 inline-flex items-center justify-center group"
+            >
+              <span className="font-semibold">Learn More About {model.title}</span>
+              <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
     </motion.div>
   );
 };

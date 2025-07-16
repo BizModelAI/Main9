@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Clock, DollarSign, TrendingUp, CheckCircle, AlertTriangle, Star } from 'lucide-react';
+import { getSafeEmoji } from '../utils/emojiHelper';
 
 interface BusinessCardData {
   id: string;
@@ -15,6 +16,7 @@ interface BusinessCardData {
   cons: string[];
   skills: string[];
   icon: string;
+  emoji?: string;
 }
 
 interface BusinessCardGridProps {
@@ -112,11 +114,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
           <div className="flex items-center flex-1">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mr-4 flex-shrink-0 ${
-              isTopMatch ? 'bg-yellow-500' : 'bg-blue-600'
-            }`}>
-              <span className="text-white text-xl">�</span>
-            </div>
+            <span className="text-3xl mr-4 flex-shrink-0">{getSafeEmoji(business.id)}</span>
             <div className="flex-1 min-w-0">
               <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{business.name}</h3>
               <div className="flex flex-wrap items-center gap-2">

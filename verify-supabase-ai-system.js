@@ -3,7 +3,7 @@ import { db, pool } from "./server/db.js";
 import { sql } from "drizzle-orm";
 
 async function verifySupabaseIntegration() {
-  console.log("� Verifying Database Integration and AI Content System...\n");
+  console.log(" Verifying Database Integration and AI Content System...\n");
 
   try {
     if (!db || !pool) {
@@ -12,7 +12,7 @@ async function verifySupabaseIntegration() {
     }
 
     // 1. Check database connection info
-    console.log("1. �️ Database Connection Analysis:");
+    console.log("1. ️ Database Connection Analysis:");
     console.log("   Database pool exists:", !!pool);
     console.log("   Drizzle ORM connected:", !!db);
 
@@ -23,11 +23,11 @@ async function verifySupabaseIntegration() {
       connectionString.includes(".pooler.supabase");
     console.log(
       "   Database provider:",
-      isSupabase ? "� Supabase" : "� PostgreSQL (Unknown provider)",
+      isSupabase ? " Supabase" : " PostgreSQL (Unknown provider)",
     );
 
     // 2. Test basic database connectivity
-    console.log("\n2. � Database Connectivity Test:");
+    console.log("\n2.  Database Connectivity Test:");
     const basicTest = await db.execute(
       sql`SELECT NOW() as current_time, version() as pg_version`,
     );
@@ -39,7 +39,7 @@ async function verifySupabaseIntegration() {
     );
 
     // 3. Verify quiz_attempts table structure
-    console.log("\n3. � Quiz Attempts Table Verification:");
+    console.log("\n3.  Quiz Attempts Table Verification:");
     const tableInfo = await db.execute(sql`
       SELECT column_name, data_type, is_nullable 
       FROM information_schema.columns 
@@ -52,7 +52,7 @@ async function verifySupabaseIntegration() {
     tableInfo.forEach((col) => {
       const isAiContent = col.column_name === "ai_content";
       console.log(
-        `   ${isAiContent ? "�" : "  "} ${col.column_name} (${col.data_type}) ${col.is_nullable === "YES" ? "nullable" : "not null"}`,
+        `   ${isAiContent ? "" : "  "} ${col.column_name} (${col.data_type}) ${col.is_nullable === "YES" ? "nullable" : "not null"}`,
       );
     });
 
@@ -70,7 +70,7 @@ async function verifySupabaseIntegration() {
     }
 
     // 4. Test AI content functionality with a real quiz attempt
-    console.log("\n4. � AI Content Functionality Test:");
+    console.log("\n4.  AI Content Functionality Test:");
 
     // First, check if we have any quiz attempts
     const existingAttempts = await db.execute(sql`
@@ -142,7 +142,7 @@ async function verifySupabaseIntegration() {
     }
 
     // Test API endpoints through storage layer
-    console.log("\n5. � API Storage Layer Test:");
+    console.log("\n5.  API Storage Layer Test:");
     try {
       const { storage } = await import("./server/storage.js");
 
@@ -171,7 +171,7 @@ async function verifySupabaseIntegration() {
     }
 
     // Clean up test data
-    console.log("\n6. � Cleanup:");
+    console.log("\n6.  Cleanup:");
     await db.execute(sql`
       UPDATE quiz_attempts 
       SET ai_content = NULL 
@@ -180,7 +180,7 @@ async function verifySupabaseIntegration() {
     console.log("   ✅ Test data cleaned up");
 
     // Final summary
-    console.log("\n� VERIFICATION COMPLETE:");
+    console.log("\n VERIFICATION COMPLETE:");
     console.log(
       "   Database Type:",
       isSupabase ? "Supabase PostgreSQL" : "PostgreSQL",

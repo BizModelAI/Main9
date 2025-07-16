@@ -21,6 +21,7 @@ import { QuizData } from "../types";
 import { Link, useNavigate } from "react-router-dom";
 import { businessPaths } from "../data/businessPaths";
 import { QuizAttemptHistory } from "../components/QuizAttemptHistory";
+import { getSafeEmoji } from '../utils/emojiHelper';
 
 const Dashboard: React.FC = () => {
   const { user, getLatestQuizData, isLoading: authLoading } = useAuth();
@@ -93,7 +94,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-4 weeks",
                 potentialIncome: "$2K-15K/month",
                 difficulty: "Beginner",
-                icon: "�",
+                icon: "📱",
               },
               "affiliate-marketing": {
                 id: "affiliate-marketing",
@@ -103,7 +104,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "3-6 months",
                 potentialIncome: "$100-10K+/month",
                 difficulty: "Easy",
-                icon: "�",
+                icon: "💰",
               },
               freelancing: {
                 id: "freelancing",
@@ -113,7 +114,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "1-2 weeks",
                 potentialIncome: "$500-8K/month",
                 difficulty: "Easy",
-                icon: "�",
+                icon: "💼",
               },
               "e-commerce": {
                 id: "e-commerce-dropshipping",
@@ -122,7 +123,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-6 months",
                 potentialIncome: "$1K-50K/month",
                 difficulty: "Medium",
-                icon: "�️",
+                icon: "️",
               },
               "virtual-assistant": {
                 id: "virtual-assistant",
@@ -132,7 +133,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "1-3 weeks",
                 potentialIncome: "$300-5K/month",
                 difficulty: "Easy",
-                icon: "�",
+                icon: "",
               },
               "online-tutoring": {
                 id: "online-coaching-consulting",
@@ -142,7 +143,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "4-8 weeks",
                 potentialIncome: "$1K-20K/month",
                 difficulty: "Medium",
-                icon: "�",
+                icon: "",
               },
               "handmade-goods": {
                 id: "print-on-demand",
@@ -152,7 +153,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "6-12 weeks",
                 potentialIncome: "$200-8K/month",
                 difficulty: "Easy",
-                icon: "�",
+                icon: "",
               },
               "youtube-automation": {
                 id: "youtube-automation",
@@ -162,7 +163,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "3-9 months",
                 potentialIncome: "$500-15K/month",
                 difficulty: "Medium",
-                icon: "�",
+                icon: "",
               },
               "local-service": {
                 id: "local-service-arbitrage",
@@ -171,7 +172,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-8 weeks",
                 potentialIncome: "$1K-12K/month",
                 difficulty: "Medium",
-                icon: "�",
+                icon: "",
               },
               "saas-development": {
                 id: "app-saas-development",
@@ -181,7 +182,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "6-18 months",
                 potentialIncome: "$5K-100K+/month",
                 difficulty: "Hard",
-                icon: "�",
+                icon: "",
               },
               "social-media-agency": {
                 id: "social-media-agency",
@@ -191,7 +192,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-6 months",
                 potentialIncome: "$2K-25K/month",
                 difficulty: "Medium",
-                icon: "�",
+                icon: "",
               },
               copywriting: {
                 id: "copywriting",
@@ -211,7 +212,7 @@ const Dashboard: React.FC = () => {
               timeToProfit: "2-6 months",
               potentialIncome: "$1K-10K/month",
               difficulty: "Medium",
-              icon: "�",
+              icon: "",
             };
 
             return {
@@ -284,67 +285,94 @@ const Dashboard: React.FC = () => {
   // Function to get default business models as fallback
   const getDefaultBusinessModels = () => [
     {
-      id: "content-creation-ugc",
+      id: "content-creation",
       name: "Content Creation & UGC",
-      description:
-        "Create engaging content and user-generated content for brands",
-      fitScore: 75,
+      description: "Create engaging content for brands and platforms",
+      fitScore: 85,
       timeToProfit: "2-4 weeks",
       potentialIncome: "$2K-15K/month",
       difficulty: "Beginner",
-      icon: "�",
+      icon: "📱",
     },
     {
       id: "affiliate-marketing",
       name: "Affiliate Marketing",
-      description:
-        "Promote other people's products and earn commission on sales",
-      fitScore: 70,
+      description: "Promote products and earn commission on sales",
+      fitScore: 78,
       timeToProfit: "3-6 months",
       potentialIncome: "$100-10K+/month",
       difficulty: "Easy",
-      icon: "�",
+      icon: "💰",
     },
     {
       id: "freelancing",
       name: "Freelancing",
-      description:
-        "Offer your skills and services to clients on a project basis",
-      fitScore: 68,
+      description: "Offer your skills and services to clients",
+      fitScore: 75,
       timeToProfit: "1-2 weeks",
       potentialIncome: "$500-8K/month",
       difficulty: "Easy",
-      icon: "�",
+      icon: "💼",
     },
     {
-      id: "e-commerce-dropshipping",
-      name: "E-commerce / Dropshipping",
-      description: "Sell products online without holding inventory",
-      fitScore: 65,
-      timeToProfit: "2-6 months",
+      id: "e-commerce",
+      name: "E-commerce Brand",
+      description: "Build and sell products online",
+      fitScore: 72,
+      timeToProfit: "3-9 months",
       potentialIncome: "$1K-50K/month",
       difficulty: "Medium",
-      icon: "�",
+      icon: "🛍️",
     },
     {
-      id: "virtual-assistant",
-      name: "Virtual Assistant",
-      description: "Provide administrative support to businesses remotely",
-      fitScore: 60,
-      timeToProfit: "1-3 weeks",
-      potentialIncome: "$300-5K/month",
-      difficulty: "Easy",
-      icon: "�",
-    },
-    {
-      id: "online-coaching-consulting",
-      name: "Online Coaching & Consulting",
-      description: "Share your expertise through 1-on-1 coaching or consulting",
-      fitScore: 58,
-      timeToProfit: "4-8 weeks",
-      potentialIncome: "$1K-20K/month",
+      id: "youtube-automation",
+      name: "YouTube Automation",
+      description: "Create and monetize YouTube channels",
+      fitScore: 68,
+      timeToProfit: "3-9 months",
+      potentialIncome: "$500-15K/month",
       difficulty: "Medium",
-      icon: "�",
+      icon: "📺",
+    },
+    {
+      id: "local-service-arbitrage",
+      name: "Local Service Arbitrage",
+      description: "Connect customers with local service providers",
+      fitScore: 65,
+      timeToProfit: "2-8 weeks",
+      potentialIncome: "$1K-12K/month",
+      difficulty: "Medium",
+      icon: "🎯",
+    },
+    {
+      id: "saas-development",
+      name: "SaaS Development",
+      description: "Build and sell software solutions",
+      fitScore: 62,
+      timeToProfit: "6-18 months",
+      potentialIncome: "$5K-100K+/month",
+      difficulty: "Hard",
+      icon: "💻",
+    },
+    {
+      id: "social-media-agency",
+      name: "Social Media Agency",
+      description: "Manage social media for businesses",
+      fitScore: 58,
+      timeToProfit: "2-6 months",
+      potentialIncome: "$2K-20K/month",
+      difficulty: "Medium",
+      icon: "👥",
+    },
+    {
+      id: "ai-marketing-agency",
+      name: "AI Marketing Agency",
+      description: "Leverage AI tools for marketing services",
+      fitScore: 55,
+      timeToProfit: "3-8 months",
+      potentialIncome: "$5K-50K+/month",
+      difficulty: "Hard",
+      icon: "🧠",
     },
     {
       id: "print-on-demand",
@@ -354,7 +382,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "6-12 weeks",
       potentialIncome: "$200-8K/month",
       difficulty: "Easy",
-      icon: "�",
+      icon: "🖼️",
     },
     {
       id: "youtube-automation",
@@ -365,7 +393,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-9 months",
       potentialIncome: "$500-15K/month",
       difficulty: "Medium",
-      icon: "�",
+      icon: "📺",
     },
     {
       id: "local-service-arbitrage",
@@ -375,7 +403,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "2-8 weeks",
       potentialIncome: "$1K-12K/month",
       difficulty: "Medium",
-      icon: "�",
+      icon: "🎯",
     },
   ];
 
@@ -697,7 +725,7 @@ const Dashboard: React.FC = () => {
 
                       <div className="flex items-start mb-3 sm:mb-4 md:mb-4 lg:mb-3">
                         <div className="text-3xl sm:text-4xl md:text-4xl lg:text-3xl mr-3 sm:mr-4 md:mr-4 lg:mr-3 flex-shrink-0">
-                          {model.icon}
+                          {getSafeEmoji(model.id)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg sm:text-xl md:text-xl lg:text-lg font-bold text-gray-900 mb-2 sm:mb-3 md:mb-3 lg:mb-2 leading-tight">
@@ -824,7 +852,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-                Welcome back, {user?.name?.split(" ")[0]}! �
+                Welcome back, {user?.name?.split(" ")[0]}! 
               </h1>
               <p className="text-xl text-gray-600">
                 Ready to take the next step in your entrepreneurial journey?
@@ -901,7 +929,7 @@ const Dashboard: React.FC = () => {
                     {/* Hide emoji on mobile, show on desktop */}
                     <div className="hidden md:flex w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl items-center justify-center mr-4">
                       <span className="text-3xl">
-                        {selectedBusinessModel.icon}
+                        {getSafeEmoji(selectedBusinessModel.id)}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">

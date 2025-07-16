@@ -52,6 +52,7 @@ import {
 } from "../data/businessTools";
 import { IncomeProjectionChart } from "./IncomeProjectionChart";
 import { renderMarkdownContent } from "../utils/markdownUtils";
+import { getSafeEmoji } from '../utils/emojiHelper';
 
 // Generate psychological fit description based on fit category
 const getPsychologicalFitDescription = (
@@ -663,7 +664,7 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
                 {/* Business Title */}
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
                   <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    {business.name || business.title}
+                    {(getSafeEmoji(business.id) || '💼') + ' ' + (business.name || business.title)}
                   </span>
                 </h1>
 

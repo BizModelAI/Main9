@@ -98,7 +98,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       setIsGeneratingInsights(true);
 
       console.log(
-        "🧠 QuizCompletionLoading: Making OpenAI API call for Results preview",
+        " QuizCompletionLoading: Making OpenAI API call for Results preview",
       );
 
       // First generate business paths

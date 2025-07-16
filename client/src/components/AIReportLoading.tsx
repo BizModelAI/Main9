@@ -132,17 +132,17 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
   // Clear any potentially stuck state on component mount and handle mobile detection
   useEffect(() => {
     console.log(
-      "� AIReportLoading component mounted, clearing any stuck state",
+      " AIReportLoading component mounted, clearing any stuck state",
     );
-    console.log("� Mobile detection:", isMobile);
+    console.log(" Mobile detection:", isMobile);
     localStorage.removeItem("ai-generation-in-progress");
     localStorage.removeItem("ai-generation-timestamp");
 
     // Mobile vs desktop detection
     if (isMobile) {
-      console.log("� Mobile detected - auto-cycling cards");
+      console.log(" Mobile detected - auto-cycling cards");
     } else {
-      console.log("� Desktop detected - showing all cards");
+      console.log(" Desktop detected - showing all cards");
     }
   }, [isMobile]);
 
@@ -614,18 +614,18 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           const timeSinceFlag = currentTime - parseInt(flagTimestamp);
           if (timeSinceFlag > 120000) {
             // 2 minutes
-            console.log("� Clearing stuck AI generation flag");
+            console.log(" Clearing stuck AI generation flag");
             localStorage.removeItem("ai-generation-in-progress");
             localStorage.removeItem("ai-generation-timestamp");
           } else {
             console.log(
-              "� AI generation already in progress, skipping duplicate call",
+              " AI generation already in progress, skipping duplicate call",
             );
             return;
           }
         } else if (aiGenerationInProgress === "true") {
           console.log(
-            "� AI generation already in progress (no timestamp), skipping duplicate call",
+            " AI generation already in progress (no timestamp), skipping duplicate call",
           );
           return;
         }
@@ -759,7 +759,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
           // Step 3: Generate AI insights (SINGLE API CALL)
           const step3Result = await executeStep(2, async () => {
-            console.log("� Starting AI insights generation (single call)");
+            console.log(" Starting AI insights generation (single call)");
             console.log("Quiz data being used:", {
               mainMotivation: activeQuizData.mainMotivation,
               successIncomeGoal: activeQuizData.successIncomeGoal,
@@ -782,7 +782,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
             // Make PREVIEW-ONLY API call for quiz loading phase
             try {
               console.log(
-                "� Generating PREVIEW insights ONLY during quiz loading phase (no full report data)",
+                " Generating PREVIEW insights ONLY during quiz loading phase (no full report data)",
               );
               const previewData = await aiService.generateResultsPreview(
                 activeQuizData,
@@ -886,7 +886,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           // Step 5: Store placeholder data for business descriptions (will be generated in full-report-loading)
           const step5Result = await executeStep(4, async () => {
             console.log(
-              "� Skipping business fit/avoid descriptions - will be generated in full-report-loading",
+              " Skipping business fit/avoid descriptions - will be generated in full-report-loading",
             );
             return {
               businessFitDescriptions: {}, // Empty - will be generated later
@@ -1332,7 +1332,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="flex items-start">
-              <div className="text-xl mr-3">�</div>
+              <div className="text-xl mr-3"></div>
               <div>
                 <p className="text-sm text-gray-600">
                   Our AI analyzes over 50 different personality traits and
@@ -1341,7 +1341,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
               </div>
             </div>
             <div className="flex items-start">
-              <div className="text-xl mr-3">�</div>
+              <div className="text-xl mr-3"></div>
               <div>
                 <p className="text-sm text-gray-600">
                   Your personalized report is unique to you - no two reports are

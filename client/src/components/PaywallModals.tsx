@@ -59,7 +59,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             {
               content: (
                 <>
-                  <strong>Step-by-Step Launch Plans</strong> � no fluff, just
+                  <strong>Step-by-Step Launch Plans</strong>  no fluff, just
                   execution
                 </>
               ),
@@ -224,7 +224,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] overflow-y-auto"
         onClick={onClose}
       >
         <motion.div
@@ -343,7 +343,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                     onClick={onUnlock}
                     className="w-full bg-gray-600 text-white py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors text-sm"
                   >
-                    � DEV: Bypass Payment (Remove in Prod)
+                     DEV: Bypass Payment (Remove in Prod)
                   </button>
                 </motion.div>
               )}
@@ -356,7 +356,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
               className="text-center mt-6"
             >
               <p className="text-sm text-gray-500">
-                � One-time payment • Instant access • 30-day guarantee
+                 One-time payment • Instant access • 30-day guarantee
               </p>
             </motion.div>
           </div>

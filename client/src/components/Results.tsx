@@ -53,6 +53,7 @@ import { ReportUnlockPaywall } from "./ReportUnlockPaywall";
 import { useReportUnlock } from "../hooks/useReportUnlock";
 import EmailResultsModal from "./EmailResultsModal";
 import { reportViewManager } from "../utils/reportViewManager";
+import { businessPaths } from "../../../shared/businessPaths";
 
 // Helper function to generate 2-sentence descriptions for business models
 const getBusinessModelDescription = (
@@ -198,7 +199,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     console.log("Results component received quizData:", quizData);
 
     // Force clear ALL AI caches to ensure fresh and accurate results
-    console.log("🧹 Force clearing all AI caches for fresh quiz results...");
+    console.log(" Force clearing all AI caches for fresh quiz results...");
 
     // Clear AI cache manager caches
     aiCacheManager.clearAllCache();
@@ -263,80 +264,86 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     );
 
     // Convert to BusinessPath format for compatibility
-    const convertedPaths: BusinessPath[] = advancedScores.map((score) => ({
-      id: score.id,
-      name: score.name,
-      description: getBusinessModelDescription(score.id, score.name),
-      detailedDescription: `${score.name} with ${score.score}% compatibility`,
-      fitScore: score.score,
-      difficulty:
-        score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
-      timeToProfit:
-        score.score >= 80
-          ? "1-3 months"
-          : score.score >= 60
-            ? "3-6 months"
-            : "6+ months",
-      startupCost:
-        score.score >= 70
-          ? "$0-500"
-          : score.score >= 50
-            ? "$500-2000"
-            : "$2000+",
-      potentialIncome:
-        score.score >= 80
-          ? "$3K-10K+/month"
-          : score.score >= 60
-            ? "$1K-5K/month"
-            : "$500-2K/month",
-      pros: [
-        `${score.score}% compatibility match`,
-        `${score.category} for your profile`,
-        "Personalized recommendations",
-      ],
-      cons:
-        score.score < 70
-          ? ["Lower compatibility score", "May require skill development"]
-          : ["Minor adjustments needed"],
-      tools: [
-        "Standard business tools",
-        "Communication platforms",
-        "Analytics tools",
-      ],
-      skills: ["Basic business skills", "Communication", "Organization"],
-      icon: "💼",
-      marketSize: "Large",
-      averageIncome: {
-        beginner: "$1K-3K",
-        intermediate: "$3K-8K",
-        advanced: "$8K-20K+",
-      },
-      userStruggles: ["Getting started", "Finding clients", "Scaling up"],
-      solutions: [
-        "Step-by-step guidance",
-        "Proven frameworks",
-        "Community support",
-      ],
-      bestFitPersonality: ["Motivated", "Organized", "Goal-oriented"],
-      resources: {
-        platforms: ["LinkedIn", "Website", "Social Media"],
-        learning: ["Online courses", "Books", "Mentorship"],
-        tools: ["CRM", "Analytics", "Communication"],
-      },
-      actionPlan: {
-        phase1: [
-          "Setup basic infrastructure",
-          "Define target market",
-          "Create initial offerings",
+    const convertedPaths: BusinessPath[] = advancedScores.map((score) => {
+      // Find the corresponding business path data
+      const businessPathData = businessPaths.find(bp => bp.id === score.id);
+      
+      return {
+        id: score.id,
+        name: score.name,
+        description: getBusinessModelDescription(score.id, score.name),
+        detailedDescription: `${score.name} with ${score.score}% compatibility`,
+        fitScore: score.score,
+        difficulty:
+          score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
+        timeToProfit:
+          score.score >= 80
+            ? "1-3 months"
+            : score.score >= 60
+              ? "3-6 months"
+              : "6+ months",
+        startupCost:
+          score.score >= 70
+            ? "$0-500"
+            : score.score >= 50
+              ? "$500-2000"
+              : "$2000+",
+        potentialIncome:
+          score.score >= 80
+            ? "$3K-10K+/month"
+            : score.score >= 60
+              ? "$1K-5K/month"
+              : "$500-2K/month",
+        pros: businessPathData?.pros || [
+          `${score.score}% compatibility match`,
+          `${score.category} for your profile`,
+          "Personalized recommendations",
         ],
-        phase2: [
-          "Launch marketing campaigns",
-          "Build client base",
-          "Optimize processes",
+        cons: businessPathData?.cons || 
+          score.score < 70
+            ? ["Lower compatibility score", "May require skill development"]
+            : ["Minor adjustments needed"],
+        tools: businessPathData?.tools || [
+          "Standard business tools",
+          "Communication platforms",
+          "Analytics tools",
         ],
-        phase3: ["Scale operations", "Expand services", "Build team"],
-      },
-    }));
+        skills: businessPathData?.skills || ["Basic business skills", "Communication", "Organization"],
+        icon: businessPathData?.icon || "",
+        emoji: businessPathData?.emoji || "💼",
+        marketSize: businessPathData?.marketSize || "Large",
+        averageIncome: businessPathData?.averageIncome || {
+          beginner: "$1K-3K",
+          intermediate: "$3K-8K",
+          advanced: "$8K-20K+",
+        },
+        userStruggles: businessPathData?.userStruggles || ["Getting started", "Finding clients", "Scaling up"],
+        solutions: businessPathData?.solutions || [
+          "Step-by-step guidance",
+          "Proven frameworks",
+          "Community support",
+        ],
+        bestFitPersonality: businessPathData?.bestFitPersonality || ["Motivated", "Organized", "Goal-oriented"],
+        resources: businessPathData?.resources || {
+          platforms: ["LinkedIn", "Website", "Social Media"],
+          learning: ["Online courses", "Books", "Mentorship"],
+          tools: ["CRM", "Analytics", "Communication"],
+        },
+        actionPlan: businessPathData?.actionPlan || {
+          phase1: [
+            "Setup basic infrastructure",
+            "Define target market",
+            "Create initial offerings",
+          ],
+          phase2: [
+            "Launch marketing campaigns",
+            "Build client base",
+            "Optimize processes",
+          ],
+          phase3: ["Scale operations", "Expand services", "Build team"],
+        },
+      };
+    });
 
     setPersonalizedPaths(convertedPaths);
 
@@ -347,7 +354,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // This function is no longer used - AI content comes from loading page
   const generateAIContent = async (paths: BusinessPath[]) => {
     console.log(
-      "��️ generateAIContent called but should not be used - AI content comes from loading page",
+      "️ generateAIContent called but should not be used - AI content comes from loading page",
     );
   };
 
@@ -370,17 +377,16 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
   // Use AI content generated during quiz-loading page
   useEffect(() => {
+    // Only read AI insights from localStorage, do NOT clear it here
     if (personalizedPaths.length > 0) {
-      // Check for AI data generated during quiz-loading
       const cachedAIData = localStorage.getItem("quiz-completion-ai-insights");
-
       if (cachedAIData) {
         try {
           const parsedData = JSON.parse(cachedAIData);
-          const { insights, analysis, complete, error } = parsedData;
-
-          if (complete && !error && insights) {
-            console.log("✅ Using AI content generated during quiz-loading");
+          const { insights, analysis, complete, error, timestamp } = parsedData;
+          // Only use if recent (within 10 minutes)
+          const isRecent = Date.now() - timestamp < 10 * 60 * 1000;
+          if (complete && !error && insights && isRecent) {
             setAiInsights(insights);
             if (analysis) {
               setAiAnalysis(analysis);
@@ -394,9 +400,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           console.error("Error parsing AI data from quiz-loading:", error);
         }
       }
-
-      // Fallback only if no AI data from quiz-loading
-      console.log("⚠️ No AI data from quiz-loading, using fallback content");
+      // Fallback only if no valid AI data from quiz-loading
       const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
       const fallbackAnalysis = generateFallbackAnalysis();
       setAiInsights(fallbackInsights);
@@ -1078,8 +1082,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                 <div className="absolute inset-0 bg-black/10"></div>
                 <div className="relative">
                   <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mr-4">
-                      <Sparkles className="h-6 w-6 text-white" />
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mr-4 bg-yellow-500">
+                      <span className="text-white text-xl">{personalizedPaths[0]?.emoji || '💼'}</span>
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold">
@@ -1191,7 +1195,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 </div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2">💰</div>
+                                <div className="text-2xl mb-2"></div>
                                 <div className="text-xs text-blue-200 mb-1">
                                   Initial Investment
                                 </div>
@@ -1201,7 +1205,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 </div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2">📈</div>
+                                <div className="text-2xl mb-2"></div>
                                 <div className="text-xs text-blue-200 mb-1">
                                   Potential Income
                                 </div>
@@ -1211,7 +1215,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 </div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2">🕒</div>
+                                <div className="text-2xl mb-2"></div>
                                 <div className="text-xs text-blue-200 mb-1">
                                   Time Commitment
                                 </div>
@@ -1310,7 +1314,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 {/* Column 1 */}
                                 <div className="space-y-6">
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">🧠</div>
+                                    <div className="text-3xl mt-1"></div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Your Business Blueprint
@@ -1338,7 +1342,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">���</div>
+                                    <div className="text-3xl mt-1"></div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Step-by-Step Launch Guidance
@@ -1355,7 +1359,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 {/* Column 2 */}
                                 <div className="space-y-6">
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">💪</div>
+                                    <div className="text-3xl mt-1"></div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Your Strengths & Blind Spots
@@ -1369,7 +1373,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">📊</div>
+                                    <div className="text-3xl mt-1"></div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Income Potential & Market Fit
@@ -1383,7 +1387,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">🛠</div>
+                                    <div className="text-3xl mt-1"></div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Skills You Need to Succeed
@@ -1515,7 +1519,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                             index === 0 ? "bg-yellow-500" : "bg-blue-600"
                           }`}
                         >
-                          <IconComponent className="h-5 w-5 text-white" />
+                          <span className="text-white text-xl">{path.emoji || '💼'}</span>
                         </div>
                         <div>
                           <h3 className="text-xl font-bold text-gray-900">
@@ -1656,7 +1660,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       <div className="flex-1 md:pr-6 mb-6 md:mb-0">
                         <div className="flex items-center mb-4">
                           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mr-4 bg-yellow-500">
-                            <IconComponent className="h-6 w-6 text-white" />
+                            <span className="text-white text-xl">{path.emoji || '💼'}</span>
                           </div>
                           <div>
                             <h3 className="text-2xl font-bold text-gray-900">
