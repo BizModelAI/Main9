@@ -63,12 +63,12 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
         const hasQuiz = !!quizData;
         console.log("PaywallContext: Quiz data found:", hasQuiz);
 
-        // In pure pay-per-report model, users don't need global access
-        // They get access per quiz/report unlock
+        // For authenticated users who have completed a quiz, give them access
+        // This prevents blocking existing users who have already paid
         console.log(
-          "PaywallContext: Pure pay-per-report model - no global access needed",
+          "PaywallContext: Authenticated user with quiz data - granting access",
         );
-        setHasUnlockedAnalysis(false);
+        setHasUnlockedAnalysis(hasQuiz);
 
         // For authenticated users, always assume they have completed the quiz
         // This handles existing users and prevents access issues
