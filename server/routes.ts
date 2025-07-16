@@ -625,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         res.json({
           canRetake: true, // Everyone can always retake
           attemptsCount,
-          hasAccessPass: false, // No longer used
+
           quizRetakesRemaining: 999, // Unlimited for everyone
           totalQuizRetakesUsed: 0, // Not used in new system, always 0
           isFirstQuiz,
