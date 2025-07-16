@@ -501,7 +501,7 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
 
       <div className="text-center">
         <p className="text-xs text-gray-500">
-          � Secured by Stripe & PayPal • Your payment details are never stored
+          🔒 Secured by Stripe & PayPal • Your payment details are never stored
           on our servers
         </p>
       </div>
