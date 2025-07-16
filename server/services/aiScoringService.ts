@@ -10,16 +10,44 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
-// Simple rate limiting for concurrent requests
+// Memory-safe rate limiting for concurrent requests
 class RateLimiter {
   private requests: number[] = [];
   private readonly maxRequests = 5; // Max requests per minute to avoid rate limits
   private readonly windowMs = 60000; // 1 minute window
+  private readonly maxHistorySize = 100; // Prevent memory bloat
+  private readonly cleanupInterval = 5 * 60 * 1000; // Clean up every 5 minutes
+  private cleanupTimer: NodeJS.Timeout;
+
+  constructor() {
+    // Periodic cleanup to prevent memory leaks
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup();
+    }, this.cleanupInterval);
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
+    const oldSize = this.requests.length;
+    this.requests = this.requests.filter((time) => now - time < this.windowMs);
+
+    // Hard limit on array size to prevent memory bloat
+    if (this.requests.length > this.maxHistorySize) {
+      this.requests = this.requests.slice(-this.maxHistorySize);
+    }
+
+    if (oldSize > this.requests.length) {
+      console.log(
+        `🧹 AI Rate limiter cleanup: removed ${oldSize - this.requests.length} expired entries`,
+      );
+    }
+  }
 
   async waitForSlot(): Promise<void> {
     const now = Date.now();
-    // Remove old requests outside the window
-    this.requests = this.requests.filter((time) => now - time < this.windowMs);
+
+    // Clean up old requests
+    this.cleanup();
 
     if (this.requests.length >= this.maxRequests) {
       // Wait until we can make another request
@@ -28,11 +56,13 @@ class RateLimiter {
         this.windowMs - (now - oldestRequest) + 100,
         10000,
       ); // Cap wait at 10 seconds
-      console.log(`⏳ Rate limit hit, waiting ${waitTime}ms for slot`);
+      console.log(`⏳ AI rate limit hit, waiting ${waitTime}ms for slot`);
 
       if (waitTime > 30000) {
         // If we'd wait more than 30 seconds, just reject to avoid timeout
-        throw new Error("Rate limit exceeded - too many concurrent requests");
+        throw new Error(
+          "AI rate limit exceeded - too many concurrent requests",
+        );
       }
 
       await new Promise((resolve) => setTimeout(resolve, waitTime));
@@ -40,6 +70,13 @@ class RateLimiter {
     }
 
     this.requests.push(now);
+  }
+
+  // Clean shutdown method
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
   }
 }
 
