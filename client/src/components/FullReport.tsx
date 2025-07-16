@@ -779,11 +779,12 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         console.error("Error generating business avoid descriptions:", error);
         // Set fallback descriptions
         const fallbackDescriptions: { [key: string]: string } = {};
-        const { calculateAdvancedBusinessModelMatches } = await import(
-          "../utils/advancedScoringAlgorithm"
+        const { businessModelService } = await import(
+          "../utils/businessModelService"
         );
-        const allMatches = calculateAdvancedBusinessModelMatches(quizData);
-        const bottomThree = allMatches.slice(-3).reverse();
+        const allMatches =
+          businessModelService.getBusinessModelMatches(quizData);
+        const bottomThree = businessModelService.getBottomMatches(quizData, 3);
 
         bottomThree.forEach((match) => {
           fallbackDescriptions[match.id] =
