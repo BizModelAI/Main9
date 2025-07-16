@@ -15,7 +15,7 @@
     "verify-migration": "tsx scripts/verify-migration.js",
     "fix-production-db": "tsx scripts/fix-production-db.js",
     "cleanup-expired-data": "tsx scripts/cleanup-expired-data.ts",
-    "add-quiz-attempt-expiration": "tsx scripts/add-quiz-attempt-expiration.ts"
+    "remove-quiz-attempt-expiration": "tsx scripts/remove-quiz-attempt-expiration.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
