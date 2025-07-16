@@ -364,25 +364,24 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           cachedContent.analysis,
         );
       } else {
-        console.log("⚠️ No cached analysis found, generating on-demand");
+        console.log("⚠️ No cached preview data found, using fallback content");
       }
 
-      // If we have insights but no analysis, use insights and generate analysis
+      // If we have insights but no analysis, use insights and fallback analysis
       if (cachedContent.insights && !cachedContent.analysis) {
-        console.log("📝 Using cached insights, generating analysis on-demand");
+        console.log("📝 Using cached insights with fallback analysis");
         setAiInsights(cachedContent.insights);
-        setIsGeneratingAI(true);
-        await generateFullAIContent(personalizedPaths);
+        setAiAnalysis(generateFallbackAnalysis());
         setIsGeneratingAI(false);
         return;
       }
 
-      // If no cached data at all, use fallback and generate analysis
+      // If no cached data at all, use fallback content only
       const topPath = personalizedPaths[0];
       const fallbackInsights = generateFallbackInsights(topPath);
+      const fallbackAnalysis = generateFallbackAnalysis();
       setAiInsights(fallbackInsights);
-      setIsGeneratingAI(true);
-      await generateFullAIContent(personalizedPaths);
+      setAiAnalysis(fallbackAnalysis);
       setIsGeneratingAI(false);
     } catch (error) {
       console.error("Error loading cached preview data:", error);
