@@ -222,10 +222,10 @@ export class PDFService {
                             <div>
                                 <h3 class="font-semibold text-gray-900">Your Profile</h3>
                                 <div class="grid grid-cols-2 gap-4 mt-2 text-sm">
-                                    <div><span class="font-medium">Income Goal:</span> $${quizData.successIncomeGoal?.toLocaleString()}/month</div>
-                                    <div><span class="font-medium">Timeline:</span> ${quizData.firstIncomeTimeline?.replace("-", " ")}</div>
-                                    <div><span class="font-medium">Investment:</span> $${quizData.upfrontInvestment?.toLocaleString()}</div>
-                                    <div><span class="font-medium">Time Commitment:</span> ${quizData.weeklyTimeCommitment} hours/week</div>
+                                                                        <div><span class="font-medium">Income Goal:</span> $${formatCurrency(quizData.successIncomeGoal)}/month</div>
+                                                                        <div><span class="font-medium">Timeline:</span> ${formatTimeline(quizData.firstIncomeTimeline)}</div>
+                                                                        <div><span class="font-medium">Investment:</span> $${formatCurrency(quizData.upfrontInvestment)}</div>
+                                                                        <div><span class="font-medium">Time Commitment:</span> ${formatCurrency(quizData.weeklyTimeCommitment)} hours/week</div>
                                 </div>
                             </div>
                             
