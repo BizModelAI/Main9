@@ -1359,7 +1359,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         const {
           userIdentifier,
           type: paymentType,
-          retakesGranted,
           isTemporaryUser,
           sessionId,
         } = metadata;
