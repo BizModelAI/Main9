@@ -35,9 +35,22 @@ export const quizAttempts = pgTable("quiz_attempts", {
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   quizData: jsonb("quiz_data").notNull(),
-  aiContent: jsonb("ai_content"), // Store generated AI insights, recommendations, etc.
+  aiContent: jsonb("ai_content"), // DEPRECATED: Use ai_content table instead
   completedAt: timestamp("completed_at").defaultNow().notNull(),
   // Note: No expiresAt needed - quiz attempts expire when user expires via CASCADE delete
+});
+
+// AI Content table - stores all AI-generated content separately for better performance and deduplication
+export const aiContent = pgTable("ai_content", {
+  id: serial("id").primaryKey(),
+  quizAttemptId: integer("quiz_attempt_id")
+    .references(() => quizAttempts.id, { onDelete: "cascade" })
+    .notNull(),
+  contentType: varchar("content_type", { length: 100 }).notNull(), // "preview", "fullReport", "model_BusinessName", "characteristics", etc.
+  content: jsonb("content").notNull(), // No artificial size limits - let PostgreSQL handle it
+  contentHash: varchar("content_hash", { length: 64 }), // SHA-256 hash for deduplication
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Payments table to track individual quiz payments
