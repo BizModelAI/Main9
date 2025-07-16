@@ -719,15 +719,16 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
       try {
         setIsLoadingDescriptions(true);
 
-        const { calculateAdvancedBusinessModelMatches } = await import(
-          "../utils/advancedScoringAlgorithm"
+        const { businessModelService } = await import(
+          "../utils/businessModelService"
         );
         const { businessPaths } = await import("../../../shared/businessPaths");
 
-        const allMatches = calculateAdvancedBusinessModelMatches(quizData);
+        const allMatches =
+          businessModelService.getBusinessModelMatches(quizData);
 
         // Get the bottom 3 business models (worst matches)
-        const bottomThree = allMatches.slice(-3).reverse(); // reverse to get worst-first order
+        const bottomThree = businessModelService.getBottomMatches(quizData, 3);
 
         const businessMatches = bottomThree.map((match) => {
           const pathData = businessPaths.find((path) => path.id === match.id);
