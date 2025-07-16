@@ -183,7 +183,7 @@ export class PDFService {
                 <div class="max-w-4xl mx-auto">
                     <div class="text-center mb-6">
                         <h1 class="text-4xl font-bold mb-2">Business Path Analysis Report</h1>
-                        <p class="text-xl opacity-90">Personalized Recommendations for ${userEmail?.split("@")[0] || "User"}</p>
+                                                <p class="text-xl opacity-90">Personalized Recommendations for ${safeUserName}</p>
                         <p class="text-sm opacity-75 mt-2">Generated on ${new Date().toLocaleDateString()}</p>
                     </div>
                     
