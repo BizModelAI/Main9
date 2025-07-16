@@ -24,11 +24,7 @@ interface CachedAIData {
 
 export class AICacheManager {
   private static instance: AICacheManager;
-  private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-  private static readonly CACHE_KEY_PREFIX = "ai-cache-";
-  private static readonly INSIGHTS_KEY = "ai-insights";
-  private static readonly ANALYSIS_KEY = "ai-analysis";
-  private static readonly CACHE_VERSION = "v2.1"; // Increment when prompts change
+  // CACHE DISABLED - All methods return null/false to force fresh data generation
 
   private constructor() {}
 
