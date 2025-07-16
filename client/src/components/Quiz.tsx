@@ -655,9 +655,6 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
     aiCacheManager.forceResetCache();
 
     // Clear business model matches cache
-    const { businessModelService } = await import(
-      "../utils/businessModelService"
-    );
     businessModelService.clearCache();
 
     // Clear any remaining localStorage AI cache keys from previous sessions
