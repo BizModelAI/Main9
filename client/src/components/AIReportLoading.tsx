@@ -930,7 +930,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
               );
               return { finalizedData: true };
             } else {
-              console.log("⚠️ No AI insights found, storing fallback data");
+              console.log("No AI insights found, storing fallback data");
 
               // Store fallback indicator
               const aiData = {
