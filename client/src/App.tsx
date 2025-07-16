@@ -506,7 +506,7 @@ const AIReportLoadingWrapper: React.FC<{
 };
 
 // Comprehensive cache clearing function for new quiz sessions
-const clearQuizRelatedCache = () => {
+const clearQuizRelatedCache = async () => {
   console.log("🧹 Clearing all quiz-related cache for new session");
 
   // Quiz data
