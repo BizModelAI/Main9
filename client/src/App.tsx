@@ -240,7 +240,7 @@ function MainAppContent() {
   };
 
   const navigate = useNavigate();
-  const location = window.location.pathname;
+  const location = useLocation();
 
   if (location === "/quiz") {
     return (
