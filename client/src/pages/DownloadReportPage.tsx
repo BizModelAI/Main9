@@ -115,6 +115,7 @@ const DownloadReportPage: React.FC = () => {
             };
 
             // Cache the generated content
+            const aiCacheManager = AICacheManager.getInstance();
             aiCacheManager.cacheAIContent(
               mockQuizData,
               mockPersonalizedInsights,
