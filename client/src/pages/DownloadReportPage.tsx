@@ -118,14 +118,7 @@ const DownloadReportPage: React.FC = () => {
               successPredictors: [], // generatePersonalizedInsights doesn't return successPredictors
             };
 
-            // Cache the generated content
-            const aiCacheManager = AICacheManager.getInstance();
-            aiCacheManager.cacheAIContent(
-              mockQuizData,
-              mockPersonalizedInsights,
-              mockDetailedAnalysis,
-              mockTopBusinessPath,
-            );
+            // Skip caching for mock data (type mismatch between API response and cache structure)
           }
 
           setReportData({
