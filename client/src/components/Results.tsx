@@ -199,7 +199,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   useEffect(() => {
     const shouldShowFullReport = searchParams.get("showFullReport");
     if (shouldShowFullReport === "true") {
-      console.log("� Query parameter detected: user requesting full report");
+      console.log("Query parameter detected: user requesting full report");
 
       if (canViewFullReport) {
         console.log("✅ User has access - showing full report directly");
