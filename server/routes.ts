@@ -2919,6 +2919,20 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP
       `);
 
+        // Create ai_content table if it doesn't exist
+        await storage.ensureDb().execute(sql`
+        CREATE TABLE IF NOT EXISTS ai_content (
+          id SERIAL PRIMARY KEY,
+          quiz_attempt_id INTEGER NOT NULL REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+          content_type VARCHAR(100) NOT NULL,
+          content JSONB NOT NULL,
+          content_hash VARCHAR(64),
+          generated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          UNIQUE(quiz_attempt_id, content_type)
+        )
+      `);
+
         // Mark all existing users as paid
         await storage.ensureDb().execute(sql`
         UPDATE users
