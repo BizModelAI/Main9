@@ -30,8 +30,11 @@ export const PDFReport: React.FC<PDFReportProps> = ({
   quizData,
   userEmail,
 }) => {
-  const paths = generatePersonalizedPaths(quizData);
-  const topThreePaths = paths.slice(0, 3);
+  const matches = businessModelService.getBusinessModelMatches(quizData);
+  const topThreePaths = matches.slice(0, 3).map((match) => {
+    const businessPath = businessPaths.find((path) => path.id === match.id);
+    return { ...businessPath!, fitScore: match.score };
+  });
   const userName = userEmail?.split("@")[0] || "User";
 
   // Calculate trait scores (same as FullReport)
