@@ -219,7 +219,7 @@ ${userProfile}`,
           "fullReport",
         );
         if (existingContent) {
-          console.log("✅ Using existing full report insights from database");
+          console.log("Using existing full report insights from database");
           return existingContent;
         }
       }
