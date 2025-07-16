@@ -649,13 +649,20 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
     localStorage.removeItem("ai-generation-timestamp");
     localStorage.removeItem("congratulationsShown");
 
-    // Clear any AI cache keys from previous sessions
+    // Clear AI service caches (this is the key fix!)
+    const aiCacheManager = AICacheManager.getInstance();
+    aiCacheManager.forceResetCache();
+
+    // Clear any additional AI cache keys from previous sessions
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (
         key &&
-        (key.startsWith("ai-analysis-") ||
+        (key.startsWith("ai_insights_") || // AI service cache keys
+          key.startsWith("preview_") || // Preview cache keys
+          key.startsWith("fullreport_") || // Full report cache keys
+          key.startsWith("ai-analysis-") ||
           key.startsWith("skills-analysis-") ||
           key.startsWith("ai-cache-"))
       ) {
@@ -665,7 +672,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
     keysToRemove.forEach((key) => localStorage.removeItem(key));
 
     console.log(
-      `✅ Cleared ${keysToRemove.length + 8} cache entries for new quiz`,
+      `✅ Cleared AI caches and ${keysToRemove.length + 8} cache entries for new quiz`,
     );
   }, []); // Run only once when component mounts
 
