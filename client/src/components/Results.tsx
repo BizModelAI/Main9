@@ -34,10 +34,7 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
-import {
-  generatePersonalizedPaths,
-  generateAIPersonalizedPaths,
-} from "../utils/quizLogic";
+import { generateAIPersonalizedPaths } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
 import { AIService } from "../utils/aiService";
 import { AICacheManager } from "../utils/aiCacheManager";
