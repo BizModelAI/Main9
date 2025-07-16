@@ -1417,7 +1417,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 </div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2">�</div>
+                                <div className="text-2xl mb-2">💰</div>
                                 <div className="text-xs text-blue-200 mb-1">
                                   Initial Investment
                                 </div>
@@ -1427,7 +1427,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 </div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2">�</div>
+                                <div className="text-2xl mb-2">📈</div>
                                 <div className="text-xs text-blue-200 mb-1">
                                   Potential Income
                                 </div>
@@ -1437,7 +1437,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 </div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2">�</div>
+                                <div className="text-2xl mb-2">🕒</div>
                                 <div className="text-xs text-blue-200 mb-1">
                                   Time Commitment
                                 </div>
