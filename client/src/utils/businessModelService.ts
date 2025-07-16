@@ -29,6 +29,11 @@ export class BusinessModelService {
     return BusinessModelService.instance;
   }
 
+  clearCache(): void {
+    console.log("🧹 Clearing business model cache");
+    this.cache.clear();
+  }
+
   private getCacheKey(quizData: QuizData): string {
     // Create a stable cache key based on quiz data
     return JSON.stringify({
