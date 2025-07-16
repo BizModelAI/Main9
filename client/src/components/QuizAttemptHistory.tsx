@@ -157,7 +157,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
           );
         } else {
           localStorage.removeItem("loadedReportData");
-          console.log(`🗑️ No AI content to store for attempt ${attempt.id}`);
+          console.log(`No AI content to store for attempt ${attempt.id}`);
         }
       } else {
         console.log(
