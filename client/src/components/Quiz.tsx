@@ -654,42 +654,48 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
     // Mark that we've cleared cache for this session
     sessionStorage.setItem("quiz-cache-cleared", currentSession);
 
-    // Clear quiz data from previous sessions
-    localStorage.removeItem("quizData");
-    localStorage.removeItem("hasCompletedQuiz");
-    localStorage.removeItem("currentQuizAttemptId");
-    localStorage.removeItem("loadedReportData");
-    localStorage.removeItem("quiz-completion-ai-insights");
-    localStorage.removeItem("ai-generation-in-progress");
-    localStorage.removeItem("ai-generation-timestamp");
-    localStorage.removeItem("congratulationsShown");
+    try {
+      // Clear quiz data from previous sessions
+      localStorage.removeItem("quizData");
+      localStorage.removeItem("hasCompletedQuiz");
+      localStorage.removeItem("currentQuizAttemptId");
+      localStorage.removeItem("loadedReportData");
+      localStorage.removeItem("quiz-completion-ai-insights");
+      localStorage.removeItem("ai-generation-in-progress");
+      localStorage.removeItem("ai-generation-timestamp");
+      localStorage.removeItem("congratulationsShown");
 
-    // Clear AI service caches (this is the key fix!)
-    const aiCacheManager = AICacheManager.getInstance();
-    aiCacheManager.forceResetCache();
+      // Clear AI service caches (with error handling)
+      const aiCacheManager = AICacheManager.getInstance();
+      aiCacheManager.forceResetCache();
 
-    // Clear any remaining localStorage AI cache keys from previous sessions
-    // Note: AI content is now stored in database, not localStorage
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (
-        key &&
-        (key.startsWith("ai_insights_") || // Legacy AI service cache keys
-          key.startsWith("preview_") || // Legacy preview cache keys
-          key.startsWith("fullreport_") || // Legacy full report cache keys
-          key.startsWith("ai-analysis-") ||
-          key.startsWith("skills-analysis-") ||
-          key.startsWith("ai-cache-"))
-      ) {
-        keysToRemove.push(key);
+      // Clear any remaining localStorage AI cache keys from previous sessions
+      // Note: AI content is now stored in database, not localStorage
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith("ai_insights_") || // Legacy AI service cache keys
+            key.startsWith("preview_") || // Legacy preview cache keys
+            key.startsWith("fullreport_") || // Legacy full report cache keys
+            key.startsWith("ai-analysis-") ||
+            key.startsWith("skills-analysis-") ||
+            key.startsWith("ai-cache-"))
+        ) {
+          keysToRemove.push(key);
+        }
       }
-    }
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
 
-    console.log(
-      `✅ Cleared AI caches and ${keysToRemove.length + 8} legacy cache entries for new quiz (AI content now stored in database)`,
-    );
+      console.log(
+        `✅ Cleared AI caches and ${keysToRemove.length + 8} legacy cache entries for new quiz (AI content now stored in database)`,
+      );
+    } catch (error) {
+      console.error("Error cleaning up AI content:", error);
+      // Continue with quiz initialization even if cache clearing fails
+      console.log("⚠️ Cache clearing failed, but quiz will continue normally");
+    }
   }, []); // Run only once when component mounts
 
   // Debug logging for exit modal state (reduced verbosity for StrictMode)
