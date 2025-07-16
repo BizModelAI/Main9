@@ -784,6 +784,109 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(aiContent.generatedAt));
   }
 
+  // MIGRATION FUNCTION: Move existing JSONB data to new AI content table
+  async migrateAIContentToNewTable(): Promise<{
+    totalAttempts: number;
+    migratedAttempts: number;
+    errors: string[];
+  }> {
+    console.log("🔄 Starting AI content migration from JSONB to new table...");
+
+    const errors: string[] = [];
+    let migratedAttempts = 0;
+
+    // Get all quiz attempts that have AI content in the old JSONB field
+    const attempts = await this.ensureDb()
+      .select({
+        id: quizAttempts.id,
+        aiContent: quizAttempts.aiContent,
+      })
+      .from(quizAttempts)
+      .where(
+        sql`${quizAttempts.aiContent} IS NOT NULL AND ${quizAttempts.aiContent} != 'null'`,
+      );
+
+    console.log(
+      `📊 Found ${attempts.length} quiz attempts with AI content to migrate`,
+    );
+
+    for (const attempt of attempts) {
+      try {
+        if (!attempt.aiContent || typeof attempt.aiContent !== "object") {
+          continue;
+        }
+
+        const aiData = attempt.aiContent as any;
+
+        // Migrate different types of AI content based on structure
+        if (aiData.insights) {
+          await this.saveAIContent(attempt.id, "preview", aiData.insights);
+        }
+
+        if (aiData.personalizedRecommendations || aiData.keyInsights) {
+          await this.saveAIContent(attempt.id, "fullReport", aiData);
+        }
+
+        if (aiData.characteristics && Array.isArray(aiData.characteristics)) {
+          await this.saveAIContent(attempt.id, "characteristics", {
+            characteristics: aiData.characteristics,
+          });
+        }
+
+        // Handle model-specific insights (look for model names in the data)
+        if (aiData.modelFitReason || aiData.successPredictors) {
+          // Try to determine model name from the data or use generic
+          const modelName =
+            aiData.modelName || aiData.businessModel || "unknown";
+          await this.saveAIContent(attempt.id, `model_${modelName}`, aiData);
+        }
+
+        // Handle any other content types that might be structured
+        for (const [key, value] of Object.entries(aiData)) {
+          if (
+            key !== "insights" &&
+            key !== "personalizedRecommendations" &&
+            key !== "keyInsights" &&
+            key !== "characteristics" &&
+            key !== "modelFitReason" &&
+            key !== "successPredictors" &&
+            value &&
+            typeof value === "object"
+          ) {
+            await this.saveAIContent(attempt.id, key, value);
+          }
+        }
+
+        migratedAttempts++;
+
+        if (migratedAttempts % 10 === 0) {
+          console.log(
+            `📈 Migration progress: ${migratedAttempts}/${attempts.length} quiz attempts`,
+          );
+        }
+      } catch (error: any) {
+        const errorMsg = `Failed to migrate quiz attempt ${attempt.id}: ${error.message}`;
+        console.error(errorMsg);
+        errors.push(errorMsg);
+      }
+    }
+
+    console.log(`✅ AI content migration completed!`);
+    console.log(`📊 Total attempts: ${attempts.length}`);
+    console.log(`✅ Successfully migrated: ${migratedAttempts}`);
+    console.log(`❌ Errors: ${errors.length}`);
+
+    if (errors.length > 0) {
+      console.log("❌ Migration errors:", errors);
+    }
+
+    return {
+      totalAttempts: attempts.length,
+      migratedAttempts,
+      errors,
+    };
+  }
+
   // DEPRECATED METHODS (for backward compatibility)
   async saveAIContentToQuizAttempt(
     quizAttemptId: number,
