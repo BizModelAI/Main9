@@ -646,6 +646,16 @@ ${userProfile}`,
 
     return descriptions;
   }
+
+  async generateDetailedAnalysis(
+    quizData: QuizData,
+    topPath: BusinessPath,
+  ): Promise<any> {
+    console.warn(
+      "⚠️ generateDetailedAnalysis is deprecated. Use generatePersonalizedInsights instead.",
+    );
+    return this.generatePersonalizedInsights(quizData, [topPath]);
+  }
 }
 
 // Export singleton instance
