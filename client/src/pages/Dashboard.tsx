@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-6 months",
                 potentialIncome: "$2K-25K/month",
                 difficulty: "Medium",
-                icon: "��",
+                icon: "📚",
               },
               copywriting: {
                 id: "copywriting",
