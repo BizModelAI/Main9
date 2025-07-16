@@ -92,7 +92,7 @@ function getIncomeGoalRange(value: number): string {
 function getTimeCommitmentRange(value: number): string {
   if (value <= 3) return "Less than 5 hours/week";
   if (value <= 7) return "5–10 hours/week";
-  if (value <= 17) return "10–25 hours/week";
+  if (value <= 17) return "10��25 hours/week";
   return "25+ hours/week";
 }
 
@@ -738,14 +738,16 @@ export async function registerRoutes(app: Express): Promise<void> {
     async (req: Request, res: Response) => {
       try {
         const quizAttemptId = parseInt(req.params.quizAttemptId);
-        const { aiContent } = req.body;
+        const { contentType, content, aiContent } = req.body;
         const currentUserId = getUserIdFromRequest(req);
 
         if (!currentUserId) {
           return res.status(401).json({ error: "Not authenticated" });
         }
 
-        if (!aiContent) {
+        // Support both new format (contentType + content) and old format (aiContent)
+        const contentToSave = aiContent || content;
+        if (!contentToSave) {
           return res.status(400).json({ error: "AI content is required" });
         }
 
@@ -759,9 +761,25 @@ export async function registerRoutes(app: Express): Promise<void> {
             .json({ error: "Quiz attempt not found or unauthorized" });
         }
 
-        await storage.saveAIContentToQuizAttempt(quizAttemptId, aiContent);
+        // Get existing AI content or initialize empty object
+        let existingContent = attempt.aiContent || {};
 
-        console.log(`AI content saved for quiz attempt ${quizAttemptId}`);
+        // If using new format, save content by type
+        if (contentType) {
+          existingContent[contentType] = contentToSave;
+        } else {
+          // Old format - replace entire content
+          existingContent = contentToSave;
+        }
+
+        await storage.saveAIContentToQuizAttempt(
+          quizAttemptId,
+          existingContent,
+        );
+
+        console.log(
+          `AI content (${contentType || "full"}) saved for quiz attempt ${quizAttemptId}`,
+        );
         res.json({ success: true, message: "AI content saved successfully" });
       } catch (error) {
         console.error("Error saving AI content:", error);
