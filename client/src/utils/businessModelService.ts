@@ -121,12 +121,12 @@ export class BusinessModelService {
       quizData.successIncomeGoal,
       quizData.weeklyTimeCommitment,
       quizData.techSkillsRating,
-      quizData.riskComfortLevel,
+      quizData.riskComfortLevel || quizData.riskComfort,
       quizData.passionIdentityAlignment,
-      quizData.selfMotivation,
-      quizData.disciplineLevel,
-      quizData.creativityImportance,
-      quizData.leadershipInterest,
+      quizData.selfMotivationLevel || quizData.selfMotivation,
+      quizData.organizationLevel,
+      quizData.creativeWorkEnjoyment,
+      quizData.brandFaceComfort,
       quizData.directCommunicationEnjoyment,
     ];
 
