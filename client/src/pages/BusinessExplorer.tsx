@@ -19,7 +19,7 @@ import {
   generatePersonalizedPaths,
   generateAIPersonalizedPaths,
 } from "../utils/quizLogic";
-import { calculateAdvancedBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { businessModelService } from "../utils/businessModelService";
 
 interface BusinessExplorerProps {
   quizData?: QuizData | null;
