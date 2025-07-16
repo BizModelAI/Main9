@@ -786,8 +786,9 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           "../utils/businessModelService"
         );
         const allMatches =
+          businessModelScores ||
           businessModelService.getBusinessModelMatches(quizData);
-        const bottomThree = businessModelService.getBottomMatches(quizData, 3);
+        const bottomThree = getBottomMatches(3);
 
         bottomThree.forEach((match) => {
           fallbackDescriptions[match.id] =
