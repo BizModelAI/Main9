@@ -774,6 +774,9 @@ export class DatabaseStorage implements IStorage {
 
     // Try to insert, if conflict then update
     try {
+      console.log(
+        `Attempting to insert AI content: ${contentType} for quiz attempt ${quizAttemptId}`,
+      );
       const [result] = await this.ensureDb()
         .insert(aiContent)
         .values({
@@ -785,9 +788,18 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result;
     } catch (error: any) {
+      console.error(`Error inserting AI content: ${error.message}`, {
+        code: error.code,
+        constraint: error.constraint,
+        table: error.table,
+      });
+
       // If unique constraint violation, update existing record
       if (error.code === "23505") {
         // PostgreSQL unique violation
+        console.log(
+          `Updating existing AI content due to unique constraint violation`,
+        );
         const [result] = await this.ensureDb()
           .update(aiContent)
           .set({
@@ -804,6 +816,17 @@ export class DatabaseStorage implements IStorage {
           .returning();
         return result;
       }
+
+      // Check if the error is about missing table
+      if (error.message.includes('relation "ai_content" does not exist')) {
+        console.error(
+          "AI Content table does not exist! Please run the database migration.",
+        );
+        throw new Error(
+          "Database migration required: ai_content table is missing. Please contact support.",
+        );
+      }
+
       throw error;
     }
 
