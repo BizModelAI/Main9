@@ -692,9 +692,11 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
     );
   }, []); // Run only once when component mounts
 
-  // Debug logging for exit modal state
+  // Debug logging for exit modal state (reduced verbosity for StrictMode)
   useEffect(() => {
-    console.log("Exit modal state changed:", showExitModal);
+    if (showExitModal) {
+      console.log("📋 Exit modal opened");
+    }
   }, [showExitModal]);
 
   // Get current round info
