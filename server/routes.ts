@@ -538,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         console.log("✅ AI business fit analysis completed successfully");
         res.json(analysis);
       } catch (error) {
-        console.error("❌ Error in AI business fit analysis:", {
+        console.error("��� Error in AI business fit analysis:", {
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : "No stack trace",
         });
@@ -2934,6 +2934,12 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         ADD COLUMN IF NOT EXISTS is_temporary BOOLEAN DEFAULT FALSE NOT NULL,
         ADD COLUMN IF NOT EXISTS temp_quiz_data JSONB,
         ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP
+      `);
+
+        // Add missing PayPal column to payments table
+        await storage.ensureDb().execute(sql`
+        ALTER TABLE payments
+        ADD COLUMN IF NOT EXISTS paypal_order_id VARCHAR UNIQUE
       `);
 
         // Create ai_content table if it doesn't exist
