@@ -682,6 +682,93 @@ export class DatabaseStorage implements IStorage {
     return user ? true : false;
   }
 
+  // NEW AI CONTENT TABLE METHODS
+  async saveAIContent(
+    quizAttemptId: number,
+    contentType: string,
+    content: any,
+  ): Promise<AiContent> {
+    // Generate content hash for deduplication
+    const crypto = await import("crypto");
+    const contentHash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify(content))
+      .digest("hex");
+
+    // First, check if identical content already exists
+    const [existing] = await this.ensureDb()
+      .select()
+      .from(aiContent)
+      .where(
+        and(
+          eq(aiContent.quizAttemptId, quizAttemptId),
+          eq(aiContent.contentType, contentType),
+          eq(aiContent.contentHash, contentHash),
+        ),
+      );
+
+    if (existing) {
+      console.log(
+        `✅ AI content ${contentType} already exists with same hash, skipping insert`,
+      );
+      return existing;
+    }
+
+    // Insert or update the content
+    const [result] = await this.ensureDb()
+      .insert(aiContent)
+      .values({
+        quizAttemptId,
+        contentType,
+        content,
+        contentHash,
+      })
+      .onConflictDoUpdate({
+        target: [aiContent.quizAttemptId, aiContent.contentType],
+        set: {
+          content,
+          contentHash,
+          generatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    console.log(
+      `✅ AI content saved: ${contentType} for quiz attempt ${quizAttemptId}`,
+    );
+    return result;
+  }
+
+  async getAIContent(
+    quizAttemptId: number,
+    contentType: string,
+  ): Promise<AiContent | null> {
+    const [result] = await this.ensureDb()
+      .select()
+      .from(aiContent)
+      .where(
+        and(
+          eq(aiContent.quizAttemptId, quizAttemptId),
+          eq(aiContent.contentType, contentType),
+        ),
+      )
+      .orderBy(desc(aiContent.generatedAt))
+      .limit(1);
+
+    return result || null;
+  }
+
+  async getAllAIContentForQuizAttempt(
+    quizAttemptId: number,
+  ): Promise<AiContent[]> {
+    return await this.ensureDb()
+      .select()
+      .from(aiContent)
+      .where(eq(aiContent.quizAttemptId, quizAttemptId))
+      .orderBy(desc(aiContent.generatedAt));
+  }
+
+  // DEPRECATED METHODS (for backward compatibility)
   async saveAIContentToQuizAttempt(
     quizAttemptId: number,
     aiContent: any,
