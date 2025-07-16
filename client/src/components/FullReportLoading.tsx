@@ -99,27 +99,81 @@ export default function FullReportLoading({
 
   const generateFullReportData = async () => {
     try {
-      console.log("🔄 Generating full report data with AI");
+      console.log(
+        "🔄 Generating full report data with AI (3 calls for business fit descriptions)",
+      );
 
       // Dynamic import to avoid bundle issues
       const { AIService } = await import("../utils/aiService");
-      const { generateAIPersonalizedPaths } = await import(
-        "../utils/quizLogic"
+      const { businessModelService } = await import(
+        "../utils/businessModelService"
       );
 
       const aiService = AIService.getInstance();
 
-      // Get business paths
-      const paths = await generateAIPersonalizedPaths(quizData);
+      // Use consistent business model scoring (same as quiz-loading and Results)
+      const businessMatches =
+        businessModelService.getBusinessModelMatches(quizData);
+      const topThreeAdvanced = businessMatches.slice(0, 3);
+
+      console.log("🎯 Generating business fit descriptions for top 3 models:");
+      topThreeAdvanced.forEach((match, index) => {
+        console.log(`${index + 1}. ${match.name} (${match.score}%)`);
+      });
+
+      // Generate business fit descriptions for top 3 models (3 AI calls)
+      const businessFitDescriptions: { [key: string]: string } = {};
+
+      for (const model of topThreeAdvanced) {
+        try {
+          console.log(`🔮 Generating insights for ${model.name}...`);
+          const insights = await aiService.generateModelInsights(
+            quizData,
+            model.name,
+            "best",
+          );
+          businessFitDescriptions[model.id] = insights.modelFitReason;
+        } catch (error) {
+          console.error(`Error generating insights for ${model.name}:`, error);
+          businessFitDescriptions[model.id] =
+            `This business model shows potential based on your skills and interests.`;
+        }
+      }
 
       // Generate full personalized insights (includes both preview and full report data)
       const insights = await aiService.generatePersonalizedInsights(
         quizData,
-        paths.slice(0, 3),
+        topThreeAdvanced,
       );
 
-      console.log("✅ Full report data generated successfully");
-      setFullReportData({ insights, paths });
+      console.log(
+        "✅ Full report data generated successfully (4 total AI calls)",
+      );
+      setFullReportData({
+        insights,
+        paths: businessMatches.slice(0, 7).map((match) => ({
+          id: match.id,
+          name: match.name,
+          description: `${match.name} with ${match.score}% compatibility`,
+          detailedDescription: `This business model scored ${match.score}% based on your quiz responses`,
+          fitScore: match.score,
+          difficulty:
+            match.score >= 75 ? "Easy" : match.score >= 50 ? "Medium" : "Hard",
+          timeToProfit:
+            match.score >= 80
+              ? "1-3 months"
+              : match.score >= 60
+                ? "3-6 months"
+                : "6+ months",
+          monthlyIncomeRange:
+            match.score >= 80
+              ? "$1000-$5000"
+              : match.score >= 60
+                ? "$500-$2000"
+                : "$100-$1000",
+        })),
+        businessFitDescriptions,
+      });
     } catch (error) {
       console.error("❌ Error generating full report data:", error);
       // Create fallback data
