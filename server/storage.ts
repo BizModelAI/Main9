@@ -890,12 +890,33 @@ export class DatabaseStorage implements IStorage {
   // DEPRECATED METHODS (for backward compatibility)
   async saveAIContentToQuizAttempt(
     quizAttemptId: number,
-    aiContent: any,
+    contentType: string,
+    content: any,
   ): Promise<void> {
-    await this.ensureDb()
-      .update(quizAttempts)
-      .set({ aiContent })
-      .where(eq(quizAttempts.id, quizAttemptId));
+    // NEW BEHAVIOR: Use the new AI content table
+    console.log(
+      `📦 Saving AI content via new table: ${contentType} for quiz attempt ${quizAttemptId}`,
+    );
+    await this.saveAIContent(quizAttemptId, contentType, content);
+
+    // LEGACY BEHAVIOR: Also update the old JSONB field for backward compatibility during transition
+    try {
+      const existingContent =
+        await this.getAIContentForQuizAttempt(quizAttemptId);
+      const updatedContent = {
+        ...existingContent,
+        [contentType]: content,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      await this.ensureDb()
+        .update(quizAttempts)
+        .set({ aiContent: updatedContent })
+        .where(eq(quizAttempts.id, quizAttemptId));
+    } catch (error) {
+      console.warn(`⚠️ Failed to update legacy JSONB field:`, error);
+      // Don't throw - new table is the primary storage now
+    }
   }
 
   async getAIContentForQuizAttempt(quizAttemptId: number): Promise<any | null> {
