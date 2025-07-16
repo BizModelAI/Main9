@@ -555,7 +555,7 @@ const clearQuizRelatedCache = () => {
   keysToRemove.forEach((key) => localStorage.removeItem(key));
 
   console.log(
-    `✅ Cleared AI caches and ${keysToRemove.length + 12} legacy cache entries for new quiz session (AI content now in database)`,
+    `Cleared AI caches and ${keysToRemove.length + 12} legacy cache entries for new quiz session (AI content now in database)`,
   );
 };
 
