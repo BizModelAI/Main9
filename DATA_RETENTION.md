@@ -30,7 +30,7 @@ BizModelAI implements a tiered data retention policy based on user payment statu
 ### Database Schema
 
 - `users.expires_at`: Expiration timestamp for temporary users (3 months)
-- `quiz_attempts.expires_at`: Expiration timestamp for unpaid user quiz attempts (3 months)
+- Quiz attempts expire automatically via CASCADE delete when user expires
 - Paid users have `expires_at` set to `NULL` (no expiration)
 
 ### Automatic Cleanup
