@@ -266,18 +266,18 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
               {[
                 {
                   icon: CheckCircle,
-                  title: "Permanent Access",
-                  description: "Return anytime with your personal link",
+                  title: "3-Month Storage",
+                  description: "Your results saved securely for 90 days",
                 },
                 {
                   icon: Clock,
-                  title: "Save Your Progress",
-                  description: "Never lose your personalized results",
+                  title: "Email Delivery",
+                  description: "Get results delivered to your inbox",
                 },
                 {
                   icon: Star,
-                  title: "Future Updates",
-                  description: "Get notified of new insights and features",
+                  title: "Upgrade Option",
+                  description: "Convert to permanent storage anytime",
                 },
               ].map((benefit, index) => (
                 <motion.div
