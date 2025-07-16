@@ -183,17 +183,13 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.sendStatus(200);
   });
 
-  // Debug endpoint to check OpenAI configuration
+  // OpenAI configuration status (secure - no sensitive info exposed)
   app.get("/api/openai-status", (req: Request, res: Response) => {
     const hasApiKey = !!process.env.OPENAI_API_KEY;
-    const keyLength = hasApiKey ? process.env.OPENAI_API_KEY!.length : 0;
 
     res.json({
       configured: hasApiKey,
-      keyLength: keyLength,
-      keyPrefix: hasApiKey
-        ? process.env.OPENAI_API_KEY!.substring(0, 7) + "..."
-        : "none",
+      status: hasApiKey ? "ready" : "not_configured",
     });
   });
 
