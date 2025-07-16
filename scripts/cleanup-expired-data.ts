@@ -68,13 +68,13 @@ async function cleanupExpiredData() {
     const totalDeleted = expiredUsers.length;
     if (totalDeleted > 0) {
       console.log(
-        `🎉 Cleanup complete! Deleted ${totalDeleted} expired records total`,
+        `🎉 Cleanup complete! Deleted ${totalDeleted} expired users (quiz attempts deleted via CASCADE)`,
       );
     } else {
       console.log(`✨ No expired data found - database is clean!`);
     }
 
-    // 5. Show current database statistics
+    // 4. Show current database statistics
     const activeTemporaryUsers = await db
       .select()
       .from(users)
