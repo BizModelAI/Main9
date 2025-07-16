@@ -161,7 +161,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         }
       } else {
         console.log(
-          `⚠️ AI content fetch failed for attempt ${attempt.id}:`,
+          `AI content fetch failed for attempt ${attempt.id}:`,
           response.status,
           response.statusText,
         );
