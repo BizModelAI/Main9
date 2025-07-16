@@ -438,6 +438,16 @@ ${userProfile}`,
     content: any,
   ): Promise<void> {
     try {
+      // Check if we should save to database (only for paid users or unpaid users who provided email)
+      const shouldSaveToDatabase = await this.shouldSaveToDatabase();
+
+      if (!shouldSaveToDatabase) {
+        console.log(
+          `⏭️ Skipping ${contentType} database save - unpaid user hasn't provided email yet`,
+        );
+        return;
+      }
+
       console.log(
         `💾 Saving ${contentType} AI content to database for quiz attempt ${quizAttemptId}`,
       );
@@ -470,6 +480,44 @@ ${userProfile}`,
         `❌ Error saving ${contentType} AI content to database:`,
         error,
       );
+    }
+  }
+
+  private async shouldSaveToDatabase(): Promise<boolean> {
+    try {
+      // Check if user is authenticated (paid users always save)
+      const response = await fetch("/api/auth/check", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated) {
+          console.log(`✅ User authenticated - will save to database`);
+          return true;
+        }
+      }
+
+      // For unpaid users, check if they've provided an email
+      const userEmail = localStorage.getItem("userEmail");
+      const hasProvidedEmail =
+        userEmail && userEmail !== "null" && userEmail.length > 0;
+
+      if (hasProvidedEmail) {
+        console.log(
+          `✅ Unpaid user provided email (${userEmail}) - will save to database`,
+        );
+        return true;
+      }
+
+      console.log(
+        `⏭️ Unpaid user hasn't provided email - will not save to database`,
+      );
+      return false;
+    } catch (error) {
+      console.error("Error checking if should save to database:", error);
+      return false;
     }
   }
 
