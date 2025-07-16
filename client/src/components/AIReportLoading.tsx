@@ -764,20 +764,15 @@ Return JSON format:
               );
               console.log(
                 "Generated preview summary:",
-                previewData.insights?.substring(0, 100) + "...",
+                previewData.previewInsights?.substring(0, 100) + "...",
               );
 
               // Convert preview data to expected format for backward compatibility
               const formattedInsights = {
-                personalizedSummary: previewData.insights,
+                personalizedSummary: previewData.previewInsights,
                 customRecommendations: previewData.keyInsights,
-                potentialChallenges: previewData.successPredictors,
-                successStrategies: [
-                  "Focus on building core skills first",
-                  "Start with proven strategies",
-                  "Build consistent daily habits",
-                  "Connect with other entrepreneurs",
-                ],
+                potentialChallenges: [], // Not used in preview
+                successStrategies: previewData.successPredictors,
                 personalizedActionPlan: {
                   week1: ["Complete market research", "Set up basic workspace"],
                   month1: [
