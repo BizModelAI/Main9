@@ -896,36 +896,38 @@ const Dashboard: React.FC = () => {
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
 
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mr-4">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center flex-1 min-w-0">
+                    {/* Hide emoji on mobile, show on desktop */}
+                    <div className="hidden md:flex w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl items-center justify-center mr-4">
                       <span className="text-3xl">
                         {selectedBusinessModel.icon}
                       </span>
                     </div>
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold mr-3">
-                          {selectedBusinessModel.fitScore}% MATCH
-                        </span>
-                        <span className="text-blue-100 text-sm font-medium">
-                          AI Recommended
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2">
+                        <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold inline-block w-fit whitespace-nowrap">
+                          {selectedBusinessModel.fitScore}% Match
                         </span>
                       </div>
-                      <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 pr-4">
                         {selectedBusinessModel.name}
                       </h2>
-                      <p className="text-blue-100 text-lg">
+                      <p className="text-blue-100 text-base sm:text-lg">
                         Start your journey to financial freedom today.
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleChangeBusinessModel}
-                    className="flex items-center text-blue-100 hover:text-white transition-colors text-sm font-medium"
+                    className="flex flex-col sm:flex-row items-center text-blue-100 hover:text-white transition-colors text-xs sm:text-sm font-medium ml-2 whitespace-nowrap"
                   >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Change Model
+                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-1" />
+                    <span className="text-center">
+                      Change
+                      <br className="sm:hidden" />
+                      Model
+                    </span>
                   </button>
                 </div>
 
