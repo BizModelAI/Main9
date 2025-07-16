@@ -406,7 +406,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       const cachedContent = aiCacheManager.getCachedAIContent(quizData);
 
       // Check if we have new complete AI data that we haven't loaded yet
-      if (cachedContent.insights && cachedContent.analysis && !aiInsights) {
+      if (
+        cachedContent.insights &&
+        validateAIAnalysis(cachedContent.analysis) &&
+        !aiInsights
+      ) {
         console.log("🔄 New AI insights detected from cache, loading...");
         setAiInsights(cachedContent.insights);
         setAiAnalysis(cachedContent.analysis);
