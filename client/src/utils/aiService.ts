@@ -429,41 +429,7 @@ ${userProfile}`,
     return `ai_insights_${quizKey}_${pathsKey}`;
   }
 
-  private getCachedInsights(cacheKey: string): any | null {
-    try {
-      const cached =
-        typeof window !== "undefined" ? localStorage.getItem(cacheKey) : null;
-      if (cached) {
-        const data = JSON.parse(cached!);
-        // Check if cache is still valid (1 hour)
-        if (Date.now() - data.timestamp < 3600000) {
-          return data.insights;
-        } else {
-          // Remove expired cache
-          if (typeof window !== "undefined") {
-            localStorage.removeItem(cacheKey);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error reading cached insights:", error);
-    }
-    return null;
-  }
-
-  private cacheInsights(cacheKey: string, insights: any): void {
-    try {
-      if (typeof window !== "undefined") {
-        const cacheData = {
-          insights,
-          timestamp: Date.now(),
-        };
-        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      }
-    } catch (error) {
-      console.error("Error caching insights:", error);
-    }
-  }
+  // Cache methods removed - now using database storage instead of localStorage
 
   // Database helper methods for AI content storage
   private async saveAIContentToDatabase(
