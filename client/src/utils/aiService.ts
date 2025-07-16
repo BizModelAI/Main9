@@ -295,18 +295,67 @@ CRITICAL RULES:
       });
 
       if (response && response.content) {
-        const insights = JSON.parse(response.content);
+        try {
+          // Clean up the response content to ensure valid JSON
+          let cleanContent = response.content.trim();
 
-        // Save to database instead of localStorage cache
-        if (quizAttemptId) {
-          await this.saveAIContentToDatabase(
-            quizAttemptId,
-            "fullReport",
-            insights,
+          // Remove any potential markdown code blocks
+          cleanContent = cleanContent
+            .replace(/```json\s*/g, "")
+            .replace(/```\s*/g, "");
+
+          // Find the JSON object (between first { and last })
+          const firstBrace = cleanContent.indexOf("{");
+          const lastBrace = cleanContent.lastIndexOf("}");
+
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
+          }
+
+          const insights = JSON.parse(cleanContent);
+
+          // Save to database instead of localStorage cache
+          if (quizAttemptId) {
+            await this.saveAIContentToDatabase(
+              quizAttemptId,
+              "fullReport",
+              insights,
+            );
+          }
+
+          return insights;
+        } catch (parseError) {
+          console.error(
+            "JSON parse error in generatePersonalizedInsights:",
+            response.content,
           );
-        }
+          console.error("Parse error details:", parseError);
 
-        return insights;
+          // Return fallback insights structure
+          return {
+            personalizedSummary:
+              "Unable to generate detailed analysis at this time. Please try again.",
+            customRecommendations: [
+              "Technical analysis temporarily unavailable",
+              "Please refresh the page to retry",
+              "Contact support if issue persists",
+            ],
+            potentialChallenges: ["System temporarily unavailable"],
+            successStrategies: [
+              "Retry analysis generation",
+              "Check internet connection",
+              "Contact support if needed",
+            ],
+            personalizedActionPlan: {
+              week1: ["Retry analysis"],
+              month1: ["Contact support if issues persist"],
+              month3: ["Continue with manual planning"],
+              month6: ["Review progress"],
+            },
+            motivationalMessage:
+              "Technical difficulties are temporary. Your entrepreneurial journey continues!",
+          };
+        }
       }
 
       throw new Error("No valid response from AI service");
