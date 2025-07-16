@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const requestBody: any = {
         model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
         messages,
-        max_tokens: maxTokens,
+        max_tokens: max_tokens || maxTokens,
         temperature: temperature,
       };
 
