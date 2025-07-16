@@ -541,6 +541,45 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getPaymentsWithUsers(
+    options: {
+      limit?: number;
+      offset?: number;
+      status?: string;
+    } = {},
+  ): Promise<
+    Array<
+      Payment & {
+        user: { id: number; email: string; username?: string } | null;
+      }
+    >
+  > {
+    const { limit = 100, offset = 0, status } = options;
+
+    let paymentsArray = Array.from(this.payments.values());
+
+    if (status) {
+      paymentsArray = paymentsArray.filter((p) => p.status === status);
+    }
+
+    paymentsArray.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    paymentsArray = paymentsArray.slice(offset, offset + limit);
+
+    return paymentsArray.map((payment) => {
+      const user = this.users.get(payment.userId);
+      return {
+        ...payment,
+        user: user
+          ? {
+              id: user.id,
+              email: user.email,
+              username: user.name,
+            }
+          : null,
+      };
+    });
+  }
+
   // Refund operations (Note: MemStorage is for testing only)
   async createRefund(refund: Omit<InsertRefund, "id">): Promise<Refund> {
     throw new Error(
