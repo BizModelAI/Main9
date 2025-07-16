@@ -84,8 +84,16 @@ const DownloadReportPage: React.FC = () => {
           };
 
           // Generate personalized paths and get the top one
-          const personalizedPaths = generatePersonalizedPaths(mockQuizData);
-          const mockTopBusinessPath = personalizedPaths[0];
+          const matches =
+            businessModelService.getBusinessModelMatches(mockQuizData);
+          const topMatch = matches[0];
+          const businessPath = businessPaths.find(
+            (path) => path.id === topMatch.id,
+          );
+          const mockTopBusinessPath = {
+            ...businessPath!,
+            fitScore: topMatch.score,
+          };
 
           // Check cache first, then generate AI analysis
           const aiCacheManager = AICacheManager.getInstance();
