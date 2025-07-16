@@ -421,6 +421,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           month6: [],
         },
       };
+
+      console.log("✅ Generated analysis:", analysis);
       setAiAnalysis(analysis);
     } catch (error) {
       console.error("Error generating detailed AI analysis:", error);
