@@ -664,7 +664,7 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 max-w-7xl mx-auto px-4 sm:px-8">
             {isLoadingScores
               ? // Loading state
-                Array.from({ length: 9 }).map((_, index) => (
+                Array.from({ length: 18 }).map((_, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
