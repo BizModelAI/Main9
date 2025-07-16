@@ -207,8 +207,8 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
 
   const getTopBusinessPath = (quizData: QuizData) => {
     try {
-      // Use the actual scoring algorithm to get the top business model
-      const matches = calculateAllBusinessModelMatches(quizData);
+      // Use the BusinessModelService to get the top business model
+      const matches = businessModelService.getBusinessModelMatches(quizData);
       if (matches && matches.length > 0) {
         return matches[0].name;
       }
