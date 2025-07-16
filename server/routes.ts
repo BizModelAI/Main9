@@ -21,29 +21,94 @@ import {
   OrdersController,
 } from "@paypal/paypal-server-sdk";
 
-// Simple rate limiter for OpenAI requests
+// Secure session/user-based rate limiter for OpenAI requests
 class OpenAIRateLimiter {
   private requests = new Map<string, number[]>();
-  private readonly maxRequestsPerIP = 20; // Max requests per IP per minute
-  private readonly windowMs = 60000; // 1 minute window
+  private readonly maxRequestsPerUser = 50; // Max requests per user/session per hour
+  private readonly windowMs = 60 * 60 * 1000; // 1 hour window
+  private readonly maxAnonymousRequests = 10; // Lower limit for anonymous users
+  private readonly cleanupInterval = 5 * 60 * 1000; // Clean up every 5 minutes
 
-  canMakeRequest(ip: string): boolean {
+  constructor() {
+    // Periodic cleanup to prevent memory leaks
+    setInterval(() => {
+      this.cleanup();
+    }, this.cleanupInterval);
+  }
+
+  private cleanup(): void {
     const now = Date.now();
-    const userRequests = this.requests.get(ip) || [];
+    let totalCleaned = 0;
+
+    for (const [key, timestamps] of this.requests.entries()) {
+      const validRequests = timestamps.filter(
+        (time) => now - time < this.windowMs,
+      );
+      if (validRequests.length === 0) {
+        this.requests.delete(key);
+        totalCleaned++;
+      } else if (validRequests.length < timestamps.length) {
+        this.requests.set(key, validRequests);
+      }
+    }
+
+    if (totalCleaned > 0) {
+      console.log(
+        `🧹 Rate limiter cleanup: removed ${totalCleaned} expired entries`,
+      );
+    }
+  }
+
+  canMakeRequest(userId?: number, sessionId?: string): boolean {
+    // Use userId if authenticated, otherwise use sessionId
+    const identifier = userId
+      ? `user_${userId}`
+      : `session_${sessionId || "anonymous"}`;
+    const isAuthenticated = !!userId;
+    const maxRequests = isAuthenticated
+      ? this.maxRequestsPerUser
+      : this.maxAnonymousRequests;
+
+    const now = Date.now();
+    const userRequests = this.requests.get(identifier) || [];
 
     // Remove old requests outside the window
     const recentRequests = userRequests.filter(
       (time) => now - time < this.windowMs,
     );
-    this.requests.set(ip, recentRequests);
 
-    if (recentRequests.length >= this.maxRequestsPerIP) {
+    if (recentRequests.length >= maxRequests) {
+      console.warn(
+        `🚫 Rate limit exceeded for ${identifier}: ${recentRequests.length}/${maxRequests} requests`,
+      );
       return false;
     }
 
     recentRequests.push(now);
-    this.requests.set(ip, recentRequests);
+    this.requests.set(identifier, recentRequests);
+
+    console.log(
+      `✅ Rate limit check passed for ${identifier}: ${recentRequests.length}/${maxRequests} requests`,
+    );
     return true;
+  }
+
+  getRemainingRequests(userId?: number, sessionId?: string): number {
+    const identifier = userId
+      ? `user_${userId}`
+      : `session_${sessionId || "anonymous"}`;
+    const isAuthenticated = !!userId;
+    const maxRequests = isAuthenticated
+      ? this.maxRequestsPerUser
+      : this.maxAnonymousRequests;
+
+    const now = Date.now();
+    const userRequests = this.requests.get(identifier) || [];
+    const recentRequests = userRequests.filter(
+      (time) => now - time < this.windowMs,
+    );
+
+    return Math.max(0, maxRequests - recentRequests.length);
   }
 }
 
