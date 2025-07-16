@@ -303,6 +303,14 @@ function MainAppContent() {
   // Load quiz data from localStorage first, then server if authenticated
   React.useEffect(() => {
     const loadQuizData = async () => {
+      // Don't auto-load quiz data when user is on /quiz page (they want to start fresh)
+      if (location.pathname === "/quiz") {
+        console.log(
+          "MainAppContent - On /quiz page, skipping auto-load of existing quiz data",
+        );
+        return;
+      }
+
       if (!quizData) {
         console.log(
           "MainAppContent - No quiz data in state, checking localStorage...",
