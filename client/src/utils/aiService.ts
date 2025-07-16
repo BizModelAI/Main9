@@ -657,7 +657,7 @@ ${userProfile}`,
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated) {
-          console.log(`✅ User authenticated - will save to database`);
+          console.log(`User authenticated - will save to database`);
           return true;
         }
       }
