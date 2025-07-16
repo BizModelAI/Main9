@@ -1025,6 +1025,18 @@ export class DatabaseStorage implements IStorage {
           .where(eq(users.id, user.id))
           .returning();
 
+        // Remove expiration from all quiz attempts for this user (make them permanent)
+        await tx
+          .update(quizAttempts)
+          .set({
+            expiresAt: null,
+          })
+          .where(eq(quizAttempts.userId, user.id));
+
+        console.log(
+          `✅ Converted temporary user ${user.email} to paid - removed expiration from user and quiz attempts`,
+        );
+
         return updatedUser;
       });
     } catch (error) {
