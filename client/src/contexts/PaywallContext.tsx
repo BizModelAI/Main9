@@ -154,9 +154,9 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
   };
 
   const canAccessFullReport = () => {
-    // In pure pay-per-report model, basic report access is available
-    // Users pay for detailed report unlocks individually
-    return hasCompletedQuiz;
+    // In pure pay-per-report model, users must pay for each full report
+    // Check if user has actually unlocked analysis (made payment)
+    return hasUnlockedAnalysis;
   };
 
   const hasMadeAnyPayment = () => {
