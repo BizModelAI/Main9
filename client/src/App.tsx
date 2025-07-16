@@ -10,6 +10,10 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PaywallProvider } from "./contexts/PaywallContext";
+import {
+  BusinessModelScoresProvider,
+  cleanupExpiredBusinessModelScores,
+} from "./contexts/BusinessModelScoresContext";
 
 // Import debug utilities (available as window.debugOpenAI and window.debugAIContent)
 import "./utils/debugOpenAI";
