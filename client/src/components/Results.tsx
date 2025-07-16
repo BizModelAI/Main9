@@ -1304,7 +1304,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                             {(() => {
                               // Safely handle potential undefined/null values
                               console.log(
-                                "🔍 Current aiAnalysis state:",
+                                "Current aiAnalysis state:",
                                 aiAnalysis,
                               );
                               if (!aiAnalysis?.fullAnalysis) {
