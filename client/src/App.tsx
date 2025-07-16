@@ -165,6 +165,9 @@ function MainAppContent() {
       } catch (error) {
         console.error("Error cleaning up AI content:", error);
       }
+
+      // Clean up expired business model scores
+      cleanupExpiredBusinessModelScores();
     };
 
     // Run cleanup immediately
