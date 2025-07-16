@@ -153,7 +153,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         if (aiContent) {
           localStorage.setItem("loadedReportData", JSON.stringify(aiContent));
           console.log(
-            `💾 AI content stored in localStorage for attempt ${attempt.id}`,
+            `AI content stored in localStorage for attempt ${attempt.id}`,
           );
         } else {
           localStorage.removeItem("loadedReportData");
