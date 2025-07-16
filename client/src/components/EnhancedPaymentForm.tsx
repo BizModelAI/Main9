@@ -247,9 +247,7 @@ const PayPalForm: React.FC<{
       }
 
       // Use appropriate endpoint based on user type
-      const endpoint = isTemporaryUser
-        ? "/api/create-paypal-anonymous-report-unlock-payment"
-        : "/api/create-paypal-report-unlock-payment";
+      const endpoint = "/api/create-paypal-payment";
 
       const response = await fetch(endpoint, {
         method: "POST",
