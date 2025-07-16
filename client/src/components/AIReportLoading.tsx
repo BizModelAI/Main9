@@ -341,7 +341,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
               "characteristics",
               { characteristics: parsed.characteristics },
             );
-            console.log("✅ Characteristics stored in database");
+            console.log("Characteristics stored in database");
           } catch (dbError) {
             console.error(
               "❌ CRITICAL: Failed to store characteristics in database:",
