@@ -432,9 +432,7 @@ ${fitPrompt}
 
 Return exactly this JSON structure:
 {
-  "modelFitReason": "Single paragraph explaining fit",
-  "keyInsights": ["...", "...", "...", "..."],
-  "successPredictors": ["...", "...", "...", "..."]
+  "modelFitReason": "Single paragraph explaining fit"
 }
 
 CRITICAL RULES:
@@ -442,7 +440,7 @@ CRITICAL RULES:
 - Do not generate markdown or formatted code blocks
 - Keep modelFitReason a single paragraph
 - Return clean, JSON-parsed output
-- Max 700 tokens total
+- Max 400 tokens total
 
 USER PROFILE:
 ${userProfile}`,
