@@ -1004,4 +1004,154 @@ const ResultsWrapperWithReset: React.FC<{
   }
 };
 
+function App() {
+  return (
+    <AuthProvider>
+      <PaywallProvider>
+        <Router>
+          <NavigationGuardWrapper>
+            <Analytics />
+            <SpeedInsights />
+            <Routes>
+              {/* Public routes with layout */}
+              <Route
+                path="/"
+                element={
+                  <Layout>
+                    <Index />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/business-explorer"
+                element={
+                  <Layout>
+                    <BusinessExplorer />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/business-model/:id"
+                element={
+                  <Layout>
+                    <BusinessModelDetail />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/business-guide"
+                element={
+                  <Layout>
+                    <BusinessGuide />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/contact"
+                element={
+                  <Layout>
+                    <ContactUs />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  <Layout>
+                    <Login />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/forgot-password"
+                element={
+                  <Layout>
+                    <ForgotPassword />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/reset-password"
+                element={
+                  <Layout>
+                    <ResetPassword />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/privacy-policy"
+                element={
+                  <Layout>
+                    <PrivacyPolicy />
+                  </Layout>
+                }
+              />
+
+              {/* Protected routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Direct routes (no layout) */}
+              <Route path="/quiz" element={<MainAppContent />} />
+              <Route path="/results" element={<MainAppContent />} />
+              <Route path="/ai-loading" element={<MainAppContent />} />
+              <Route
+                path="/download-report"
+                element={
+                  <Layout>
+                    <DownloadReportPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/pdf-report"
+                element={
+                  <Layout>
+                    <PDFReportPage />
+                  </Layout>
+                }
+              />
+
+              <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+              {/* Admin Page */}
+              <Route path="/admin" element={<AdminPage />} />
+
+              {/* Quiz Payment Required */}
+              <Route
+                path="/quiz-payment-required"
+                element={<QuizPaymentRequired />}
+              />
+
+              {/* Save Results Payment */}
+              <Route
+                path="/save-results-payment"
+                element={<SaveResultsPayment />}
+              />
+            </Routes>
+          </NavigationGuardWrapper>
+        </Router>
+      </PaywallProvider>
+    </AuthProvider>
+  );
+}
+
 export default App;
