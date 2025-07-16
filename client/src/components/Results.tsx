@@ -119,6 +119,11 @@ interface AIInsights {
 
 const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   const navigate = useNavigate();
+  const {
+    scores: businessModelScores,
+    isLoading: scoresLoading,
+    calculateAndStoreScores,
+  } = useBusinessModelScores();
 
   // Get quiz attempt ID from localStorage (set when quiz is saved)
   const [quizAttemptId, setQuizAttemptId] = useState<number | null>(() => {
