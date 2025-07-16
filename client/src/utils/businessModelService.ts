@@ -120,7 +120,7 @@ export class BusinessModelService {
       quizData.successIncomeGoal,
       quizData.weeklyTimeCommitment,
       quizData.techSkillsRating,
-      quizData.riskComfortLevel || quizData.riskComfort,
+      quizData.riskComfortLevel,
       quizData.passionIdentityAlignment,
       quizData.selfMotivationLevel || quizData.selfMotivation,
       quizData.organizationLevel,
