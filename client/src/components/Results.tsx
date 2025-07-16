@@ -431,12 +431,12 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
       // Extract the analysis portion from the insights
       const analysis = {
-        fullAnalysis:
-          analysisData.personalizedSummary || analysisData.analysis || "",
-        keyInsights: analysisData.customRecommendations || [],
-        successPredictors: analysisData.successStrategies || [],
+        fullAnalysis: "", // generatePersonalizedInsights doesn't return fullAnalysis
+        keyInsights: analysisData.keyInsights || [],
+        successPredictors: [], // generatePersonalizedInsights doesn't return successPredictors
         potentialChallenges: analysisData.potentialChallenges || [],
-        personalizedRecommendations: analysisData.customRecommendations || [],
+        personalizedRecommendations:
+          analysisData.personalizedRecommendations || [],
         riskFactors: analysisData.potentialChallenges || [],
       };
 
