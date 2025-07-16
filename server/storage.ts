@@ -627,7 +627,7 @@ export class MemStorage implements IStorage {
     // Clean up expired temporary users (3-month storage for email-provided users)
     await this.cleanupExpiredTemporaryUsers();
 
-    console.log("✅ Successfully cleaned up all expired data (MemStorage)");
+    console.log("Successfully cleaned up all expired data (MemStorage)");
   }
 }
 
@@ -991,10 +991,10 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    console.log(`✅ AI content migration completed!`);
-    console.log(`📊 Total attempts: ${attempts.length}`);
-    console.log(`✅ Successfully migrated: ${migratedAttempts}`);
-    console.log(`❌ Errors: ${errors.length}`);
+    console.log(`AI content migration completed!`);
+    console.log(`Total attempts: ${attempts.length}`);
+    console.log(`Successfully migrated: ${migratedAttempts}`);
+    console.log(`Errors: ${errors.length}`);
 
     if (errors.length > 0) {
       console.log("❌ Migration errors:", errors);
@@ -1034,7 +1034,7 @@ export class DatabaseStorage implements IStorage {
         .set({ aiContent: updatedContent })
         .where(eq(quizAttempts.id, quizAttemptId));
     } catch (error) {
-      console.warn(`⚠️ Failed to update legacy JSONB field:`, error);
+      console.warn(`Failed to update legacy JSONB field:`, error);
       // Don't throw - new table is the primary storage now
     }
   }
@@ -1078,7 +1078,7 @@ export class DatabaseStorage implements IStorage {
 
       // Check if payment is already completed (idempotency)
       if (currentPayment.status === "completed") {
-        console.log(`⚠️ Payment ${paymentId} already completed, skipping`);
+        console.log(`Payment ${paymentId} already completed, skipping`);
         return;
       }
 
@@ -1576,7 +1576,7 @@ export class DatabaseStorage implements IStorage {
       // Clean up expired temporary users (3-month storage for email-provided users)
       await this.cleanupExpiredTemporaryUsers();
 
-      console.log("✅ Successfully cleaned up all expired data");
+      console.log("Successfully cleaned up all expired data");
     } catch (error) {
       console.error("❌ Error during data cleanup:", error);
       // Don't throw - just log the error to prevent server crashes
