@@ -971,11 +971,8 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
     .slice(0, 3);
 
   // Get the worst 3 business models based on actual scoring
-  const allBusinessMatches =
-    businessModelService.getBusinessModelMatches(quizData);
-  const worstThreePaths = businessModelService
-    .getBottomMatches(quizData, 3)
-    .slice(-3) // Get bottom 3 (lowest scores)
+  const allBusinessMatches = businessModelScores || [];
+  const worstThreePaths = getBottomMatches(3)
     .reverse() // Reverse to show worst-first order
     .map((match) => ({
       id: match.id,
