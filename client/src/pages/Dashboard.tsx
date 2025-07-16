@@ -103,7 +103,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "3-6 months",
                 potentialIncome: "$100-10K+/month",
                 difficulty: "Easy",
-                icon: "��",
+                icon: "💰",
               },
               freelancing: {
                 id: "freelancing",
