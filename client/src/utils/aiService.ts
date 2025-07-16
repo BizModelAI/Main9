@@ -526,6 +526,16 @@ ${userProfile}`,
     contentType: string,
   ): Promise<any | null> {
     try {
+      // Check if we should retrieve from database (same logic as saving)
+      const shouldUseDatabase = await this.shouldSaveToDatabase();
+
+      if (!shouldUseDatabase) {
+        console.log(
+          `⏭️ Skipping ${contentType} database retrieval - unpaid user hasn't provided email yet`,
+        );
+        return null;
+      }
+
       const response = await fetch(
         `/api/quiz-attempts/${quizAttemptId}/ai-content?type=${contentType}`,
         {
