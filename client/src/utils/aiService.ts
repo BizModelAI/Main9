@@ -393,7 +393,7 @@ ${userProfile}`,
     max_tokens?: number;
   }): Promise<{ content: string } | null> {
     try {
-      const response = await fetch("/api/generate-ai-insights", {
+      const response = await fetch("/api/openai-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
