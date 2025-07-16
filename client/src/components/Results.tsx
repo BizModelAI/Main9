@@ -1257,6 +1257,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           <div>
                             {(() => {
                               // Safely handle potential undefined/null values
+                              console.log(
+                                "🔍 Current aiAnalysis state:",
+                                aiAnalysis,
+                              );
                               if (!aiAnalysis?.fullAnalysis) {
                                 return (
                                   <div className="text-gray-600">
