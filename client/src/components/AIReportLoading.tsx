@@ -889,15 +889,14 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           });
           currentAiResults = { ...currentAiResults, ...step4Result };
 
-          // Step 5: Generate business fit and avoid descriptions
+          // Step 5: Store placeholder data for business descriptions (will be generated in full-report-loading)
           const step5Result = await executeStep(4, async () => {
-            const [fitDescriptions, avoidDescriptions] = await Promise.all([
-              generateBusinessFitDescriptions(activeQuizData),
-              generateBusinessAvoidDescriptions(activeQuizData),
-            ]);
+            console.log(
+              "📝 Skipping business fit/avoid descriptions - will be generated in full-report-loading",
+            );
             return {
-              businessFitDescriptions: fitDescriptions,
-              businessAvoidDescriptions: avoidDescriptions,
+              businessFitDescriptions: {}, // Empty - will be generated later
+              businessAvoidDescriptions: {}, // Empty - will be generated later
             };
           });
           currentAiResults = { ...currentAiResults, ...step5Result };
