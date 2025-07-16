@@ -1175,62 +1175,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   );
 
-  // Create payment for anonymous users unlocking full report (always $9.99)
-  app.post(
-    "/api/create-anonymous-report-unlock-payment",
-    async (req: Request, res: Response) => {
-      try {
-        const { sessionId, email } = req.body;
-
-        if (!sessionId) {
-          return res
-            .status(400)
-            .json({ error: "Missing sessionId for anonymous user" });
-        }
-
-        // Verify temporary user data exists
-        const tempData = await storage.getTemporaryUser(sessionId);
-        if (!tempData) {
-          return res
-            .status(404)
-            .json({ error: "Temporary account data not found or expired" });
-        }
-
-        // Anonymous users always pay $9.99 (first-time pricing)
-        const amount = 999; // $9.99 in cents
-        const amountDollar = "9.99";
-
-        // Create Stripe Payment Intent
-        if (!stripe) {
-          return res
-            .status(500)
-            .json({ error: "Payment processing not configured" });
-        }
-
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount,
-          currency: "usd",
-          metadata: {
-            sessionId,
-            type: "anonymous_report_unlock",
-            email: email || tempData.email,
-          },
-          description: "BizModelAI Anonymous Report Unlock - First time $9.99",
-        });
-
-        res.json({
-          success: true,
-          clientSecret: paymentIntent.client_secret,
-          amount: amountDollar,
-          isFirstReport: true, // Always true for anonymous users
-        });
-      } catch (error) {
-        console.error("Error creating anonymous report unlock payment:", error);
-        res.status(500).json({ error: "Internal server error" });
-      }
-    },
-  );
-
   // Quiz attempts are now free for everyone - no payment needed
 
   // Check if report is unlocked for a specific quiz attempt
