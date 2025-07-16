@@ -360,7 +360,7 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
                 className="text-center space-y-3"
               >
                 <p className="text-xs text-gray-500">
-                  � We respect your privacy. Your results will be stored for 3
+                  🔒 We respect your privacy. Your results will be stored for 3
                   months, then automatically deleted unless you upgrade to
                   permanent storage.
                 </p>
