@@ -175,7 +175,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
 
       // Call the callback if provided
       if (onQuizSelected) {
-        onQuizSelected(attempt.quizData, aiContent);
+        onQuizSelected(attempt.quizData, aiContent, attempt.completedAt);
       }
 
       // Show success notification
