@@ -2266,7 +2266,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
                 "businessFitDescriptions",
                 descriptionsMap,
               );
-              console.log("✅ Business fit descriptions stored in database");
+              console.log("Business fit descriptions stored in database");
             }
           }
         } catch (dbError) {
@@ -2456,7 +2456,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
                 "businessAvoidDescriptions",
                 descriptionsMap,
               );
-              console.log("✅ Business avoid descriptions stored in database");
+              console.log("Business avoid descriptions stored in database");
             }
           }
         } catch (dbError) {
@@ -2533,7 +2533,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
 
         const result = await storage.migrateAIContentToNewTable();
 
-        console.log("✅ AI content migration completed successfully");
+        console.log("AI content migration completed successfully");
         res.json({
           success: true,
           message: "AI content migration completed",
@@ -2984,7 +2984,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         WHERE is_paid IS NULL OR is_temporary IS NULL
       `);
 
-        console.log("✅ Database schema fixed!");
+        console.log("Database schema fixed!");
         res.json({ success: true, message: "Database schema fixed" });
       } catch (error) {
         console.error("❌ Database schema fix failed:", error);
