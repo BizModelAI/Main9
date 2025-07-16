@@ -165,8 +165,14 @@ function MainAppContent() {
 
       // Clean up expired AI content for anonymous users
       try {
-        const { AIService } = require("./utils/aiService");
-        AIService.cleanupExpiredLocalStorageContent();
+        // Import dynamically to avoid issues with module loading
+        import("./utils/aiService")
+          .then(({ AIService }) => {
+            AIService.cleanupExpiredLocalStorageContent();
+          })
+          .catch((error) => {
+            console.error("Error cleaning up AI content:", error);
+          });
       } catch (error) {
         console.error("Error cleaning up AI content:", error);
       }
