@@ -37,6 +37,7 @@ import { QuizData, BusinessPath } from "../types";
 import { businessPaths } from "../data/businessPaths";
 import { businessModels } from "../data/businessModels";
 import { businessModelService } from "../utils/businessModelService";
+import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
 import { usePaywall } from "../contexts/PaywallContext";
 import { useQuery } from "@tanstack/react-query";
 
