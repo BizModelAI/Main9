@@ -1604,7 +1604,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   </div>
 
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">�</div>
+                                    <div className="text-3xl mt-1">📊</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Income Potential & Market Fit
