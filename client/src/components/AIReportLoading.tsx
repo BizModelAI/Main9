@@ -413,11 +413,25 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       const { AIService } = await import("../utils/aiService");
       const aiService = AIService.getInstance();
 
-      // Use the deprecated wrapper method for backward compatibility
-      return await aiService.generateBusinessFitDescriptions(
-        quizData,
-        businessModels,
-      );
+      // Use new generateModelInsights method instead of deprecated one
+      const descriptions: { [key: string]: string } = {};
+
+      for (const model of topThreeAdvanced) {
+        try {
+          const insights = await aiService.generateModelInsights(
+            quizData,
+            model.name,
+            "best",
+          );
+          descriptions[model.id] = insights.modelFitReason;
+        } catch (error) {
+          console.error(`Error generating insights for ${model.name}:`, error);
+          descriptions[model.id] =
+            `This business model shows potential based on your skills and interests.`;
+        }
+      }
+
+      return descriptions;
     } catch (error) {
       console.error("Error generating business fit descriptions:", error);
       // Set fallback descriptions
