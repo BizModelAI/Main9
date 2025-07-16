@@ -142,6 +142,205 @@ ${userProfile}`,
     }
   }
 
+  // Call 2: Full Report Generation (full-report-loading page) - AFTER PAYWALL
+  async generatePersonalizedInsights(
+    quizData: QuizData,
+    topPaths: BusinessPath[],
+  ): Promise<{
+    personalizedRecommendations: string[];
+    potentialChallenges: string[];
+    keyInsights: string[];
+    bestFitCharacteristics: string[];
+    top3Fits: { model: string; reason: string }[];
+    bottom3Avoid: {
+      model: string;
+      reason: string;
+      futureConsideration?: string;
+    }[];
+  }> {
+    try {
+      const cacheKey = `fullreport_${this.createCacheKey(quizData, topPaths)}`;
+      const cached = this.getCachedInsights(cacheKey);
+      if (cached) {
+        console.log("✅ Using cached full report insights");
+        return cached;
+      }
+
+      const userProfile = this.createUserProfile(quizData);
+
+      const response = await this.makeOpenAIRequest({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an AI business coach. Use JSON output. Use a professional and direct tone. Do not invent data.",
+          },
+          {
+            role: "user",
+            content: `Based only on the quiz data and top 3 business matches, generate the following JSON output. This is for a full business analysis report. Do NOT include formatting or markdown. Be specific and use only known data.
+
+Return exactly this structure:
+
+{
+  "personalizedRecommendations": ["...", "...", "...", "...", "...", "..."],
+  "potentialChallenges": ["...", "...", "...", "..."],
+  "keyInsights": ["...", "...", "...", "..."],
+  "bestFitCharacteristics": ["...", "...", "...", "...", "...", "..."],
+  "top3Fits": [
+    {
+      "model": "${topPaths[0]?.name || "Business Model"}",
+      "reason": "One short paragraph explaining why this is a strong match"
+    },
+    {
+      "model": "${topPaths[1]?.name || "Business Model"}",
+      "reason": "One short paragraph explaining why this is a strong match"
+    },
+    {
+      "model": "${topPaths[2]?.name || "Business Model"}",
+      "reason": "One short paragraph explaining why this is a strong match"
+    }
+  ],
+  "bottom3Avoid": [
+    {
+      "model": "App or SaaS Development",
+      "reason": "Why this model doesn't align with current profile",
+      "futureConsideration": "How it could become viable in the future (optional)"
+    },
+    {
+      "model": "E-commerce",
+      "reason": "Why this model doesn't align with current profile",
+      "futureConsideration": "How it could become viable in the future (optional)"
+    },
+    {
+      "model": "Franchise Ownership",
+      "reason": "Why this model doesn't align with current profile",
+      "futureConsideration": "How it could become viable in the future (optional)"
+    }
+  ]
+}
+
+CRITICAL RULES:
+- Use ONLY the following data:
+  ${userProfile}
+  - Top matches:
+    1. ${topPaths[0]?.name || "N/A"} (${topPaths[0]?.fitScore || "N/A"}%)
+    2. ${topPaths[1]?.name || "N/A"} (${topPaths[1]?.fitScore || "N/A"}%)
+    3. ${topPaths[2]?.name || "N/A"} (${topPaths[2]?.fitScore || "N/A"}%)
+- DO NOT generate previewInsights or keySuccessIndicators (already created).
+- Use clean, specific, professional language only.
+- Do NOT invent numbers, ratings, or filler traits.`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1200,
+      });
+
+      if (response && response.content) {
+        const insights = JSON.parse(response.content);
+        this.cacheInsights(cacheKey, insights);
+        return insights;
+      }
+
+      throw new Error("No valid response from AI service");
+    } catch (error) {
+      console.error("Error generating full report insights:", error);
+      throw error;
+    }
+  }
+
+  // Call 3: Business Model Insights (/business/:modelSlug pages) - ON DEMAND
+  async generateModelInsights(
+    quizData: QuizData,
+    modelName: string,
+    fitType: "best" | "strong" | "possible" | "poor",
+  ): Promise<{
+    modelFitReason: string;
+    keyInsights: string[];
+    successPredictors: string[];
+  }> {
+    try {
+      const quizKey = this.createCacheKey(quizData, []);
+      const cacheKey = `model_${modelName}_${quizKey}`;
+      const cached = this.getCachedInsights(cacheKey);
+
+      if (cached) {
+        console.log(
+          `✅ Using cached model insights for ${modelName} (${fitType})`,
+        );
+        return cached;
+      }
+
+      const userProfile = this.createUserProfile(quizData);
+
+      // Fit-type specific prompt logic
+      let fitPrompt = "";
+      switch (fitType) {
+        case "best":
+          fitPrompt =
+            "Explain why this is the user's ideal match. Use clear, confident tone. keyInsights all positive. successPredictors: traits that increase odds of success.";
+          break;
+        case "strong":
+          fitPrompt =
+            "Explain why it's a great fit, but briefly note why it's not their #1. keyInsights: mostly strengths, 1 light drawback. successPredictors: mostly positive, minor caveat if needed.";
+          break;
+        case "possible":
+          fitPrompt =
+            "Explain why it might work, but emphasize 2–3 quiz-based reasons why it likely won't right now. keyInsights: highlight gaps or blockers. successPredictors: traits that reduce odds of success.";
+          break;
+        case "poor":
+          fitPrompt =
+            "Clearly explain why this model is misaligned with their profile. End with future-oriented line (what would need to change). keyInsights: clear mismatches. successPredictors: traits that would make success unlikely.";
+          break;
+      }
+
+      const response = await this.makeOpenAIRequest({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an AI business coach. Use JSON output. Use a professional and direct tone. Do not invent data.",
+          },
+          {
+            role: "user",
+            content: `Generate personalized AI content for the business model "${modelName}" based on the user's quiz data and fit type "${fitType}".
+
+${fitPrompt}
+
+Return exactly this JSON structure:
+{
+  "modelFitReason": "Single paragraph explaining fit",
+  "keyInsights": ["...", "...", "...", "..."],
+  "successPredictors": ["...", "...", "...", "..."]
+}
+
+CRITICAL RULES:
+- Use existing user profile data only
+- Do not generate markdown or formatted code blocks
+- Keep modelFitReason a single paragraph
+- Return clean, JSON-parsed output
+- Max 700 tokens total
+
+USER PROFILE:
+${userProfile}`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 700,
+      });
+
+      if (response && response.content) {
+        const insights = JSON.parse(response.content);
+        this.cacheInsights(cacheKey, insights);
+        return insights;
+      }
+
+      throw new Error("No valid response from AI service");
+    } catch (error) {
+      console.error(`Error generating model insights for ${modelName}:`, error);
+      throw error;
+    }
+  }
+
   async generateModelInsights(
     quizData: QuizData,
     modelName: string,
@@ -166,7 +365,7 @@ ${userProfile}`,
       }
 
       console.log(
-        `���� Generating fresh model insights for ${modelName} (${fitType})`,
+        `🔄 Generating fresh model insights for ${modelName} (${fitType})`,
       );
 
       const userProfile = this.createUserProfile(quizData);
