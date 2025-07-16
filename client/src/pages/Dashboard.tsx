@@ -708,20 +708,20 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-6 lg:gap-3 lg:mb-6">
-                        <div className="text-center bg-gray-50 rounded-xl p-2 sm:p-3 md:p-4 lg:p-3">
-                          <div className="text-xs text-gray-500 font-medium mb-1 md:mb-2 lg:text-xs lg:mb-1">
+                      <div className="grid grid-cols-2 gap-4 mb-6 sm:mb-6 md:mb-6 lg:gap-3 lg:mb-6">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
+                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
                             Time to Profit
                           </div>
-                          <div className="font-bold text-gray-900 text-xs sm:text-sm md:text-base lg:text-sm">
+                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
                             {model.timeToProfit}
                           </div>
                         </div>
-                        <div className="text-center bg-gray-50 rounded-xl p-2 sm:p-3 md:p-4 lg:p-3">
-                          <div className="text-xs text-gray-500 font-medium mb-1 md:mb-2 lg:text-xs lg:mb-1">
+                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
+                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
                             Income
                           </div>
-                          <div className="font-bold text-gray-900 text-xs sm:text-sm md:text-base lg:text-sm">
+                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
                             {model.potentialIncome}
                           </div>
                         </div>
@@ -730,8 +730,8 @@ const Dashboard: React.FC = () => {
                       {/* Spacer to push button to bottom */}
                       <div className="flex-grow"></div>
 
-                      <div className="flex items-center mt-auto pt-2">
-                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 sm:py-3 md:py-4 lg:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-xs sm:text-sm md:text-base lg:text-sm shadow-lg hover:shadow-xl">
+                      <div className="flex items-center mt-auto">
+                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 sm:py-4 md:py-4 lg:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm sm:text-base md:text-base lg:text-sm sm:shadow-lg md:shadow-lg hover:shadow-xl">
                           Select This Model
                         </button>
                       </div>
