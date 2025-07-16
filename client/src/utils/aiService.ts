@@ -224,7 +224,7 @@ ${userProfile}`,
         }
       }
 
-      console.log("🔄 Generating fresh full report insights");
+      console.log("Generating fresh full report insights");
       const userProfile = this.createUserProfile(quizData);
 
       const response = await this.makeOpenAIRequest({
