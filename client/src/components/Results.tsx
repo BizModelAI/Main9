@@ -368,45 +368,42 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     }
   };
 
-  // ALWAYS generate fresh AI content - NO CACHED DATA ON RESULTS PAGE
+  // Use AI content generated during quiz-loading page
   useEffect(() => {
     if (personalizedPaths.length > 0) {
-      console.log(
-        "🚀 GENERATING FRESH AI CONTENT FOR RESULTS PAGE - NO CACHED DATA",
-      );
-      setIsGeneratingAI(true);
-      generateFreshAIContent(personalizedPaths[0]);
-    }
-  }, [personalizedPaths]);
+      // Check for AI data generated during quiz-loading
+      const cachedAIData = localStorage.getItem("quiz-completion-ai-insights");
 
-  // Generate fresh AI content for every Results page visit
-  const generateFreshAIContent = async (topPath: BusinessPath) => {
-    try {
-      console.log("🧠 Making fresh OpenAI API call for Results preview");
+      if (cachedAIData) {
+        try {
+          const parsedData = JSON.parse(cachedAIData);
+          const { insights, analysis, complete, error } = parsedData;
 
-      const aiService = AIService.getInstance();
+          if (complete && !error && insights) {
+            console.log("✅ Using AI content generated during quiz-loading");
+            setAiInsights(insights);
+            if (analysis) {
+              setAiAnalysis(analysis);
+            } else {
+              setAiAnalysis(generateFallbackAnalysis());
+            }
+            setIsGeneratingAI(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Error parsing AI data from quiz-loading:", error);
+        }
+      }
 
-      // Generate fresh insights and analysis every time
-      const [insights, analysis] = await Promise.all([
-        aiService.generatePersonalizedInsights(quizData, topPath),
-        aiService.generateDetailedAnalysis(quizData, topPath),
-      ]);
-
-      console.log("✅ Fresh AI content generated successfully");
-      setAiInsights(insights);
-      setAiAnalysis(analysis);
-      setIsGeneratingAI(false);
-    } catch (error) {
-      console.error("❌ OpenAI API failed, using fallback content:", error);
-
-      // Only use fallback if OpenAI API actually fails
+      // Fallback only if no AI data from quiz-loading
+      console.log("⚠️ No AI data from quiz-loading, using fallback content");
       const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
       const fallbackAnalysis = generateFallbackAnalysis();
       setAiInsights(fallbackInsights);
       setAiAnalysis(fallbackAnalysis);
       setIsGeneratingAI(false);
     }
-  };
+  }, [personalizedPaths]);
 
   // Helper function to execute download action (PDF)
   const executeDownloadAction = async () => {
