@@ -382,7 +382,7 @@ CRITICAL RULES:
         );
         if (existingContent) {
           console.log(
-            `✅ Using existing model insights for ${modelName} from database`,
+            `Using existing model insights for ${modelName} from database`,
           );
           return existingContent;
         }
@@ -656,7 +656,7 @@ ${userProfile}`,
         );
 
         if (response.ok) {
-          console.log(`✅ ${contentType} AI content saved to database`);
+          console.log(`${contentType} AI content saved to database`);
         } else {
           console.error(
             `❌ Failed to save ${contentType} AI content to database:`,
@@ -668,7 +668,7 @@ ${userProfile}`,
       } else {
         // TIER 3: Save to localStorage for anonymous users (no email provided)
         console.log(
-          `💾 Saving ${contentType} AI content to localStorage (anonymous user)`,
+          `���� Saving ${contentType} AI content to localStorage (anonymous user)`,
         );
         this.saveAIContentToLocalStorage(contentType, content);
       }
@@ -696,7 +696,7 @@ ${userProfile}`,
       localStorage.setItem(`${storageKey}_expires`, expiresAt.toString());
 
       console.log(
-        `✅ ${contentType} AI content saved to localStorage, expires at: ${new Date(expiresAt)}`,
+        `${contentType} AI content saved to localStorage, expires at: ${new Date(expiresAt)}`,
       );
     } catch (error) {
       console.error(
@@ -729,13 +729,13 @@ ${userProfile}`,
 
       if (hasProvidedEmail) {
         console.log(
-          `✅ Unpaid user provided email (${userEmail}) - will save to database`,
+          `Unpaid user provided email (${userEmail}) - will save to database`,
         );
         return true;
       }
 
       console.log(
-        `⏭️ Unpaid user hasn't provided email - will not save to database`,
+        `Unpaid user hasn't provided email - will not save to database`,
       );
       return false;
     } catch (error) {
@@ -834,7 +834,7 @@ ${userProfile}`,
     topPath: BusinessPath,
   ): Promise<any> {
     console.warn(
-      "⚠️ generateDetailedAnalysis is deprecated. Use generatePersonalizedInsights instead.",
+      "generateDetailedAnalysis is deprecated. Use generatePersonalizedInsights instead.",
     );
     return this.generatePersonalizedInsights(quizData, [topPath]);
   }
@@ -927,7 +927,7 @@ ${userProfile}`,
 
           const result = JSON.parse(cleanContent);
           console.log(
-            "✅ Consolidated full report content generated successfully",
+            "Consolidated full report content generated successfully",
           );
           return {
             businessFitDescriptions: result.businessFitDescriptions || {},
