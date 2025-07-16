@@ -47,7 +47,7 @@ When an unpaid user upgrades to paid:
 1. `users.is_paid` set to `true`
 2. `users.is_temporary` set to `false`
 3. `users.expires_at` set to `NULL` (permanent)
-4. All associated `quiz_attempts.expires_at` set to `NULL` (permanent)
+4. All associated quiz attempts become permanent automatically
 
 ## Email Notifications
 
