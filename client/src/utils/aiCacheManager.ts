@@ -167,6 +167,16 @@ export class AICacheManager {
    * Force reset cache (called when starting a NEW quiz)
    */
   forceResetCache(): void {
+    // Check if we've already reset cache recently (prevents double-reset in React StrictMode)
+    const lastReset = localStorage.getItem("ai-cache-reset-timestamp");
+    if (lastReset && Date.now() - parseInt(lastReset) < 3000) {
+      // 3 second window
+      console.log(
+        "🔄 AI cache already reset recently, skipping duplicate reset",
+      );
+      return;
+    }
+
     console.log("🔄 Force resetting AI cache for new quiz attempt");
     this.clearAllCache();
   }
