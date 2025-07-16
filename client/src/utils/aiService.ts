@@ -80,7 +80,7 @@ Personality Traits (0–5 scale):
           "preview",
         );
         if (existingContent) {
-          console.log("✅ Using existing preview insights from database");
+          console.log("Using existing preview insights from database");
           return existingContent;
         }
       }
