@@ -403,6 +403,30 @@ export async function registerRoutes(app: Express): Promise<void> {
         ],
       };
 
+      // Store fallback skills analysis in database if user is authenticated
+      try {
+        const userId = await getUserIdFromRequest(req);
+        if (userId) {
+          const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+          if (quizAttemptId) {
+            const { businessModel } = req.body;
+            await storage.saveAIContentToQuizAttempt(
+              quizAttemptId,
+              `skills_${businessModel}`,
+              fallbackResult,
+            );
+            console.log(
+              `✅ Fallback skills analysis for ${businessModel} stored in database`,
+            );
+          }
+        }
+      } catch (dbError) {
+        console.warn(
+          "⚠️ Failed to store fallback skills analysis in database:",
+          dbError,
+        );
+      }
+
       res.json(fallbackResult);
     }
   });
