@@ -744,6 +744,147 @@ ${userProfile}`,
     );
     return this.generatePersonalizedInsights(quizData, [topPath]);
   }
+
+  // Consolidated full report generation - replaces 4 separate calls with 1 call
+  async generateFullReportContent(
+    quizData: QuizData,
+    topBusinessModels: any[],
+  ): Promise<{
+    businessFitDescriptions: { [key: string]: string };
+    fullReportInsights: {
+      customRecommendations: string[];
+      potentialChallenges: string[];
+    };
+  }> {
+    try {
+      console.log("🚀 Generating consolidated full report content (1 AI call)");
+
+      const userProfile = this.createUserProfile(
+        quizData,
+        topBusinessModels[0],
+      );
+
+      const response = await this.makeOpenAIRequest({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an AI business coach. Use JSON output. Use a professional and direct tone. Do not invent data.",
+          },
+          {
+            role: "user",
+            content: `Generate comprehensive business analysis for this user based on their quiz data and top 3 business models.
+
+Generate the following content:
+
+1. Business Fit Descriptions: For each of the top 3 business models, write a single paragraph explaining why this model fits (or doesn't fit) the user's profile.
+
+2. General Business Recommendations: 4-6 actionable recommendations for this user's entrepreneurial journey (not model-specific).
+
+3. Potential Challenges: 4-5 challenges this user might face based on their quiz responses and profile.
+
+Top 3 Business Models:
+${topBusinessModels.map((model, index) => `${index + 1}. ${model.name} (${model.score}% match)`).join("\n")}
+
+Return exactly this JSON structure:
+{
+  "businessFitDescriptions": {
+    "${topBusinessModels[0]?.id}": "Paragraph for model 1",
+    "${topBusinessModels[1]?.id}": "Paragraph for model 2",
+    "${topBusinessModels[2]?.id}": "Paragraph for model 3"
+  },
+  "customRecommendations": ["...", "...", "...", "...", "...", "..."],
+  "potentialChallenges": ["...", "...", "...", "...", "..."]
+}
+
+CRITICAL RULES:
+- Use only the data from this user profile
+- Do NOT invent data or use generic filler
+- Each business fit description should be 1 focused paragraph
+- Recommendations should be specific and actionable
+- Challenges should be realistic based on user's profile
+- Max 1200 tokens total
+
+USER PROFILE:
+${userProfile}`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1200,
+      });
+
+      if (response && response.content) {
+        try {
+          // Clean up the response content to ensure valid JSON
+          let cleanContent = response.content.trim();
+
+          // Remove any potential markdown code blocks
+          cleanContent = cleanContent
+            .replace(/```json\s*/g, "")
+            .replace(/```\s*/g, "");
+
+          // Find the JSON object (between first { and last })
+          const firstBrace = cleanContent.indexOf("{");
+          const lastBrace = cleanContent.lastIndexOf("}");
+
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
+          }
+
+          const result = JSON.parse(cleanContent);
+          console.log(
+            "✅ Consolidated full report content generated successfully",
+          );
+          return {
+            businessFitDescriptions: result.businessFitDescriptions || {},
+            fullReportInsights: {
+              customRecommendations: result.customRecommendations || [],
+              potentialChallenges: result.potentialChallenges || [],
+            },
+          };
+        } catch (parseError) {
+          console.error(
+            "JSON parse error in generateFullReportContent:",
+            response.content,
+          );
+          console.error("Parse error details:", parseError);
+          throw parseError;
+        }
+      }
+
+      throw new Error("No response from OpenAI");
+    } catch (error) {
+      console.error(
+        "Error generating consolidated full report content:",
+        error,
+      );
+
+      // Return fallback content
+      const fallbackFitDescriptions: { [key: string]: string } = {};
+      topBusinessModels.forEach((model) => {
+        fallbackFitDescriptions[model.id] =
+          `${model.name} appears to be a good match based on your quiz responses and entrepreneurial goals.`;
+      });
+
+      return {
+        businessFitDescriptions: fallbackFitDescriptions,
+        fullReportInsights: {
+          customRecommendations: [
+            "Focus on developing your core business skills",
+            "Start with a minimum viable product to test the market",
+            "Build a strong online presence and network",
+            "Track your progress and adjust strategies as needed",
+          ],
+          potentialChallenges: [
+            "Time management while building your business",
+            "Learning new skills and technologies",
+            "Finding and retaining customers",
+            "Managing finances and cash flow",
+          ],
+        },
+      };
+    }
+  }
 }
 
 // Export singleton instance
