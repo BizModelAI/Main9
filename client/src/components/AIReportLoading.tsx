@@ -383,82 +383,18 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
       const businessModels = topThreeAdvanced.slice(0, 3).map((match) => ({
         id: match.id,
         name: match.name,
-        score: match.score,
+        fitScore: match.score,
+        description: match.description || "",
       }));
 
-      const prompt = `Based on the quiz data and business model matches, generate personalized explanations for why each business model fits this user. Focus on specific aspects of their profile that align with each model.
+      const { AIService } = await import("../utils/aiService");
+      const aiService = AIService.getInstance();
 
-Quiz Data Summary:
-- Self-motivation: ${quizData.selfMotivationLevel}/5
-- Risk tolerance: ${quizData.riskComfortLevel}/5
-- Tech skills: ${quizData.techSkillsRating}/5
-- Time commitment: ${quizData.weeklyTimeCommitment} hours/week
-- Income goal: ${quizData.successIncomeGoal}
-- Learning preference: ${quizData.learningPreference}
-- Work collaboration: ${quizData.workCollaborationPreference}
-
-Business Models:
-${businessModels.map((model) => `- ${model.name} (${model.score}% fit)`).join("\n")}
-
-For each business model, write a 2-3 sentence explanation of why it fits this user's profile. Focus on specific strengths and alignments.
-
-Return JSON format:
-{
-  "descriptions": [
-    {"businessId": "business-id", "description": "explanation here"},
-    {"businessId": "business-id", "description": "explanation here"},
-    {"businessId": "business-id", "description": "explanation here"}
-  ]
-}`;
-
-      const response = await fetch("/api/generate-business-fit-descriptions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ quizData, businessMatches: businessModels }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate business fit descriptions");
-      }
-
-      const data = await response.json();
-      let cleanContent = data.content || "";
-
-      // If data.content is not available, check if data itself is a string
-      if (!cleanContent && typeof data === "string") {
-        cleanContent = data;
-      }
-
-      // If we still don't have content, try to stringify the data object
-      if (!cleanContent && typeof data === "object" && data !== null) {
-        cleanContent = JSON.stringify(data);
-      }
-
-      // Ensure cleanContent is a string before proceeding
-      if (typeof cleanContent !== "string") {
-        throw new Error("Invalid response format: expected string content");
-      }
-
-      if (cleanContent.includes("```json")) {
-        cleanContent = cleanContent
-          .replace(/```json\n?/g, "")
-          .replace(/```/g, "");
-      }
-
-      const parsed = JSON.parse(cleanContent);
-      const descriptionsMap: { [key: string]: string } = {};
-
-      if (parsed && parsed.descriptions && Array.isArray(parsed.descriptions)) {
-        parsed.descriptions.forEach(
-          (desc: { businessId: string; description: string }) => {
-            descriptionsMap[desc.businessId] = desc.description;
-          },
-        );
-      }
-
-      return descriptionsMap;
+      // Use the deprecated wrapper method for backward compatibility
+      return await aiService.generateBusinessFitDescriptions(
+        quizData,
+        businessModels,
+      );
     } catch (error) {
       console.error("Error generating business fit descriptions:", error);
       // Set fallback descriptions
