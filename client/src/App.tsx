@@ -246,6 +246,34 @@ function MainAppContent() {
   console.log("MainAppContent - quizData:", !!quizData);
   console.log("MainAppContent - userEmail:", userEmail);
 
+  // Load quiz data from server if not already loaded
+  React.useEffect(() => {
+    const loadQuizData = async () => {
+      if (!quizData) {
+        console.log("MainAppContent - Loading quiz data from server...");
+        try {
+          const response = await fetch("/api/auth/latest-quiz-data", {
+            credentials: "include",
+          });
+          if (response.ok) {
+            const data = await response.json();
+            console.log(
+              "MainAppContent - Received quiz data from server:",
+              data,
+            );
+            if (data.quizData) {
+              setQuizData(data.quizData);
+            }
+          }
+        } catch (error) {
+          console.error("MainAppContent - Error loading quiz data:", error);
+        }
+      }
+    };
+
+    loadQuizData();
+  }, [quizData, setQuizData]);
+
   if (location.pathname === "/quiz") {
     return (
       <QuizWithNavigation
