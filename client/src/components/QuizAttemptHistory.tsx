@@ -312,8 +312,17 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                   ) : (
-                    <button className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                      <Eye className="w-4 h-4" />
+                    <button
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleSelectQuiz(attempt)}
+                      disabled={loadingAttemptId === attempt.id}
+                      title={`View quiz from ${format(new Date(attempt.completedAt), "MMM d, yyyy")}`}
+                    >
+                      {loadingAttemptId === attempt.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   )}
                 </div>
