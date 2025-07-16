@@ -181,7 +181,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
       // Show success notification
       const attemptDate = format(new Date(attempt.completedAt), "MMM d, yyyy");
       // You can customize this notification system as needed
-      console.log(`✅ Successfully loaded quiz from ${attemptDate}`);
+      console.log(`Successfully loaded quiz from ${attemptDate}`);
 
       // Instead of page reload, trigger a React state update
       console.log("Quiz attempt switched successfully without page reload");
