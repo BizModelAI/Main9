@@ -164,7 +164,7 @@ export class AIScoringService {
         ),
       ])) as OpenAI.Chat.Completions.ChatCompletion;
 
-      console.log("✅ OpenAI API call completed successfully");
+      console.log("OpenAI API call completed successfully");
       const content = response.choices[0].message.content;
       if (!content) {
         console.error("No content in AI response, using fallback");
@@ -209,7 +209,7 @@ export class AIScoringService {
         "🔄 Falling back to algorithmic analysis due to OpenAI error",
       );
       const fallbackResult = this.fallbackAnalysis(quizData);
-      console.log("✅ Fallback analysis completed successfully");
+      console.log("Fallback analysis completed successfully");
       return fallbackResult;
     }
   }
@@ -315,7 +315,7 @@ export class AIScoringService {
   }
 
   private fallbackAnalysis(quizData: QuizData): ComprehensiveFitAnalysis {
-    console.log("🎯 Starting fallback analysis (algorithmic scoring)");
+    console.log("Starting fallback analysis (algorithmic scoring)");
     // Enhanced algorithmic scoring as fallback
     const scoredPaths = businessPaths
       .map((path) => {
