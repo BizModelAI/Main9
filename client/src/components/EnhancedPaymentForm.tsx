@@ -346,6 +346,7 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
   setIsProcessing,
   amount = 9.99,
   isFirstReport = true,
+  quizAttemptId,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
