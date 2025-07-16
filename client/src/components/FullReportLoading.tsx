@@ -100,13 +100,16 @@ export default function FullReportLoading({
   const generateFullReportData = async () => {
     try {
       console.log(
-        "🔄 Generating full report data with AI (3 calls for business fit descriptions)",
+        "🚀 Generating full report data with consolidated AI (1 call instead of 4)",
       );
 
       // Dynamic import to avoid bundle issues
       const { AIService } = await import("../utils/aiService");
       const { businessModelService } = await import(
         "../utils/businessModelService"
+      );
+      const { getActionPlanForModel, MOTIVATIONAL_MESSAGE } = await import(
+        "../utils/hardcodedContent"
       );
 
       const aiService = AIService.getInstance();
@@ -116,31 +119,18 @@ export default function FullReportLoading({
         businessModelService.getBusinessModelMatches(quizData);
       const topThreeAdvanced = businessMatches.slice(0, 3);
 
-      console.log("🎯 Generating business fit descriptions for top 3 models:");
+      console.log("🎯 Generating consolidated content for top 3 models:");
       topThreeAdvanced.forEach((match, index) => {
         console.log(`${index + 1}. ${match.name} (${match.score}%)`);
       });
 
-      // Generate business fit descriptions for top 3 models (3 AI calls)
-      const businessFitDescriptions: { [key: string]: string } = {};
+      // Generate all content with 1 consolidated AI call
+      const consolidatedContent = await aiService.generateFullReportContent(
+        quizData,
+        topThreeAdvanced,
+      );
 
-      for (const model of topThreeAdvanced) {
-        try {
-          console.log(`🔮 Generating insights for ${model.name}...`);
-          const insights = await aiService.generateModelInsights(
-            quizData,
-            model.name,
-            "best",
-          );
-          businessFitDescriptions[model.id] = insights.modelFitReason;
-        } catch (error) {
-          console.error(`Error generating insights for ${model.name}:`, error);
-          businessFitDescriptions[model.id] =
-            `This business model shows potential based on your skills and interests.`;
-        }
-      }
-
-      // Generate business avoid descriptions for bottom 3 models (fallback only - no AI calls)
+      // Generate business avoid descriptions (hardcoded - no AI needed)
       const bottomThree = businessModelService.getBottomMatches(quizData, 3);
       const businessAvoidDescriptions: { [key: string]: string } = {};
 
@@ -149,14 +139,37 @@ export default function FullReportLoading({
           `This business model scored ${match.score}% for your profile, indicating significant misalignment with your current goals, skills, and preferences. Based on your quiz responses, you would likely face substantial challenges in this field that could impact your success. Consider focusing on higher-scoring business models that better match your natural strengths and current situation. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable for your entrepreneurial journey.`;
       });
 
-      // Generate full personalized insights (includes both preview and full report data)
-      const insights = await aiService.generatePersonalizedInsights(
-        quizData,
-        topThreeAdvanced,
+      // Get hardcoded action plan for the top business model
+      const topModelActionPlan = getActionPlanForModel(
+        topThreeAdvanced[0]?.name || "",
       );
 
+      // Create final insights object with both AI-generated and hardcoded content
+      const insights = {
+        // Use the 3 paragraphs from Results page (already cached) instead of AI-generated summary
+        personalizedSummary: "Analysis will be pulled from Results page cache",
+
+        // AI-generated content from consolidated call
+        customRecommendations:
+          consolidatedContent.fullReportInsights.customRecommendations,
+        potentialChallenges:
+          consolidatedContent.fullReportInsights.potentialChallenges,
+
+        // Hardcoded content
+        personalizedActionPlan: topModelActionPlan,
+        motivationalMessage: MOTIVATIONAL_MESSAGE,
+
+        // These are used in FullReport but generated elsewhere or hardcoded
+        successStrategies: [
+          "Focus on your top-scoring business model to maximize success potential",
+          "Leverage your strong skills while addressing identified challenges",
+          "Start small and scale gradually based on market feedback",
+          "Build a support network of mentors and fellow entrepreneurs",
+        ],
+      };
+
       console.log(
-        "✅ Full report data generated successfully (4 total AI calls: 3 model insights + 1 personalized insights)",
+        "✅ Full report data generated successfully (1 AI call + hardcoded content)",
       );
       setFullReportData({
         insights,
