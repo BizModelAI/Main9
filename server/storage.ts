@@ -99,7 +99,7 @@ export interface IStorage {
   ): Promise<void>;
   getRefundsByPayment(paymentId: number): Promise<Refund[]>;
   getRefundById(refundId: number): Promise<Refund | undefined>;
-  getAllRefunds(): Promise<Refund[]>;
+  getAllRefunds(limit?: number): Promise<Refund[]>;
 
   // Temporary user management (consolidated into users table)
   storeTemporaryUser(
