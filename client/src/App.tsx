@@ -50,6 +50,10 @@ import QuizCompletionLoading from "./components/QuizCompletionLoading";
 import QuizPaymentRequired from "./pages/QuizPaymentRequired";
 import SaveResultsPayment from "./pages/SaveResultsPayment";
 import { NavigationGuardWrapper } from "./components/NavigationGuardWrapper";
+import { initializeEmojiSafeguards } from "./utils/emojiHelper";
+
+// Initialize emoji corruption prevention system
+initializeEmojiSafeguards();
 
 // Alias for loading page component
 const LoadingPage = AIReportLoading;
