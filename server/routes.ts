@@ -2902,5 +2902,40 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
     }
   });
 
+  // Emergency database schema fix endpoint
+  app.post(
+    "/api/admin/fix-database-schema",
+    async (req: Request, res: Response) => {
+      try {
+        console.log("🔧 Emergency database schema fix requested...");
+
+        // Add missing columns to users table
+        await storage.ensureDb().execute(sql`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS session_id TEXT,
+        ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE NOT NULL,
+        ADD COLUMN IF NOT EXISTS is_temporary BOOLEAN DEFAULT FALSE NOT NULL,
+        ADD COLUMN IF NOT EXISTS temp_quiz_data JSONB,
+        ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP
+      `);
+
+        // Mark all existing users as paid
+        await storage.ensureDb().execute(sql`
+        UPDATE users
+        SET is_paid = TRUE, is_temporary = FALSE
+        WHERE is_paid IS NULL OR is_temporary IS NULL
+      `);
+
+        console.log("✅ Database schema fixed!");
+        res.json({ success: true, message: "Database schema fixed" });
+      } catch (error) {
+        console.error("❌ Database schema fix failed:", error);
+        res
+          .status(500)
+          .json({ error: "Schema fix failed", details: error.message });
+      }
+    },
+  );
+
   // Routes registered successfully
 }
