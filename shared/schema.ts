@@ -155,3 +155,5 @@ export type InsertPasswordResetToken = z.infer<
 >;
 export type ReportView = typeof reportViews.$inferSelect;
 export type InsertReportView = z.infer<typeof insertReportViewSchema>;
+export type AiContent = typeof aiContent.$inferSelect;
+export type InsertAiContent = z.infer<typeof insertAiContentSchema>;
