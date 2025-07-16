@@ -300,9 +300,15 @@ export class EmailService {
                 </a>
               </div>
 
-              <div class="footer-disclaimer" style="font-size: 14px; color: #9CA3AF !important; line-height: 1.5; margin-bottom: 16px;">
+                            <div class="footer-disclaimer" style="font-size: 14px; color: #9CA3AF !important; line-height: 1.5; margin-bottom: 16px;">
                 This email was sent because you completed our business assessment quiz.<br>
                 We're here to help you discover your perfect business path.
+              </div>
+
+              <div class="data-retention-notice" style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 16px; margin: 16px 0; font-size: 13px; color: #92400E !important; line-height: 1.4;">
+                <strong>📅 Data Retention Notice:</strong><br>
+                Your quiz results and data will be stored securely for <strong>3 months</strong> from today. After this period, your data will be automatically deleted from our systems unless you create a paid account.<br><br>
+                <strong>Want to keep your results forever?</strong> <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" style="color: #92400E !important; text-decoration: underline;">Upgrade to unlock your full report</a> and your data will be saved permanently.
               </div>
               <div class="footer-unsubscribe" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #F3F4F6;">
                 <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/unsubscribe" class="unsubscribe-link" style="color: #6B7280 !important; text-decoration: none; font-size: 14px; padding: 8px 16px; border-radius: 6px;">
