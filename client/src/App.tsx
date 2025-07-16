@@ -238,6 +238,7 @@ function MainAppContent() {
     };
   };
 
+  const navigate = useNavigate();
   const location = window.location.pathname;
 
   if (location === "/quiz") {
