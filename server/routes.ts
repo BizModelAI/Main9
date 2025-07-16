@@ -346,6 +346,29 @@ export async function registerRoutes(app: Express): Promise<void> {
       const content = data.choices[0].message.content;
       const result = JSON.parse(content);
 
+      // Store skills analysis in database if user is authenticated
+      try {
+        const userId = await getUserIdFromRequest(req);
+        if (userId) {
+          const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+          if (quizAttemptId) {
+            await storage.saveAIContentToQuizAttempt(
+              quizAttemptId,
+              `skills_${businessModel}`,
+              result,
+            );
+            console.log(
+              `✅ Skills analysis for ${businessModel} stored in database`,
+            );
+          }
+        }
+      } catch (dbError) {
+        console.warn(
+          "⚠️ Failed to store skills analysis in database:",
+          dbError,
+        );
+      }
+
       res.json(result);
     } catch (error) {
       console.error("Error in skills analysis:", error);
