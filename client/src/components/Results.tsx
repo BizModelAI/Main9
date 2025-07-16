@@ -429,8 +429,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Use cached AI data from loading page or set fallback content
   useEffect(() => {
     if (personalizedPaths.length > 0) {
-      // Load cached preview data (NO API calls!)
-      loadCachedPreviewData();
+      // Load generated content from quiz-loading page (NO API calls!)
+      loadGeneratedContent();
     }
   }, [personalizedPaths]);
 
@@ -1485,7 +1485,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                 {/* Column 1 */}
                                 <div className="space-y-6">
                                   <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1">🧠</div>
+                                    <div className="text-3xl mt-1">��</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Your Business Blueprint
