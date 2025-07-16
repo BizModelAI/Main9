@@ -1,4 +1,4 @@
-// NO-OP AI Cache Manager - All caching disabled to force fresh data generation
+// AI Cache Manager - 1-hour cache for current session, cleared between new quiz attempts
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
 
 interface AIInsights {
@@ -15,8 +15,19 @@ interface AIInsights {
   motivationalMessage: string;
 }
 
+interface CachedAIData {
+  quizDataHash: string;
+  timestamp: number;
+  insights: AIInsights;
+  analysis: AIAnalysis;
+  topPath: BusinessPath;
+}
+
 export class AICacheManager {
   private static instance: AICacheManager;
+  private static readonly CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
+  private static readonly CACHE_KEY_PREFIX = "ai-cache-";
+  private static readonly CACHE_VERSION = "v3.0"; // Updated for 1-hour session cache
 
   static getInstance(): AICacheManager {
     if (!AICacheManager.instance) {
@@ -26,21 +37,80 @@ export class AICacheManager {
   }
 
   /**
-   * CACHE DISABLED - Always returns null to force fresh data generation
+   * Generate a hash of quiz data for cache key
+   */
+  private generateQuizDataHash(quizData: QuizData): string {
+    const key = JSON.stringify({
+      version: AICacheManager.CACHE_VERSION,
+      mainMotivation: quizData.mainMotivation,
+      successIncomeGoal: quizData.successIncomeGoal,
+      weeklyTimeCommitment: quizData.weeklyTimeCommitment,
+      techSkillsRating: quizData.techSkillsRating,
+      riskComfortLevel: quizData.riskComfortLevel,
+      directCommunicationEnjoyment: quizData.directCommunicationEnjoyment,
+      socialMediaInterest: quizData.socialMediaInterest,
+    });
+    return btoa(key).substring(0, 16);
+  }
+
+  /**
+   * Check if cached data is still valid (within 1 hour)
+   */
+  private isCacheValid(timestamp: number): boolean {
+    const now = Date.now();
+    const isWithinTimeLimit = now - timestamp < AICacheManager.CACHE_DURATION;
+
+    // Check if cache has been force reset for new quiz
+    const resetTimestamp = localStorage.getItem("ai-cache-reset-timestamp");
+    const wasReset = resetTimestamp && parseInt(resetTimestamp) > timestamp;
+
+    return isWithinTimeLimit && !wasReset;
+  }
+
+  /**
+   * Get cached AI content if valid (for page refreshes within 1 hour)
    */
   getCachedAIContent(quizData: QuizData): {
     insights: AIInsights | null;
     analysis: AIAnalysis | null;
     topPath: BusinessPath | null;
   } {
-    console.log(
-      "🚫 AI Cache disabled - returning null to force fresh generation",
-    );
-    return { insights: null, analysis: null, topPath: null };
+    try {
+      const quizHash = this.generateQuizDataHash(quizData);
+      const cacheKey = `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`;
+      const cachedData = localStorage.getItem(cacheKey);
+
+      if (!cachedData) {
+        console.log("📭 No cached AI data found for this quiz");
+        return { insights: null, analysis: null, topPath: null };
+      }
+
+      const parsedData: CachedAIData = JSON.parse(cachedData);
+
+      // Check if cache is valid and quiz data matches
+      if (
+        parsedData.quizDataHash === quizHash &&
+        this.isCacheValid(parsedData.timestamp)
+      ) {
+        console.log("✅ Using cached AI content (valid for 1 hour)");
+        return {
+          insights: parsedData.insights,
+          analysis: parsedData.analysis,
+          topPath: parsedData.topPath,
+        };
+      } else {
+        console.log("🕐 Cached AI data is stale (>1 hour), removing...");
+        localStorage.removeItem(cacheKey);
+        return { insights: null, analysis: null, topPath: null };
+      }
+    } catch (error) {
+      console.error("❌ Error retrieving cached AI data:", error);
+      return { insights: null, analysis: null, topPath: null };
+    }
   }
 
   /**
-   * CACHE DISABLED - Does nothing, all data goes directly to database
+   * Cache AI content for 1 hour (for page refreshes)
    */
   cacheAIContent(
     quizData: QuizData,
@@ -48,18 +118,34 @@ export class AICacheManager {
     analysis: AIAnalysis,
     topPath: BusinessPath,
   ): void {
-    console.log(
-      "🚫 AI Cache disabled - not caching content, using database storage",
-    );
-    // All data goes directly to database via AIService
+    try {
+      const quizHash = this.generateQuizDataHash(quizData);
+      const cacheData: CachedAIData = {
+        quizDataHash: quizHash,
+        timestamp: Date.now(),
+        insights,
+        analysis,
+        topPath,
+      };
+
+      const cacheKey = `${AICacheManager.CACHE_KEY_PREFIX}${quizHash}`;
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log("💾 AI content cached for 1 hour (allows page refresh)");
+    } catch (error) {
+      console.error("❌ Error caching AI content:", error);
+    }
   }
 
   /**
-   * CACHE DISABLED - No-op
+   * Clear all AI cache (called when starting a NEW quiz)
    */
   clearAllCache(): void {
-    console.log("🚫 AI Cache disabled - no cache to clear");
-    // Clear any remaining localStorage cache keys for cleanup
+    console.log("🧹 Clearing all AI cache for new quiz session");
+
+    // Set reset timestamp to invalidate existing caches
+    localStorage.setItem("ai-cache-reset-timestamp", Date.now().toString());
+
+    // Remove all cache keys
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -67,27 +153,29 @@ export class AICacheManager {
         key &&
         (key.startsWith("ai-cache-") ||
           key.startsWith("ai-analysis-") ||
-          key.startsWith("skills-analysis-"))
+          key.startsWith("skills-analysis-") ||
+          key.startsWith("quiz-completion-ai-insights"))
       ) {
         keysToRemove.push(key);
       }
     }
     keysToRemove.forEach((key) => localStorage.removeItem(key));
+    console.log(`🧹 Removed ${keysToRemove.length} cache entries`);
   }
 
   /**
-   * CACHE DISABLED - No-op
+   * Force reset cache (called when starting a NEW quiz)
    */
   forceResetCache(): void {
-    console.log("🚫 AI Cache disabled - clearing any remaining cache keys");
+    console.log("🔄 Force resetting AI cache for new quiz attempt");
     this.clearAllCache();
   }
 
   /**
-   * CACHE DISABLED - Always returns false to indicate cache miss
+   * Check if data is cached for current quiz
    */
   isCacheHit(quizData: QuizData): boolean {
-    console.log("🚫 AI Cache disabled - always returning cache miss");
-    return false;
+    const cached = this.getCachedAIContent(quizData);
+    return cached.insights !== null;
   }
 }
