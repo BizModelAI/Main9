@@ -51,6 +51,7 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
     aiAnalysis = passedAIAnalysis;
   } else {
     // Fallback to cached data if no AI data was passed
+    const aiCacheManager = AICacheManager.getInstance();
     const cachedData = aiCacheManager.getCachedAIContent(quizData);
     aiInsights = cachedData.insights;
     aiAnalysis = cachedData.analysis;
