@@ -631,7 +631,7 @@ ${userProfile}`,
       );
 
       if (response.ok) {
-        console.log(`✅ ${contentType} AI content saved to database`);
+        console.log(`${contentType} AI content saved to database`);
       } else {
         console.error(
           `❌ Failed to save ${contentType} AI content to database:`,
