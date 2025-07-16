@@ -766,6 +766,10 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           };
         });
 
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         const response = await fetch(
           "/api/generate-business-avoid-descriptions",
           {
@@ -777,11 +781,16 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
               quizData: quizData,
               businessMatches: businessMatches,
             }),
+            signal: controller.signal,
           },
         );
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
-          throw new Error("Failed to generate business avoid descriptions");
+          throw new Error(
+            `HTTP ${response.status}: Failed to generate business avoid descriptions`,
+          );
         }
 
         const data = await response.json();
