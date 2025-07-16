@@ -2232,10 +2232,17 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
             }
           }
         } catch (dbError) {
-          console.warn(
-            "⚠️ Failed to store business fit descriptions in database:",
-            dbError,
-          );
+          const { ErrorHandler } = await import("./utils/errorHandler.js");
+          await ErrorHandler.handleStorageError(dbError as Error, {
+            operation: "store_business_fit_descriptions",
+            context: {
+              quizAttemptId,
+              userId,
+              descriptionsCount: descriptions.length,
+            },
+            isCritical: false,
+            shouldThrow: false,
+          });
         }
 
         res.json({ descriptions });
@@ -2409,7 +2416,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           }
         } catch (dbError) {
           console.warn(
-            "⚠️ Failed to store business avoid descriptions in database:",
+            "⚠��� Failed to store business avoid descriptions in database:",
             dbError,
           );
         }
