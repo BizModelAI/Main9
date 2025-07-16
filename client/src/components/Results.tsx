@@ -189,7 +189,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Basic access shows the first result, but full reports require payment for both auth/non-auth users
   const canViewFullReport = user ? isReportUnlocked : false;
 
-  useEffect(() => {
+    useEffect(() => {
     const initializeResults = async () => {
       console.log("Results component received quizData:", quizData);
 
@@ -230,104 +230,101 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         socialMediaInterest: quizData.socialMediaInterest,
       });
 
-      try {
-        // Use database-stored business model results (with fallback to fresh calculation)
-        const advancedScores =
-          await businessModelStorageService.getBusinessModelResults(quizData);
-        console.log("All business model scores:", advancedScores);
-        console.log(
-          "Top 5 business models:",
-          advancedScores
-            .slice(0, 5)
-            .map((s) => `${s.name} (${s.score}%)`)
-            .join(", "),
-        );
+            // Use centralized business model service for fresh calculation
+      const advancedScores = businessModelService.getBusinessModelMatches(quizData);
+    console.log("All business model scores:", advancedScores);
+    console.log(
+      "Top 5 business models:",
+      advancedScores
+        .slice(0, 5)
+        .map((s) => `${s.name} (${s.score}%)`)
+        .join(", "),
+    );
 
-        // Convert to BusinessPath format for compatibility
-        const convertedPaths: BusinessPath[] = advancedScores.map((score) => ({
-          id: score.id,
-          name: score.name,
-          description: getBusinessModelDescription(score.id, score.name),
-          detailedDescription: `${score.name} with ${score.score}% compatibility`,
-          fitScore: score.score,
-          difficulty:
-            score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
-          timeToProfit:
-            score.score >= 80
-              ? "1-3 months"
-              : score.score >= 60
-                ? "3-6 months"
-                : "6+ months",
-          startupCost:
-            score.score >= 70
-              ? "$0-500"
-              : score.score >= 50
-                ? "$500-2000"
-                : "$2000+",
-          potentialIncome:
-            score.score >= 80
-              ? "$3K-10K+/month"
-              : score.score >= 60
-                ? "$1K-5K/month"
-                : "$500-2K/month",
-          pros: [
-            `${score.score}% compatibility match`,
-            `${score.category} for your profile`,
-            "Personalized recommendations",
-          ],
-          cons:
-            score.score < 70
-              ? ["Lower compatibility score", "May require skill development"]
-              : ["Minor adjustments needed"],
-          tools: [
-            "Standard business tools",
-            "Communication platforms",
-            "Analytics tools",
-          ],
-          skills: ["Basic business skills", "Communication", "Organization"],
-          icon: "💼",
-          marketSize: "Large",
-          averageIncome: {
-            beginner: "$1K-3K",
-            intermediate: "$3K-8K",
-            advanced: "$8K-20K+",
-          },
-          userStruggles: ["Getting started", "Finding clients", "Scaling up"],
-          solutions: [
-            "Step-by-step guidance",
-            "Proven frameworks",
-            "Community support",
-          ],
-          bestFitPersonality: ["Motivated", "Organized", "Goal-oriented"],
-          resources: {
-            platforms: ["LinkedIn", "Website", "Social Media"],
-            learning: ["Online courses", "Books", "Mentorship"],
-            tools: ["CRM", "Analytics", "Communication"],
-          },
-          actionPlan: {
-            phase1: [
-              "Setup basic infrastructure",
-              "Define target market",
-              "Create initial offerings",
-            ],
-            phase2: [
-              "Launch marketing campaigns",
-              "Build client base",
-              "Optimize processes",
-            ],
-            phase3: ["Scale operations", "Expand services", "Build team"],
-          },
-        }));
+    // Convert to BusinessPath format for compatibility
+    const convertedPaths: BusinessPath[] = advancedScores.map((score) => ({
+      id: score.id,
+      name: score.name,
+      description: getBusinessModelDescription(score.id, score.name),
+      detailedDescription: `${score.name} with ${score.score}% compatibility`,
+      fitScore: score.score,
+      difficulty:
+        score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
+      timeToProfit:
+        score.score >= 80
+          ? "1-3 months"
+          : score.score >= 60
+            ? "3-6 months"
+            : "6+ months",
+      startupCost:
+        score.score >= 70
+          ? "$0-500"
+          : score.score >= 50
+            ? "$500-2000"
+            : "$2000+",
+      potentialIncome:
+        score.score >= 80
+          ? "$3K-10K+/month"
+          : score.score >= 60
+            ? "$1K-5K/month"
+            : "$500-2K/month",
+      pros: [
+        `${score.score}% compatibility match`,
+        `${score.category} for your profile`,
+        "Personalized recommendations",
+      ],
+      cons:
+        score.score < 70
+          ? ["Lower compatibility score", "May require skill development"]
+          : ["Minor adjustments needed"],
+      tools: [
+        "Standard business tools",
+        "Communication platforms",
+        "Analytics tools",
+      ],
+      skills: ["Basic business skills", "Communication", "Organization"],
+      icon: "💼",
+      marketSize: "Large",
+      averageIncome: {
+        beginner: "$1K-3K",
+        intermediate: "$3K-8K",
+        advanced: "$8K-20K+",
+      },
+      userStruggles: ["Getting started", "Finding clients", "Scaling up"],
+      solutions: [
+        "Step-by-step guidance",
+        "Proven frameworks",
+        "Community support",
+      ],
+      bestFitPersonality: ["Motivated", "Organized", "Goal-oriented"],
+      resources: {
+        platforms: ["LinkedIn", "Website", "Social Media"],
+        learning: ["Online courses", "Books", "Mentorship"],
+        tools: ["CRM", "Analytics", "Communication"],
+      },
+      actionPlan: {
+        phase1: [
+          "Setup basic infrastructure",
+          "Define target market",
+          "Create initial offerings",
+        ],
+        phase2: [
+          "Launch marketing campaigns",
+          "Build client base",
+          "Optimize processes",
+        ],
+        phase3: ["Scale operations", "Expand services", "Build team"],
+      },
+    }));
 
-        setPersonalizedPaths(convertedPaths);
+            setPersonalizedPaths(convertedPaths);
 
         // Mark quiz as completed
         setHasCompletedQuiz(true);
       } catch (error) {
         console.error("❌ Error initializing results:", error);
         // Fallback to immediate calculation if database fails
-        const fallbackScores =
-          businessModelService.getBusinessModelMatches(quizData);
+        const fallbackScores = businessModelService.getBusinessModelMatches(quizData);
         const convertedPaths: BusinessPath[] = fallbackScores.map((score) => ({
           id: score.id,
           name: score.name,
