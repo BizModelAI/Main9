@@ -653,15 +653,16 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
     const aiCacheManager = AICacheManager.getInstance();
     aiCacheManager.forceResetCache();
 
-    // Clear any additional AI cache keys from previous sessions
+    // Clear any remaining localStorage AI cache keys from previous sessions
+    // Note: AI content is now stored in database, not localStorage
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (
         key &&
-        (key.startsWith("ai_insights_") || // AI service cache keys
-          key.startsWith("preview_") || // Preview cache keys
-          key.startsWith("fullreport_") || // Full report cache keys
+        (key.startsWith("ai_insights_") || // Legacy AI service cache keys
+          key.startsWith("preview_") || // Legacy preview cache keys
+          key.startsWith("fullreport_") || // Legacy full report cache keys
           key.startsWith("ai-analysis-") ||
           key.startsWith("skills-analysis-") ||
           key.startsWith("ai-cache-"))
@@ -672,7 +673,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
     keysToRemove.forEach((key) => localStorage.removeItem(key));
 
     console.log(
-      `✅ Cleared AI caches and ${keysToRemove.length + 8} cache entries for new quiz`,
+      `✅ Cleared AI caches and ${keysToRemove.length + 8} legacy cache entries for new quiz (AI content now stored in database)`,
     );
   }, []); // Run only once when component mounts
 
