@@ -2159,6 +2159,33 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           }),
         );
 
+        // Store fallback business fit descriptions in database if user is authenticated
+        try {
+          const userId = await getUserIdFromRequest(req);
+          if (userId) {
+            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            if (quizAttemptId) {
+              const descriptionsMap: { [key: string]: string } = {};
+              fallbackDescriptions.forEach((desc: any) => {
+                descriptionsMap[desc.businessId] = desc.description;
+              });
+              await storage.saveAIContentToQuizAttempt(
+                quizAttemptId,
+                "businessFitDescriptions",
+                descriptionsMap,
+              );
+              console.log(
+                "✅ Fallback business fit descriptions stored in database",
+              );
+            }
+          }
+        } catch (dbError) {
+          console.warn(
+            "⚠️ Failed to store fallback business fit descriptions in database:",
+            dbError,
+          );
+        }
+
         res.json({ descriptions: fallbackDescriptions });
       }
     },
