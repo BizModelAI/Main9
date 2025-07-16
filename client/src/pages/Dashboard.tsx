@@ -81,145 +81,143 @@ const Dashboard: React.FC = () => {
           const calculatedMatches = calculateAllBusinessModelMatches(quizData);
 
           // Map the calculated results to the format expected by the UI
-          const formattedBusinessModels = calculatedMatches
-            .slice(0, 9)
-            .map((match) => {
-              // Map business model IDs to the UI format
-              const businessModelMap: Record<string, any> = {
-                "content-creation": {
-                  id: "content-creation-ugc",
-                  name: "Content Creation & UGC",
-                  description:
-                    "Create engaging content and user-generated content for brands",
-                  timeToProfit: "2-4 weeks",
-                  potentialIncome: "$2K-15K/month",
-                  difficulty: "Beginner",
-                  icon: "📱",
-                },
-                "affiliate-marketing": {
-                  id: "affiliate-marketing",
-                  name: "Affiliate Marketing",
-                  description:
-                    "Promote other people's products and earn commission on sales",
-                  timeToProfit: "3-6 months",
-                  potentialIncome: "$100-10K+/month",
-                  difficulty: "Easy",
-                  icon: "��",
-                },
-                freelancing: {
-                  id: "freelancing",
-                  name: "Freelancing",
-                  description:
-                    "Offer your skills and services to clients on a project basis",
-                  timeToProfit: "1-2 weeks",
-                  potentialIncome: "$500-8K/month",
-                  difficulty: "Easy",
-                  icon: "💼",
-                },
-                "e-commerce": {
-                  id: "e-commerce-dropshipping",
-                  name: "E-commerce / Dropshipping",
-                  description: "Sell products online without holding inventory",
-                  timeToProfit: "2-6 months",
-                  potentialIncome: "$1K-50K/month",
-                  difficulty: "Medium",
-                  icon: "🛍️",
-                },
-                "virtual-assistant": {
-                  id: "virtual-assistant",
-                  name: "Virtual Assistant",
-                  description:
-                    "Provide administrative support to businesses remotely",
-                  timeToProfit: "1-3 weeks",
-                  potentialIncome: "$300-5K/month",
-                  difficulty: "Easy",
-                  icon: "💻",
-                },
-                "online-tutoring": {
-                  id: "online-coaching-consulting",
-                  name: "Online Coaching & Consulting",
-                  description:
-                    "Share your expertise through 1-on-1 coaching or consulting",
-                  timeToProfit: "4-8 weeks",
-                  potentialIncome: "$1K-20K/month",
-                  difficulty: "Medium",
-                  icon: "🎯",
-                },
-                "handmade-goods": {
-                  id: "print-on-demand",
-                  name: "Print on Demand",
-                  description:
-                    "Design and sell custom products without inventory",
-                  timeToProfit: "6-12 weeks",
-                  potentialIncome: "$200-8K/month",
-                  difficulty: "Easy",
-                  icon: "🎨",
-                },
-                "youtube-automation": {
-                  id: "youtube-automation",
-                  name: "YouTube Automation",
-                  description:
-                    "Create and monetize YouTube channels with outsourced content",
-                  timeToProfit: "3-9 months",
-                  potentialIncome: "$500-15K/month",
-                  difficulty: "Medium",
-                  icon: "📹",
-                },
-                "local-service": {
-                  id: "local-service-arbitrage",
-                  name: "Local Service Arbitrage",
-                  description: "Connect local customers with service providers",
-                  timeToProfit: "2-8 weeks",
-                  potentialIncome: "$1K-12K/month",
-                  difficulty: "Medium",
-                  icon: "🏠",
-                },
-                "saas-development": {
-                  id: "app-saas-development",
-                  name: "App / SaaS Development",
-                  description:
-                    "Build and launch software applications or SaaS products",
-                  timeToProfit: "6-18 months",
-                  potentialIncome: "$5K-100K+/month",
-                  difficulty: "Hard",
-                  icon: "💻",
-                },
-                "social-media-agency": {
-                  id: "social-media-agency",
-                  name: "Social Media Agency",
-                  description:
-                    "Manage social media accounts and marketing for businesses",
-                  timeToProfit: "2-6 months",
-                  potentialIncome: "$2K-25K/month",
-                  difficulty: "Medium",
-                  icon: "📱",
-                },
-                copywriting: {
-                  id: "copywriting",
-                  name: "Copywriting",
-                  description: "Write persuasive marketing copy for businesses",
-                  timeToProfit: "2-8 weeks",
-                  potentialIncome: "$1K-15K/month",
-                  difficulty: "Easy",
-                  icon: "✍️",
-                },
-              };
-
-              const baseModel = businessModelMap[match.id] || {
-                id: match.id,
-                name: match.name,
-                description: `Build a successful ${match.name.toLowerCase()} business`,
+          const formattedBusinessModels = calculatedMatches.map((match) => {
+            // Map business model IDs to the UI format
+            const businessModelMap: Record<string, any> = {
+              "content-creation": {
+                id: "content-creation-ugc",
+                name: "Content Creation & UGC",
+                description:
+                  "Create engaging content and user-generated content for brands",
+                timeToProfit: "2-4 weeks",
+                potentialIncome: "$2K-15K/month",
+                difficulty: "Beginner",
+                icon: "📱",
+              },
+              "affiliate-marketing": {
+                id: "affiliate-marketing",
+                name: "Affiliate Marketing",
+                description:
+                  "Promote other people's products and earn commission on sales",
+                timeToProfit: "3-6 months",
+                potentialIncome: "$100-10K+/month",
+                difficulty: "Easy",
+                icon: "��",
+              },
+              freelancing: {
+                id: "freelancing",
+                name: "Freelancing",
+                description:
+                  "Offer your skills and services to clients on a project basis",
+                timeToProfit: "1-2 weeks",
+                potentialIncome: "$500-8K/month",
+                difficulty: "Easy",
+                icon: "💼",
+              },
+              "e-commerce": {
+                id: "e-commerce-dropshipping",
+                name: "E-commerce / Dropshipping",
+                description: "Sell products online without holding inventory",
                 timeToProfit: "2-6 months",
-                potentialIncome: "$1K-10K/month",
+                potentialIncome: "$1K-50K/month",
                 difficulty: "Medium",
-                icon: "🚀",
-              };
+                icon: "🛍️",
+              },
+              "virtual-assistant": {
+                id: "virtual-assistant",
+                name: "Virtual Assistant",
+                description:
+                  "Provide administrative support to businesses remotely",
+                timeToProfit: "1-3 weeks",
+                potentialIncome: "$300-5K/month",
+                difficulty: "Easy",
+                icon: "💻",
+              },
+              "online-tutoring": {
+                id: "online-coaching-consulting",
+                name: "Online Coaching & Consulting",
+                description:
+                  "Share your expertise through 1-on-1 coaching or consulting",
+                timeToProfit: "4-8 weeks",
+                potentialIncome: "$1K-20K/month",
+                difficulty: "Medium",
+                icon: "🎯",
+              },
+              "handmade-goods": {
+                id: "print-on-demand",
+                name: "Print on Demand",
+                description:
+                  "Design and sell custom products without inventory",
+                timeToProfit: "6-12 weeks",
+                potentialIncome: "$200-8K/month",
+                difficulty: "Easy",
+                icon: "🎨",
+              },
+              "youtube-automation": {
+                id: "youtube-automation",
+                name: "YouTube Automation",
+                description:
+                  "Create and monetize YouTube channels with outsourced content",
+                timeToProfit: "3-9 months",
+                potentialIncome: "$500-15K/month",
+                difficulty: "Medium",
+                icon: "📹",
+              },
+              "local-service": {
+                id: "local-service-arbitrage",
+                name: "Local Service Arbitrage",
+                description: "Connect local customers with service providers",
+                timeToProfit: "2-8 weeks",
+                potentialIncome: "$1K-12K/month",
+                difficulty: "Medium",
+                icon: "🏠",
+              },
+              "saas-development": {
+                id: "app-saas-development",
+                name: "App / SaaS Development",
+                description:
+                  "Build and launch software applications or SaaS products",
+                timeToProfit: "6-18 months",
+                potentialIncome: "$5K-100K+/month",
+                difficulty: "Hard",
+                icon: "💻",
+              },
+              "social-media-agency": {
+                id: "social-media-agency",
+                name: "Social Media Agency",
+                description:
+                  "Manage social media accounts and marketing for businesses",
+                timeToProfit: "2-6 months",
+                potentialIncome: "$2K-25K/month",
+                difficulty: "Medium",
+                icon: "📱",
+              },
+              copywriting: {
+                id: "copywriting",
+                name: "Copywriting",
+                description: "Write persuasive marketing copy for businesses",
+                timeToProfit: "2-8 weeks",
+                potentialIncome: "$1K-15K/month",
+                difficulty: "Easy",
+                icon: "✍️",
+              },
+            };
 
-              return {
-                ...baseModel,
-                fitScore: match.score, // Use the real calculated score
-              };
-            });
+            const baseModel = businessModelMap[match.id] || {
+              id: match.id,
+              name: match.name,
+              description: `Build a successful ${match.name.toLowerCase()} business`,
+              timeToProfit: "2-6 months",
+              potentialIncome: "$1K-10K/month",
+              difficulty: "Medium",
+              icon: "🚀",
+            };
+
+            return {
+              ...baseModel,
+              fitScore: match.score, // Use the real calculated score
+            };
+          });
 
           setTopBusinessModels(formattedBusinessModels);
         } else {
