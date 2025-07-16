@@ -33,6 +33,7 @@ import { QuizData } from "../types";
 import { quizSteps } from "../data/quizSteps";
 import { useToast } from "../hooks/use-toast";
 import { AICacheManager } from "../utils/aiCacheManager";
+import { businessModelService } from "../utils/businessModelService";
 
 // Mobile-specific content for scale questions
 const mobileScaleContent: Record<
