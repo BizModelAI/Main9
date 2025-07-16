@@ -242,7 +242,7 @@ function MainAppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (location === "/quiz") {
+  if (location.pathname === "/quiz") {
     return (
       <QuizWithNavigation
         quizData={quizData}
