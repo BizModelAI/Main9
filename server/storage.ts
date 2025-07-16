@@ -1213,11 +1213,12 @@ export class DatabaseStorage implements IStorage {
     return refund || undefined;
   }
 
-  async getAllRefunds(): Promise<Refund[]> {
+  async getAllRefunds(limit: number = 1000): Promise<Refund[]> {
     return await this.ensureDb()
       .select()
       .from(refunds)
-      .orderBy(desc(refunds.createdAt));
+      .orderBy(desc(refunds.createdAt))
+      .limit(limit);
   }
 
   async storeUnpaidUserEmail(
