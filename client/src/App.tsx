@@ -1014,6 +1014,7 @@ function App() {
               <Route path="/quiz" element={<MainAppContent />} />
               <Route path="/results" element={<MainAppContent />} />
               <Route path="/ai-loading" element={<MainAppContent />} />
+              <Route path="/quiz-loading" element={<MainAppContent />} />
               <Route
                 path="/download-report"
                 element={
