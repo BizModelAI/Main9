@@ -90,8 +90,8 @@ export function validateEmojis(text: string): boolean {
  */
 export function cleanCorruptedEmojis(text: string): string {
   return text
-    .replace(/+/g, "") // Remove replacement character sequences
-    .replace(//g, "") // Remove single replacement characters
+    .replace(/\uFFFD\uFFFD+/g, "") // Remove replacement character sequences
+    .replace(/\uFFFD/g, "") // Remove single replacement characters
     .replace(/\uFFFD/g, "") // Remove unicode replacement characters
     .replace(/\u00EF\u00BF\u00BD/g, "") // Remove UTF-8 replacement sequence
     .replace(/[\uD800-\uDFFF](?![\uD800-\uDFFF])/g, "") // Remove unpaired surrogates
