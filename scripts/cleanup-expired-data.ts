@@ -64,32 +64,8 @@ async function cleanupExpiredData() {
       console.log(`✅ Deleted ${deletedUsers.length} expired temporary users`);
     }
 
-    // 3. Find and delete expired quiz attempts for unpaid users (independent of user deletion)
-    const expiredQuizAttempts = await db
-      .select()
-      .from(quizAttempts)
-      .where(and(lt(quizAttempts.expiresAt, now)));
-
-    console.log(`📊 Found ${expiredQuizAttempts.length} expired quiz attempts`);
-
-    if (expiredQuizAttempts.length > 0) {
-      // Log details of quiz attempts being deleted
-      expiredQuizAttempts.forEach((attempt) => {
-        console.log(
-          `🗑️  Deleting expired quiz attempt: ID ${attempt.id} (user: ${attempt.userId}, expired: ${attempt.expiresAt})`,
-        );
-      });
-
-      const deletedAttempts = await db
-        .delete(quizAttempts)
-        .where(lt(quizAttempts.expiresAt, now))
-        .returning();
-
-      console.log(`✅ Deleted ${deletedAttempts.length} expired quiz attempts`);
-    }
-
-    // 4. Summary
-    const totalDeleted = expiredUsers.length + expiredQuizAttempts.length;
+    // 3. Summary
+    const totalDeleted = expiredUsers.length;
     if (totalDeleted > 0) {
       console.log(
         `🎉 Cleanup complete! Deleted ${totalDeleted} expired records total`,
