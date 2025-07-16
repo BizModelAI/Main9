@@ -726,17 +726,31 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
                   "You have the foundation to build a successful business. Stay consistent and trust the process.",
               };
 
-              // Store the topPaths array used for the OpenAI call along with the insights
-              localStorage.setItem(
-                "quiz-completion-ai-insights",
-                JSON.stringify({
-                  insights: formattedInsights,
-                  topPaths: pathsForInsights, // <-- store the exact topPaths used
-                  analysis: null, // Will be generated on-demand if needed
-                  timestamp: Date.now(),
-                  complete: true,
-                  error: false,
-                }),
+              // Store in new 1-hour cache system and database
+              const aiCacheManager = AICacheManager.getInstance();
+
+              // Create dummy analysis for cache (will be generated on-demand if needed)
+              const dummyAnalysis = {
+                personalizedSummary:
+                  "Analysis will be generated when viewing full report",
+                customRecommendations: [],
+                potentialChallenges: [],
+                successStrategies: [],
+                personalizedActionPlan: {
+                  week1: [],
+                  month1: [],
+                  month3: [],
+                  month6: [],
+                },
+                motivationalMessage: "",
+              };
+
+              // Cache for 1-hour session with both insights and analysis
+              aiCacheManager.cacheAIContent(
+                quizData,
+                formattedInsights,
+                dummyAnalysis,
+                pathsForInsights[0],
               );
 
               return { aiInsights: formattedInsights };
