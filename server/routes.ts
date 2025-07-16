@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const sessionId = req.sessionID || getSessionKey(req);
 
       if (!openaiRateLimiter.canMakeRequest(userId, sessionId)) {
-        console.log("�� Rate limit exceeded for IP:", clientIP);
+        console.log("Rate limit exceeded for IP:", clientIP);
         return res.status(429).json({
           error: "Too many requests. Please wait a moment before trying again.",
         });
