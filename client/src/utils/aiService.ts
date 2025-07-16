@@ -333,27 +333,24 @@ CRITICAL RULES:
 
           // Return fallback insights structure
           return {
-            personalizedSummary:
-              "Unable to generate detailed analysis at this time. Please try again.",
-            customRecommendations: [
+            personalizedRecommendations: [
               "Technical analysis temporarily unavailable",
               "Please refresh the page to retry",
               "Contact support if issue persists",
             ],
             potentialChallenges: ["System temporarily unavailable"],
-            successStrategies: [
+            keyInsights: [
               "Retry analysis generation",
               "Check internet connection",
               "Contact support if needed",
             ],
-            personalizedActionPlan: {
-              week1: ["Retry analysis"],
-              month1: ["Contact support if issues persist"],
-              month3: ["Continue with manual planning"],
-              month6: ["Review progress"],
-            },
-            motivationalMessage:
-              "Technical difficulties are temporary. Your entrepreneurial journey continues!",
+            bestFitCharacteristics: ["Analysis unavailable"],
+            top3Fits: [
+              { model: "Analysis unavailable", reason: "System error" },
+            ],
+            bottom3Avoid: [
+              { model: "Analysis unavailable", reason: "System error" },
+            ],
           };
         }
       }
