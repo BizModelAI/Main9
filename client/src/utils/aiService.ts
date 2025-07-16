@@ -41,24 +41,24 @@ ${topMatch ? `- Top Business Match: ${topMatch.name} (${topMatch.fitScore}% matc
 
 Work Preferences:
 - Time Availability: ${quizData.weeklyTimeCommitment}
-- Learning Style: ${quizData.learningStyle}
-- Work Structure: ${quizData.workStructure}
-- Collaboration Style: ${quizData.collaborationStyle}
+- Learning Style: ${quizData.learningPreference || quizData.learningStyle || "self_directed"}
+- Work Structure: ${quizData.workStructurePreference || "flexible"}
+- Collaboration Style: ${quizData.workCollaborationPreference || "independent"}
 - Decision-Making Style: ${quizData.decisionMakingStyle}
 
 Personality Traits (0–5 scale):
-- Social Comfort: ${quizData.socialComfort || 3}
-- Discipline: ${quizData.disciplineLevel || 3}
-- Risk Tolerance: ${quizData.riskComfortLevel || 3}
+- Social Comfort: ${quizData.salesComfort || 3}
+- Self-Motivation: ${quizData.selfMotivationLevel || quizData.selfMotivation || 3}
+- Risk Tolerance: ${quizData.riskComfortLevel || quizData.riskComfort || 3}
 - Tech Comfort: ${quizData.techSkillsRating || 3}
-- Structure Preference: ${quizData.structurePreference || 3}
-- Motivation: ${quizData.selfMotivation || 3}
-- Feedback Resilience: ${quizData.feedbackResilience || 3}
-- Creativity: ${quizData.creativityImportance || 3}
-- Confidence: ${quizData.leadershipInterest || 3}
-- Adaptability: ${quizData.adaptabilityRating || 3}
-- Focus Preference: ${quizData.focusPreference || 3}
+- Structure Preference: ${quizData.workStructurePreference || 3}
+- Feedback Response: ${quizData.feedbackRejectionResponse || 3}
+- Creativity: ${quizData.creativeWorkEnjoyment || 3}
+- Brand Comfort: ${quizData.brandFaceComfort || 3}
+- Competitiveness: ${quizData.competitivenessLevel || 3}
 - Communication: ${quizData.directCommunicationEnjoyment || 3}
+- Organization: ${quizData.organizationLevel || 3}
+- Uncertainty Handling: ${quizData.uncertaintyHandling || 3}
 `.trim();
   }
 
