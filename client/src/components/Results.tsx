@@ -336,7 +336,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     );
   };
 
-    // Function to load cached preview data using new 1-hour cache system
+  // Function to load cached preview data using new 1-hour cache system
   const loadCachedPreviewData = async () => {
     try {
       console.log("✅ Loading cached data using 1-hour session cache...");
@@ -348,18 +348,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
       if (cachedContent.insights && cachedContent.analysis) {
         console.log("✅ Using cached AI content from 1-hour session cache");
-          setAiInsights(aiData.insights);
-
-          // Generate fallback analysis for top path preview
-          const topPath = personalizedPaths[0];
-          if (topPath) {
-            const fallbackAnalysis = generateFallbackAnalysis();
-            setAiAnalysis(fallbackAnalysis);
-          }
-
-          setIsGeneratingAI(false);
-          return;
-        }
+        setAiInsights(cachedContent.insights);
+        setAiAnalysis(cachedContent.analysis);
+        setIsGeneratingAI(false);
+        return;
       }
 
       // Fallback if no cached data available
