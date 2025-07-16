@@ -532,9 +532,6 @@ const clearQuizRelatedCache = () => {
   const aiCacheManager = AICacheManager.getInstance();
   aiCacheManager.forceResetCache();
 
-  // Clear business model matches cache
-  businessModelService.clearCache();
-
   // Clear any legacy AI cache keys
   // Note: AI content is now stored in database per user/quiz attempt
   const keysToRemove = [];
