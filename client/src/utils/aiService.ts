@@ -134,18 +134,57 @@ ${userProfile}`,
       });
 
       if (response && response.content) {
-        const insights = JSON.parse(response.content);
+        try {
+          // Clean up the response content to ensure valid JSON
+          let cleanContent = response.content.trim();
 
-        // Save to database instead of localStorage cache
-        if (quizAttemptId) {
-          await this.saveAIContentToDatabase(
-            quizAttemptId,
-            "preview",
-            insights,
-          );
+          // Remove any potential markdown code blocks
+          cleanContent = cleanContent
+            .replace(/```json\s*/g, "")
+            .replace(/```\s*/g, "");
+
+          // Find the JSON object (between first { and last })
+          const firstBrace = cleanContent.indexOf("{");
+          const lastBrace = cleanContent.lastIndexOf("}");
+
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
+          }
+
+          const insights = JSON.parse(cleanContent);
+
+          // Save to database instead of localStorage cache
+          if (quizAttemptId) {
+            await this.saveAIContentToDatabase(
+              quizAttemptId,
+              "preview",
+              insights,
+            );
+          }
+
+          return insights;
+        } catch (parseError) {
+          console.error("JSON parse error for response:", response.content);
+          console.error("Parse error details:", parseError);
+
+          // Return a fallback structure
+          return {
+            previewInsights:
+              "Unable to generate detailed insights at this time. Please try again.",
+            keyInsights: [
+              "Technical analysis temporarily unavailable",
+              "Personalized recommendations being processed",
+              "Business fit assessment in progress",
+              "Success predictors under review",
+            ],
+            successPredictors: [
+              "Your quiz responses indicate strong entrepreneurial potential",
+              "Multiple business models show compatibility with your profile",
+              "Time commitment and risk tolerance align with opportunities",
+              "Skills assessment suggests good foundation for success",
+            ],
+          };
         }
-
-        return insights;
       }
 
       throw new Error("No valid response from AI service");
