@@ -1726,151 +1726,132 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     </div>
                   </div>
 
-                  {/* Desktop Layout - Matches Screenshot Exactly */}
-                  <div className="hidden md:flex md:flex-col h-full p-8">
-                    {/* Desktop Header */}
-                    <div className="flex items-start justify-between mb-6">
-                      {/* Left Side: Icon, Title, and Difficulty */}
-                      <div className="flex items-start">
-                        <div
-                          className={`w-16 h-16 rounded-2xl flex items-center justify-center mr-4 ${
-                            index === 0 ? "bg-yellow-500" : "bg-blue-600"
-                          }`}
-                        >
-                          <IconComponent className="h-8 w-8 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                            {path.name}
-                          </h3>
-                          <div
-                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                              path.difficulty === "Easy"
-                                ? "bg-green-100 text-green-800"
-                                : path.difficulty === "Medium"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {path.difficulty}
+                  {/* Desktop Layout - New Design */}
+                  <div className="hidden md:block h-full p-6 md:p-8">
+                    <div className="flex flex-col md:flex-row">
+                      {/* Left Side */}
+                      <div className="flex-1 md:pr-6 mb-6 md:mb-0">
+                        <div className="flex items-center mb-4">
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mr-4 bg-yellow-500">
+                            <IconComponent className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold text-gray-900">
+                              {path.name}
+                            </h3>
+                            <div
+                              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                                path.difficulty === "Easy"
+                                  ? "bg-green-100 text-green-800"
+                                  : path.difficulty === "Medium"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {path.difficulty}
+                            </div>
                           </div>
                         </div>
+
+                        <p className="text-gray-600 mb-6 text-sm md:text-base">
+                          {path.description}
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                          <div className="bg-white rounded-xl p-3">
+                            <div className="flex items-center mb-1">
+                              <Clock className="h-4 w-4 text-gray-500 mr-1" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Time to Profit
+                              </span>
+                            </div>
+                            <div className="font-bold text-sm text-gray-900">
+                              {path.timeToProfit}
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-xl p-3">
+                            <div className="flex items-center mb-1">
+                              <DollarSign className="h-4 w-4 text-gray-500 mr-1" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Startup Cost
+                              </span>
+                            </div>
+                            <div className="font-bold text-sm text-gray-900">
+                              {path.startupCost}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="space-y-3">
+                          {!(index > 0 && !canViewFullReport) && (
+                            <button
+                              onClick={() => handleViewFullReport(path)}
+                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold text-base flex items-center justify-center hover:scale-[1.02] transition-all duration-300"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              View Full Report
+                            </button>
+                          )}
+                          {!(index > 0 && !canViewFullReport) && (
+                            <div className="text-center space-y-2">
+                              <button
+                                onClick={() => handleLearnMore(path)}
+                                className="text-gray-700 hover:text-blue-600 text-sm font-bold flex items-center justify-center group"
+                              >
+                                Learn more about {path.name} for you
+                                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                              </button>
+                              <button
+                                onClick={() => handleStartBusinessModel(path)}
+                                className="text-gray-700 hover:text-blue-600 text-sm font-bold flex items-center justify-center group"
+                              >
+                                Complete Guide to {path.name}
+                                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Right Side: Large Percentage */}
-                      <div className="text-right">
-                        <div
-                          className={`text-6xl font-bold ${
-                            index === 0 ? "text-yellow-600" : "text-blue-600"
-                          }`}
-                        >
-                          {path.fitScore}%
+                      {/* Right Side */}
+                      <div className="md:w-48 flex flex-col justify-between">
+                        <div className="text-center mb-6">
+                          <div className="text-5xl font-bold text-yellow-600">
+                            {path.fitScore}%
+                          </div>
+                          <div className="text-sm text-gray-500 font-medium">
+                            AI Match
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500 font-medium mt-1">
-                          AI Match
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Description - Full Width */}
-                    <p className="text-gray-600 mb-6 leading-relaxed text-base">
-                      {path.description}
-                    </p>
-
-                    {/* Time to Profit and Startup Cost - Two Columns */}
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      <div
-                        className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-4`}
-                      >
-                        <div className="flex items-center mb-2">
-                          <Clock className="h-4 w-4 text-gray-500 mr-2" />
-                          <span className="text-sm font-medium text-gray-700">
-                            Time to Profit
-                          </span>
-                        </div>
-                        <div className="font-bold text-gray-900 text-lg">
-                          {path.timeToProfit}
-                        </div>
-                      </div>
-                      <div
-                        className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-4`}
-                      >
-                        <div className="flex items-center mb-2">
-                          <DollarSign className="h-4 w-4 text-gray-500 mr-2" />
-                          <span className="text-sm font-medium text-gray-700">
-                            Startup Cost
-                          </span>
-                        </div>
-                        <div className="font-bold text-gray-900 text-lg">
-                          {path.startupCost}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Potential Income - Highlighted Green Section */}
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6">
-                      <div className="flex items-center mb-2">
-                        <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
-                        <span className="text-sm font-medium text-green-800">
-                          Potential Income
-                        </span>
-                      </div>
-                      <div className="text-xl font-bold text-green-700">
-                        {path.potentialIncome}
-                      </div>
-                    </div>
-
-                    {/* Top Benefits Section */}
-                    <div className="flex-1 mb-6">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
-                        Top Benefits
-                      </h4>
-                      <ul className="text-sm text-gray-600 space-y-2">
-                        {path.pros.slice(0, 3).map((pro, i) => (
-                          <li key={i} className="flex items-start">
-                            <span className="text-green-500 mr-3 text-base">
-                              •
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6">
+                          <div className="flex items-center mb-2">
+                            <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
+                            <span className="text-sm font-medium text-green-800">
+                              Potential Income
                             </span>
-                            <span className="leading-tight">{pro}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* CTAs at Bottom */}
-                    <div className="space-y-3 mt-auto">
-                      {/* Primary CTA - Only show if card is not locked */}
-                      {!(index > 0 && !canViewFullReport) && (
-                        <button
-                          onClick={() => handleViewFullReport(path)}
-                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-base"
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          View Full Report
-                        </button>
-                      )}
-
-                      {/* Secondary CTAs - Only show if card is not locked */}
-                      {!(index > 0 && !canViewFullReport) && (
-                        <div className="text-center space-y-3">
-                          <button
-                            onClick={() => handleLearnMore(path)}
-                            className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-sm font-bold flex items-center justify-center group"
-                          >
-                            Learn more about {path.name} for you
-                            <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                          </button>
-
-                          <button
-                            onClick={() => handleStartBusinessModel(path)}
-                            className="text-gray-700 hover:text-blue-600 transition-colors duration-300 text-sm font-bold flex items-center justify-center group"
-                          >
-                            Complete Guide to {path.name}
-                            <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                          </button>
+                          </div>
+                          <div className="text-xl font-bold text-green-700">
+                            {path.potentialIncome}
+                          </div>
                         </div>
-                      )}
+
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                            Top Benefits
+                          </h4>
+                          <ul className="text-sm text-gray-600 space-y-2">
+                            {path.pros.slice(0, 3).map((pro, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="text-green-500 mr-2">•</span>
+                                <span className="leading-tight">{pro}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
