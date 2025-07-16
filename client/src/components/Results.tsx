@@ -434,29 +434,50 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     }
   }, [personalizedPaths]);
 
-  // Monitor for newly generated AI insights using new cache system
+  // Monitor for newly generated AI insights from quiz-loading page
   useEffect(() => {
     const checkForNewAIData = () => {
-      const aiCacheManager = AICacheManager.getInstance();
-      const cachedContent = aiCacheManager.getCachedAIContent(quizData);
+      const storedAIData = localStorage.getItem("quiz-completion-ai-insights");
 
-      // Check if we have new complete AI data that we haven't loaded yet
-      if (
-        cachedContent.insights &&
-        validateAIAnalysis(cachedContent.analysis) &&
-        !aiInsights
-      ) {
-        console.log("🔄 New AI insights detected from cache, loading...");
-        setAiInsights(cachedContent.insights);
-        setAiAnalysis(cachedContent.analysis);
-        setIsGeneratingAI(false);
+      if (storedAIData && !aiInsights) {
+        try {
+          const aiData = JSON.parse(storedAIData);
+
+          // Check if we have new complete AI data that we haven't loaded yet
+          if (aiData.insights && !aiData.error) {
+            console.log(
+              "🔄 New AI insights detected from quiz-loading, loading...",
+            );
+
+            setAiInsights(aiData.insights);
+
+            // Create analysis from insights for AI-Generated Insights section
+            const generatedAnalysis = {
+              fullAnalysis: aiData.insights.personalizedSummary || "",
+              keyInsights: aiData.insights.customRecommendations || [],
+              successPredictors: aiData.insights.successStrategies || [],
+              potentialChallenges: aiData.insights.potentialChallenges || [],
+              personalizedActionPlan: aiData.insights
+                .personalizedActionPlan || {
+                week1: [],
+                month1: [],
+                month3: [],
+                month6: [],
+              },
+            };
+
+            setAiAnalysis(generatedAnalysis);
+            setIsGeneratingAI(false);
+          }
+        } catch (error) {
+          console.error("Error parsing stored AI data:", error);
+        }
       }
     };
 
     // Check immediately
     checkForNewAIData();
 
-    // Listen for localStorage changes (more responsive than polling)
     // Set up interval to check for new AI data every 3 seconds
     const interval = setInterval(checkForNewAIData, 3000);
 
