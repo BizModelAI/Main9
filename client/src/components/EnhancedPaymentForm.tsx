@@ -21,6 +21,7 @@ interface EnhancedPaymentFormProps {
   setIsProcessing: (processing: boolean) => void;
   amount?: number;
   isFirstReport?: boolean;
+  quizAttemptId?: number; // Required for report unlock payments
 }
 
 const PaymentMethodSelector: React.FC<{
