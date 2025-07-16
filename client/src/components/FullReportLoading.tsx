@@ -194,7 +194,7 @@ export default function FullReportLoading({
                 ? "$500-$2000"
                 : "$100-$1000",
         })),
-        businessFitDescriptions,
+        businessFitDescriptions: consolidatedContent.businessFitDescriptions,
         businessAvoidDescriptions,
       });
     } catch (error) {
