@@ -172,11 +172,17 @@ ${userProfile}`,
     }[];
   }> {
     try {
-      const cacheKey = `fullreport_${this.createCacheKey(quizData, topPaths)}`;
-      const cached = this.getCachedInsights(cacheKey);
-      if (cached) {
-        console.log("✅ Using cached full report insights");
-        return cached;
+      // First check if we have existing AI content in database
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      if (quizAttemptId) {
+        const existingContent = await this.getAIContentFromDatabase(
+          quizAttemptId,
+          "fullReport",
+        );
+        if (existingContent) {
+          console.log("✅ Using existing full report insights from database");
+          return existingContent;
+        }
       }
 
       console.log("🔄 Generating fresh full report insights");
