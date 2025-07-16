@@ -32,7 +32,7 @@ import {
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
 import { businessPaths } from "../data/businessPaths";
 import { businessModels } from "../data/businessModels";
-import { calculateAdvancedBusinessModelMatches } from "../../../shared/scoring";
+import { businessModelService } from "../utils/businessModelService";
 import { calculateBusinessModelTraits } from "../../../shared/businessModelTraits";
 import {
   getIdealTraits,
