@@ -360,24 +360,17 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
       if (!user || selectedMethod !== "card") return;
 
       try {
-        // Determine if this is a temporary user
-        const isTemporaryUser =
-          user.isTemporary || user.id.toString().startsWith("temp_");
-
-        const requestBody: any = {};
-
-        if (isTemporaryUser) {
-          // Extract session ID from temporary user ID
-          const sessionId = user.id.toString().replace("temp_", "");
-          requestBody.sessionId = sessionId;
-        } else {
-          requestBody.userId = parseInt(user.id);
+        // Pay-per-report model: Users must have accounts before paying
+        if (!user.id || user.isTemporary) {
+          throw new Error("User must create an account before making payments");
         }
 
-        // Use appropriate endpoint based on user type
-        const endpoint = isTemporaryUser
-          ? "/api/create-anonymous-report-unlock-payment"
-          : "/api/create-report-unlock-payment";
+        const requestBody = {
+          userId: parseInt(user.id),
+        };
+
+        // Use report unlock payment endpoint
+        const endpoint = "/api/create-report-unlock-payment";
 
         const response = await fetch(endpoint, {
           method: "POST",
