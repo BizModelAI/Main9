@@ -386,11 +386,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     } catch (error) {
       console.error("Error loading cached preview data:", error);
 
-      // Use fallback content and generate analysis on-demand
+      // Use fallback content only - never generate on Results page
       const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
+      const fallbackAnalysis = generateFallbackAnalysis();
       setAiInsights(fallbackInsights);
-      setIsGeneratingAI(true);
-      await generateFullAIContent(personalizedPaths);
+      setAiAnalysis(fallbackAnalysis);
       setIsGeneratingAI(false);
     }
   };
