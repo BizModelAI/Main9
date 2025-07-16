@@ -72,8 +72,8 @@ export function safeDecodeEmoji(encoded: string): string {
 export function validateEmojis(text: string): boolean {
   // Check for common corruption patterns
   const corruptionPatterns = [
-    /+/g, // Replacement characters
-    //g, // Single replacement character
+    /\uFFFD\uFFFD+/g, // Replacement characters
+    /\uFFFD/g, // Single replacement character
     /\uFFFD/g, // Unicode replacement character
     /\u00EF\u00BF\u00BD/g, // UTF-8 replacement character sequence
     /[\uD800-\uDFFF](?![\uD800-\uDFFF])/g, // Unpaired surrogates
