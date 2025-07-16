@@ -229,9 +229,9 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       socialMediaInterest: quizData.socialMediaInterest,
     });
 
-    // Use centralized business model service
+    // Use database-stored business model results (with fallback to fresh calculation)
     const advancedScores =
-      businessModelService.getBusinessModelMatches(quizData);
+      await businessModelStorageService.getBusinessModelResults(quizData);
     console.log("All business model scores:", advancedScores);
     console.log(
       "Top 5 business models:",
