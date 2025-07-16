@@ -104,7 +104,7 @@ const Dashboard: React.FC = () => {
                   timeToProfit: "3-6 months",
                   potentialIncome: "$100-10K+/month",
                   difficulty: "Easy",
-                  icon: "🔗",
+                  icon: "��",
                 },
                 freelancing: {
                   id: "freelancing",
@@ -974,12 +974,15 @@ const Dashboard: React.FC = () => {
                     View Complete Guide
                     <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </button>
-                  <Link
-                    to="/results"
+                  <button
+                    onClick={() => {
+                      // Navigate to results page with query parameter to show full report
+                      navigate("/results?showFullReport=true");
+                    }}
                     className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-all duration-300 flex items-center justify-center"
                   >
                     View Full Analysis
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
