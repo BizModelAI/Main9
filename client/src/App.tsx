@@ -13,6 +13,7 @@ import { PaywallProvider } from "./contexts/PaywallContext";
 import {
   BusinessModelScoresProvider,
   cleanupExpiredBusinessModelScores,
+  useBusinessModelScores,
 } from "./contexts/BusinessModelScoresContext";
 
 // Import debug utilities (available as window.debugOpenAI and window.debugAIContent)
