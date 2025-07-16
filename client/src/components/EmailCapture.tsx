@@ -360,15 +360,16 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
                 className="text-center space-y-3"
               >
                 <p className="text-xs text-gray-500">
-                  🔒 We respect your privacy. No spam, just your results and
-                  occasional valuable insights.
+                  🔒 We respect your privacy. Your results will be stored for 3
+                  months, then automatically deleted unless you upgrade to
+                  permanent storage.
                 </p>
 
                 <button
                   onClick={handleGuestContinue}
                   className="text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center justify-center group text-sm mx-auto"
                 >
-                  Continue as Guest (results won't be saved)
+                  Continue as Guest (1-hour local storage only)
                   <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
                 </button>
               </motion.div>
