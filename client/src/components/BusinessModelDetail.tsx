@@ -154,8 +154,10 @@ const BusinessModelDetail: React.FC<BusinessModelDetailProps> = ({
   const fitCategory = useMemo(() => {
     if (!quizData || !businessId) return "Best Fit";
 
-    const businessMatches = calculateAdvancedBusinessModelMatches(quizData);
-    const matchingBusiness = businessMatches.find((b) => b.id === businessId);
+    const matchingBusiness = businessModelService.getBusinessModelMatch(
+      quizData,
+      businessId,
+    );
     const fitScore = matchingBusiness?.score || 0;
 
     console.log(`Fit score for ${businessId}: ${fitScore}%`);
