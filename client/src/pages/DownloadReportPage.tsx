@@ -110,8 +110,13 @@ const DownloadReportPage: React.FC = () => {
               );
 
             combinedAnalysis = {
-              ...mockDetailedAnalysis,
-              ...mockPersonalizedInsights,
+              fullAnalysis: mockPersonalizedInsights.personalizedSummary || "",
+              keyInsights: mockPersonalizedInsights.customRecommendations || [],
+              personalizedRecommendations:
+                mockPersonalizedInsights.customRecommendations || [],
+              riskFactors: mockPersonalizedInsights.potentialChallenges || [],
+              successPredictors:
+                mockPersonalizedInsights.successStrategies || [],
             };
 
             // Cache the generated content
