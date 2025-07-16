@@ -246,33 +246,67 @@ function MainAppContent() {
   console.log("MainAppContent - quizData:", !!quizData);
   console.log("MainAppContent - userEmail:", userEmail);
 
-  // Load quiz data from server if not already loaded
+  // Load quiz data from localStorage first, then server if authenticated
   React.useEffect(() => {
     const loadQuizData = async () => {
       if (!quizData) {
-        console.log("MainAppContent - Loading quiz data from server...");
-        try {
-          const response = await fetch("/api/auth/latest-quiz-data", {
-            credentials: "include",
-          });
-          if (response.ok) {
-            const data = await response.json();
-            console.log(
-              "MainAppContent - Received quiz data from server:",
-              data,
+        console.log(
+          "MainAppContent - No quiz data in state, checking localStorage...",
+        );
+
+        // First try localStorage (works for both authenticated and non-authenticated users)
+        const savedQuizData = localStorage.getItem("quizData");
+        if (savedQuizData) {
+          try {
+            const parsed = JSON.parse(savedQuizData);
+            console.log("MainAppContent - Found quiz data in localStorage");
+            setQuizData(parsed);
+            return; // Found data in localStorage, no need to fetch from server
+          } catch (error) {
+            console.error(
+              "MainAppContent - Error parsing localStorage quiz data:",
+              error,
             );
-            if (data.quizData) {
-              setQuizData(data.quizData);
-            }
           }
-        } catch (error) {
-          console.error("MainAppContent - Error loading quiz data:", error);
+        }
+
+        // If no localStorage data and user is authenticated, try server
+        if (user) {
+          console.log("MainAppContent - User authenticated, trying server...");
+          try {
+            const response = await fetch("/api/auth/latest-quiz-data", {
+              credentials: "include",
+            });
+            if (response.ok) {
+              const data = await response.json();
+              console.log(
+                "MainAppContent - Received quiz data from server:",
+                data,
+              );
+              if (data.quizData) {
+                setQuizData(data.quizData);
+              }
+            } else {
+              console.log(
+                "MainAppContent - Server request failed, no quiz data available",
+              );
+            }
+          } catch (error) {
+            console.log(
+              "MainAppContent - Error loading from server (non-critical):",
+              error,
+            );
+          }
+        } else {
+          console.log(
+            "MainAppContent - User not authenticated, relying on localStorage only",
+          );
         }
       }
     };
 
     loadQuizData();
-  }, [quizData, setQuizData]);
+  }, [quizData, setQuizData, user]);
 
   if (location.pathname === "/quiz") {
     return (
