@@ -523,7 +523,7 @@ const QuizWithNavigation: React.FC<{
   showEmailCapture: boolean;
   setShowEmailCapture: (show: boolean) => void;
   userEmail: string | null;
-  setUserEmail: (email: string) => void;
+  setUserEmail: (email: string | null) => void;
   generateMockQuizData: () => QuizData;
   showAILoading: boolean;
   setShowAILoading: (show: boolean) => void;
