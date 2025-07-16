@@ -1265,7 +1265,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                   Success Predictors
                                 </h4>
                                 <ul className="space-y-2">
-                                  {aiAnalysis.successPredictors.map(
+                                  {aiAnalysis?.successPredictors?.map(
                                     (predictor, index) => (
                                       <li
                                         key={index}
