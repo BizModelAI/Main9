@@ -588,7 +588,7 @@ ${userProfile}`,
         }
       }
 
-      console.log("✅ Finished retroactively saving AI content to database");
+      console.log("Finished retroactively saving AI content to database");
     } catch (error) {
       console.error("Error retroactively saving AI content:", error);
     }
