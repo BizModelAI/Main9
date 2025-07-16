@@ -714,10 +714,45 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
           // Step 2: Generate AI-powered personalized paths
           const step2Result = await executeStep(1, async () => {
-            const { generateAIPersonalizedPaths } = await import(
-              "../utils/quizLogic"
+            // Use the same business model scoring system as Results page
+            const { businessModelService } = await import(
+              "../utils/businessModelService"
             );
-            const paths = await generateAIPersonalizedPaths(activeQuizData);
+            const businessMatches =
+              businessModelService.getBusinessModelMatches(activeQuizData);
+
+            // Convert to BusinessPath format for compatibility
+            const paths = businessMatches.slice(0, 7).map((match) => ({
+              id: match.id,
+              name: match.name,
+              description: `${match.name} with ${match.score}% compatibility`,
+              detailedDescription: `This business model scored ${match.score}% based on your quiz responses`,
+              fitScore: match.score,
+              difficulty:
+                match.score >= 75
+                  ? "Easy"
+                  : match.score >= 50
+                    ? "Medium"
+                    : "Hard",
+              timeToProfit:
+                match.score >= 80
+                  ? "1-3 months"
+                  : match.score >= 60
+                    ? "3-6 months"
+                    : "6+ months",
+              monthlyIncomeRange:
+                match.score >= 80
+                  ? "$1000-$5000"
+                  : match.score >= 60
+                    ? "$500-$2000"
+                    : "$100-$1000",
+            }));
+
+            console.log("Using consistent business model scoring, top 3:");
+            paths.slice(0, 3).forEach((path, index) => {
+              console.log(`${index + 1}. ${path.name} (${path.fitScore}%)`);
+            });
+
             return { personalizedPaths: paths };
           });
           currentAiResults = { ...currentAiResults, ...step2Result };
