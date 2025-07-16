@@ -365,7 +365,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-9 months",
       potentialIncome: "$500-15K/month",
       difficulty: "Medium",
-      icon: "��",
+      icon: "🎨",
     },
     {
       id: "local-service-arbitrage",
