@@ -1568,16 +1568,17 @@ export class DatabaseStorage implements IStorage {
 
   async cleanupExpiredData(): Promise<void> {
     try {
-      // Clean up expired unpaid email data
+      // Clean up expired unpaid email data (legacy 24h storage)
       await this.cleanupExpiredUnpaidEmails();
-      console.log("Successfully cleaned up expired data");
+
+      // Clean up expired temporary users (3-month storage for email-provided users)
+      await this.cleanupExpiredTemporaryUsers();
+
+      console.log("✅ Successfully cleaned up all expired data");
     } catch (error) {
-      console.error("Error during data cleanup:", error);
+      console.error("❌ Error during data cleanup:", error);
       // Don't throw - just log the error to prevent server crashes
     }
-
-    // Note: For paid users, we never delete their data
-    // For unpaid users, data is only stored in unpaidUserEmails table with 24h expiry
   }
 }
 
