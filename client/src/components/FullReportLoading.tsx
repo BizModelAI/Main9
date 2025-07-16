@@ -52,7 +52,7 @@ export default function FullReportLoading({
         businessModelService.getBusinessModelMatches(quizData);
       const topThreeAdvanced = businessMatches.slice(0, 3);
 
-      console.log("🎯 Generating consolidated content for top 3 models:");
+      console.log("Generating consolidated content for top 3 models:");
       topThreeAdvanced.forEach((match, index) => {
         console.log(`${index + 1}. ${match.name} (${match.score}%)`);
       });
