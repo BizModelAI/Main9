@@ -238,190 +238,56 @@ function MainAppContent() {
     };
   };
 
-  return (
-    <AuthProvider>
-      <PaywallProvider>
-        <Router>
-          <NavigationGuardWrapper>
-            <Analytics />
-            <SpeedInsights />
-            <Routes>
-              {/* Public routes with layout */}
-              <Route
-                path="/"
-                element={
-                  <Layout>
-                    <Index />
-                  </Layout>
-                }
-              />
+  const location = window.location.pathname;
 
-              <Route
-                path="/explore"
-                element={
-                  <Layout>
-                    <BusinessExplorer quizData={quizData} />
-                  </Layout>
-                }
-              />
+  if (location === "/quiz") {
+    return (
+      <QuizWithNavigation
+        quizData={quizData}
+        setQuizData={setQuizData}
+        showEmailCapture={showEmailCapture}
+        setShowEmailCapture={setShowEmailCapture}
+        userEmail={userEmail}
+        setUserEmail={setUserEmail}
+        generateMockQuizData={generateMockQuizData}
+        showAILoading={showAILoading}
+        setShowAILoading={setShowAILoading}
+        loadedReportData={loadedReportData}
+        setLoadedReportData={setLoadedReportData}
+        showCongratulations={showCongratulations}
+        setShowCongratulations={setShowCongratulations}
+        congratulationsShown={congratulationsShown}
+        setCongratulationsShown={setCongratulationsShown}
+        handleAILoadingComplete={handleAILoadingComplete}
+      />
+    );
+  }
 
-              <Route
-                path="/contact"
-                element={
-                  <Layout>
-                    <ContactUs />
-                  </Layout>
-                }
-              />
+  if (location === "/results") {
+    return (
+      <Layout>
+        <ResultsWrapperWithReset
+          quizData={quizData}
+          userEmail={userEmail}
+          onBack={() => window.history.back()}
+          loadedReportData={loadedReportData}
+          setShowCongratulations={setShowCongratulations}
+        />
+      </Layout>
+    );
+  }
 
-              {/* Auth routes (no layout) */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+  if (location === "/ai-loading") {
+    return (
+      <AIReportLoadingWrapper
+        quizData={quizData}
+        setShowCongratulations={setShowCongratulations}
+      />
+    );
+  }
 
-              {/* Protected routes with layout */}
-              <Route
-                path="/dashboard"
-                element={
-                  <Layout>
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  </Layout>
-                }
-              />
-
-              <Route
-                path="/settings"
-                element={
-                  <Layout>
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  </Layout>
-                }
-              />
-
-              {/* Quiz without layout (has its own design) */}
-              <Route
-                path="/quiz"
-                element={
-                  <QuizWithNavigation
-                    quizData={quizData}
-                    setQuizData={setQuizData}
-                    showEmailCapture={showEmailCapture}
-                    setShowEmailCapture={setShowEmailCapture}
-                    userEmail={userEmail}
-                    setUserEmail={setUserEmail}
-                    generateMockQuizData={generateMockQuizData}
-                    showAILoading={showAILoading}
-                    setShowAILoading={setShowAILoading}
-                    loadedReportData={loadedReportData}
-                    setLoadedReportData={setLoadedReportData}
-                    showCongratulations={showCongratulations}
-                    setShowCongratulations={setShowCongratulations}
-                    congratulationsShown={congratulationsShown}
-                    setCongratulationsShown={setCongratulationsShown}
-                    handleAILoadingComplete={handleAILoadingComplete}
-                  />
-                }
-              />
-
-              {/* Quiz completion loading page - NOW uses AIReportLoading */}
-              <Route
-                path="/quiz-loading"
-                element={
-                  <AIReportLoadingWrapper
-                    quizData={quizData}
-                    setShowCongratulations={setShowCongratulations}
-                  />
-                }
-              />
-
-              {/* Loading page - NOW uses QuizCompletionLoading */}
-              <Route
-                path="/loading"
-                element={
-                  <QuizCompletionLoadingWrapper
-                    quizData={quizData}
-                    userEmail={userEmail}
-                    showCongratulations={showCongratulations}
-                    setUserEmail={setUserEmail}
-                    setShowCongratulations={setShowCongratulations}
-                    loadedReportData={loadedReportData}
-                    handleAILoadingComplete={handleAILoadingComplete}
-                  />
-                }
-              />
-
-              {/* Results with layout */}
-              <Route
-                path="/results"
-                element={
-                  <Layout>
-                    <ResultsWrapperWithReset
-                      quizData={quizData}
-                      userEmail={userEmail}
-                      onBack={() => window.history.back()}
-                      loadedReportData={loadedReportData}
-                      setShowCongratulations={setShowCongratulations}
-                    />
-                  </Layout>
-                }
-              />
-
-              {/* Business Model Detail Page */}
-              <Route
-                path="/business/:businessId"
-                element={
-                  <Layout>
-                    <BusinessModelDetail quizData={quizData} />
-                  </Layout>
-                }
-              />
-
-              {/* Business Guide Page */}
-              <Route
-                path="/guide/:businessId"
-                element={
-                  <Layout>
-                    <BusinessGuide quizData={quizData} />
-                  </Layout>
-                }
-              />
-
-              {/* Download Report Page */}
-              <Route path="/report" element={<DownloadReportPage />} />
-
-              {/* PDF Report Page (no layout) */}
-              <Route path="/pdf-report" element={<PDFReportPage />} />
-
-              {/* Privacy Policy */}
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-
-              {/* Unsubscribe Page */}
-              <Route path="/unsubscribe" element={<UnsubscribePage />} />
-
-              {/* Admin Page */}
-              <Route path="/admin" element={<AdminPage />} />
-
-              {/* Quiz Payment Required */}
-              <Route
-                path="/quiz-payment-required"
-                element={<QuizPaymentRequired />}
-              />
-
-              {/* Save Results Payment */}
-              <Route
-                path="/save-results-payment"
-                element={<SaveResultsPayment />}
-              />
-            </Routes>
-          </NavigationGuardWrapper>
-        </Router>
-      </PaywallProvider>
-    </AuthProvider>
-  );
+  // Default fallback
+  return <div>Loading...</div>;
 }
 
 // AIReport loading wrapper component for quiz completion
