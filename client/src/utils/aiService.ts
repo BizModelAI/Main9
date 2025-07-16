@@ -487,6 +487,8 @@ ${userProfile}`,
           // Return fallback insights for model
           return {
             modelFitReason: `Unable to generate detailed analysis for ${modelName} at this time. This business model may still be a good fit based on your quiz responses.`,
+            keyInsights: ["Analysis temporarily unavailable"],
+            successPredictors: ["Technical analysis unavailable"],
           };
         }
       }
