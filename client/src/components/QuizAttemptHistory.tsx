@@ -22,7 +22,11 @@ interface QuizAttempt {
 
 interface QuizAttemptHistoryProps {
   userId: number;
-  onQuizSelected?: (quizData: QuizData, aiContent?: any) => void;
+  onQuizSelected?: (
+    quizData: QuizData,
+    aiContent?: any,
+    completedAt?: string,
+  ) => void;
 }
 
 export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
