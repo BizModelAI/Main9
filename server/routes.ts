@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Check if OpenAI API key is configured
       if (!process.env.OPENAI_API_KEY) {
-        console.error("��� OpenAI API key not configured");
+        console.error("OpenAI API key not configured");
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
