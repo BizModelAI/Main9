@@ -65,8 +65,15 @@ export async function generateAIPersonalizedPaths(
       fitScore: match.analysis.fitScore,
     }));
   } catch (error) {
-    console.error("AI analysis failed, using fallback scoring:", error);
-    return generatePersonalizedPaths(data);
+    console.error(
+      "AI analysis failed, using BusinessModelService fallback:",
+      error,
+    );
+    const matches = businessModelService.getBusinessModelMatches(data);
+    return matches.map((match) => {
+      const businessPath = businessPaths.find((path) => path.id === match.id);
+      return { ...businessPath!, fitScore: match.score };
+    });
   }
 }
 
