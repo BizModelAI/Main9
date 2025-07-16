@@ -587,6 +587,37 @@ ${userProfile}`,
         }
       }
 
+      // Check for new format AI content in localStorage (from anonymous users)
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("ai_content_")) {
+          try {
+            const storedData = localStorage.getItem(key);
+            if (storedData) {
+              const parsedData = JSON.parse(storedData);
+
+              // Extract content type from key (e.g., "ai_content_preview" -> "preview")
+              const contentType = key.replace("ai_content_", "");
+
+              console.log(
+                `💾 Saving ${contentType} AI content from localStorage to database`,
+              );
+              await this.saveAIContentToDatabase(
+                quizAttemptId,
+                contentType,
+                parsedData.content,
+              );
+
+              // Remove from localStorage since it's now in database
+              localStorage.removeItem(key);
+              localStorage.removeItem(`${key}_expires`);
+            }
+          } catch (error) {
+            console.error(`Error processing AI content ${key}:`, error);
+          }
+        }
+      }
+
       console.log("Finished retroactively saving AI content to database");
     } catch (error) {
       console.error("Error retroactively saving AI content:", error);
