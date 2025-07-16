@@ -736,7 +736,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
     };
 
     // Generate detailed business avoid descriptions
-    const generateBusinessAvoidDescriptions = async () => {
+    const generateBusinessAvoidDescriptions = async (retryCount = 0) => {
       try {
         setIsLoadingDescriptions(true);
 
