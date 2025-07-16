@@ -274,7 +274,7 @@ export default function FullReportLoading({
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           Our advanced AI is generating your complete business analysis with
-          personalized insights. This will take about 8-12 seconds.
+          personalized insights. This will take about 15-30 seconds.
         </motion.p>
 
         {/* Animated Dots */}
