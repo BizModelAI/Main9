@@ -824,18 +824,12 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
               // Create dummy analysis for cache (will be generated on-demand if needed)
               const dummyAnalysis = {
-                personalizedSummary:
+                fullAnalysis:
                   "Analysis will be generated when viewing full report",
-                customRecommendations: [],
-                potentialChallenges: [],
-                successStrategies: [],
-                personalizedActionPlan: {
-                  week1: [],
-                  month1: [],
-                  month3: [],
-                  month6: [],
-                },
-                motivationalMessage: "",
+                keyInsights: [],
+                personalizedRecommendations: [],
+                riskFactors: [],
+                successPredictors: [],
               };
 
               // Cache for 1-hour session with both insights and analysis
