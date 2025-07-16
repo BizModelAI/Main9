@@ -780,6 +780,9 @@ export class DatabaseStorage implements IStorage {
     contentType: string,
     content: any,
   ): Promise<AiContent> {
+    // Ensure ai_content table exists before proceeding
+    await this.ensureAiContentTable();
+
     // Generate content hash for deduplication
     const crypto = await import("crypto");
     const contentHash = crypto
