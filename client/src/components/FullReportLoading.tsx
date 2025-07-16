@@ -140,6 +140,15 @@ export default function FullReportLoading({
         }
       }
 
+      // Generate business avoid descriptions for bottom 3 models (fallback only - no AI calls)
+      const bottomThree = businessModelService.getBottomMatches(quizData, 3);
+      const businessAvoidDescriptions: { [key: string]: string } = {};
+
+      bottomThree.forEach((match) => {
+        businessAvoidDescriptions[match.id] =
+          `This business model scored ${match.score}% for your profile, indicating significant misalignment with your current goals, skills, and preferences. Based on your quiz responses, you would likely face substantial challenges in this field that could impact your success. Consider focusing on higher-scoring business models that better match your natural strengths and current situation. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable for your entrepreneurial journey.`;
+      });
+
       // Generate full personalized insights (includes both preview and full report data)
       const insights = await aiService.generatePersonalizedInsights(
         quizData,
@@ -147,7 +156,7 @@ export default function FullReportLoading({
       );
 
       console.log(
-        "✅ Full report data generated successfully (4 total AI calls)",
+        "✅ Full report data generated successfully (4 total AI calls: 3 model insights + 1 personalized insights)",
       );
       setFullReportData({
         insights,
@@ -173,6 +182,7 @@ export default function FullReportLoading({
                 : "$100-$1000",
         })),
         businessFitDescriptions,
+        businessAvoidDescriptions,
       });
     } catch (error) {
       console.error("❌ Error generating full report data:", error);
