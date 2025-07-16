@@ -39,7 +39,6 @@ import {
   generateAIPersonalizedPaths,
 } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
-import { businessModelStorageService } from "../utils/businessModelStorageService";
 import { AIService } from "../utils/aiService";
 import { AICacheManager } from "../utils/aiCacheManager";
 import FullReport from "./FullReport";
