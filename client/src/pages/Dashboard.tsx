@@ -93,7 +93,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-4 weeks",
                 potentialIncome: "$2K-15K/month",
                 difficulty: "Beginner",
-                icon: "��",
+                icon: "📱",
               },
               "affiliate-marketing": {
                 id: "affiliate-marketing",
