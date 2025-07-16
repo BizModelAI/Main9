@@ -15,10 +15,7 @@ import { PaymentAccountModal } from "../components/PaymentAccountModal";
 import { usePaywall } from "../contexts/PaywallContext";
 import { useAuth } from "../contexts/AuthContext";
 import { QuizData } from "../types";
-import {
-  generatePersonalizedPaths,
-  generateAIPersonalizedPaths,
-} from "../utils/quizLogic";
+import { generateAIPersonalizedPaths } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
 
 interface BusinessExplorerProps {
