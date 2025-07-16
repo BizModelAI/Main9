@@ -399,29 +399,18 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     }
   }, [personalizedPaths]);
 
-  // Monitor for newly generated AI insights from AIReportLoading component
+  // Monitor for newly generated AI insights using new cache system
   useEffect(() => {
     const checkForNewAIData = () => {
-      const cachedData = localStorage.getItem("quiz-completion-ai-insights");
-      if (cachedData) {
-        try {
-          const aiData = JSON.parse(cachedData);
-          // Check if we have new complete AI data that we haven't loaded yet
-          if (aiData.insights && aiData.complete && !aiInsights) {
-            console.log("🔄 New AI insights detected, refreshing content...");
-            setAiInsights(aiData.insights);
+      const aiCacheManager = AICacheManager.getInstance();
+      const cachedContent = aiCacheManager.getCachedAIContent(quizData);
 
-            // Generate fallback analysis for the new insights
-            const topPath = personalizedPaths[0];
-            if (topPath) {
-              const fallbackAnalysis = generateFallbackAnalysis();
-              setAiAnalysis(fallbackAnalysis);
-            }
-            setIsGeneratingAI(false);
-          }
-        } catch (error) {
-          console.error("Error parsing new AI data:", error);
-        }
+      // Check if we have new complete AI data that we haven't loaded yet
+      if (cachedContent.insights && cachedContent.analysis && !aiInsights) {
+        console.log("🔄 New AI insights detected from cache, loading...");
+        setAiInsights(cachedContent.insights);
+        setAiAnalysis(cachedContent.analysis);
+        setIsGeneratingAI(false);
       }
     };
 
