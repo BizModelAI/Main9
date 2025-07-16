@@ -164,31 +164,37 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const {
         prompt,
+        messages: directMessages,
         maxTokens = 1200,
+        max_tokens,
         temperature = 0.7,
         responseFormat = null,
         systemMessage,
       } = req.body;
 
-      if (!prompt) {
-        return res.status(400).json({ error: "Prompt is required" });
-      }
+      let messages = [];
 
-      const messages = [];
-
-      // Add system message if provided
-      if (systemMessage) {
+      // Support both old format (prompt + systemMessage) and new format (messages array)
+      if (directMessages && Array.isArray(directMessages)) {
+        // New format: messages array passed directly
+        messages = directMessages;
+      } else if (prompt) {
+        // Old format: prompt + optional systemMessage
+        if (systemMessage) {
+          messages.push({
+            role: "system",
+            content: systemMessage,
+          });
+        }
         messages.push({
-          role: "system",
-          content: systemMessage,
+          role: "user",
+          content: prompt,
         });
+      } else {
+        return res
+          .status(400)
+          .json({ error: "Either 'messages' array or 'prompt' is required" });
       }
-
-      // Add user prompt
-      messages.push({
-        role: "user",
-        content: prompt,
-      });
 
       const requestBody: any = {
         model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
