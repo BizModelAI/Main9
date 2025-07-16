@@ -1,5 +1,9 @@
 // Proper Admin Authentication Middleware
-import { Request, Response, NextFunction } from "express";
+import express from "express";
+
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
 import { createErrorResponse } from "../utils/errorHandler.js";
 
 interface AdminAuthRequest extends Request {
