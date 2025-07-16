@@ -227,7 +227,15 @@ const PayPalForm: React.FC<{
   isProcessing: boolean;
   setIsProcessing: (processing: boolean) => void;
   amount: number;
-}> = ({ onSuccess, onError, isProcessing, setIsProcessing, amount }) => {
+  quizAttemptId: number;
+}> = ({
+  onSuccess,
+  onError,
+  isProcessing,
+  setIsProcessing,
+  amount,
+  quizAttemptId,
+}) => {
   const { user } = useAuth();
 
   const createOrder = async () => {
@@ -487,6 +495,7 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
           isProcessing={isProcessing}
           setIsProcessing={setIsProcessing}
           amount={amount}
+          quizAttemptId={quizAttemptId!}
         />
       )}
 
