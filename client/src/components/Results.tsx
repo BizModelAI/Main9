@@ -489,7 +489,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           // Check if we have new complete AI data that we haven't loaded yet
           if (aiData.insights && !aiData.error) {
             console.log(
-              "� New AI insights detected from quiz-loading, loading...",
+              "New AI insights detected from quiz-loading, loading...",
             );
 
             setAiInsights(aiData.insights);
