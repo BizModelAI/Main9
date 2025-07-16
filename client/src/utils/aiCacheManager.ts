@@ -271,3 +271,6 @@ export class AICacheManager {
     return status;
   }
 }
+
+// Export singleton instance
+export const aiCacheManager = AICacheManager.getInstance();
