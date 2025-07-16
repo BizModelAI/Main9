@@ -366,7 +366,7 @@ const Dashboard: React.FC = () => {
       timeToProfit: "3-9 months",
       potentialIncome: "$500-15K/month",
       difficulty: "Medium",
-      icon: "📹",
+      icon: "��",
     },
     {
       id: "local-service-arbitrage",
@@ -415,23 +415,25 @@ const Dashboard: React.FC = () => {
     }, 0);
   };
 
-  const handleQuizSelected = (quizData: QuizData, aiContent?: any) => {
-    console.log("Quiz selected in Dashboard:", { quizData, aiContent });
+  const handleQuizSelected = (
+    quizData: QuizData,
+    aiContent?: any,
+    completedAt?: string,
+  ) => {
+    console.log("Quiz selected in Dashboard:", {
+      quizData,
+      aiContent,
+      completedAt,
+    });
 
-    // Check if this is a historical quiz by checking currentQuizAttemptId
-    const currentAttemptId = localStorage.getItem("currentQuizAttemptId");
-    if (currentAttemptId) {
-      // Find the attempt date from localStorage or estimate it
-      const savedData = localStorage.getItem("quizData");
-      if (savedData) {
-        try {
-          const parsedData = JSON.parse(savedData);
-          // If we have a completion date or can derive it, use it
-          setHistoricalQuizDate(new Date().toLocaleDateString());
-        } catch (e) {
-          console.warn("Could not parse saved quiz data");
-        }
-      }
+    // Set historical quiz date if provided
+    if (completedAt) {
+      const formattedDate = new Date(completedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+      setHistoricalQuizDate(formattedDate);
     }
 
     // Show success notification
