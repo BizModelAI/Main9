@@ -227,4 +227,37 @@ export class AICacheManager {
       console.error("❌ Error caching skills analysis:", error);
     }
   }
+
+  /**
+   * Get cache status for debugging
+   */
+  getCacheStatus(): any {
+    const status = {
+      cacheType: "1-hour session cache",
+      duration: "1 hour",
+      entries: [] as any[],
+      totalSize: 0,
+    };
+
+    // Count all cache entries
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith("ai-cache-") || key.startsWith("skills-analysis-"))
+      ) {
+        const value = localStorage.getItem(key);
+        const size = value ? value.length : 0;
+        status.entries.push({
+          key,
+          size,
+          sizeKB: Math.round((size / 1024) * 100) / 100,
+        });
+        status.totalSize += size;
+      }
+    }
+
+    status.totalSize = Math.round((status.totalSize / 1024) * 100) / 100; // KB
+    return status;
+  }
 }
