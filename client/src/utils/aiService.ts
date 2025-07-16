@@ -447,7 +447,7 @@ ${userProfile}`,
           },
         ],
         temperature: 0.7,
-        max_tokens: 700,
+        max_tokens: 400,
       });
 
       if (response && response.content) {
