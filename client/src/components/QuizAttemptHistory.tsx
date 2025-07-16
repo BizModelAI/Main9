@@ -145,7 +145,7 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         const data = await response.json();
         aiContent = data.aiContent;
         console.log(
-          `✅ AI content fetched for attempt ${attempt.id}:`,
+          `AI content fetched for attempt ${attempt.id}:`,
           aiContent ? "Found" : "None",
         );
 
