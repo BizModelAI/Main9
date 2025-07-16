@@ -492,7 +492,7 @@ export class AIScoringService {
   private getIncomeGoalRange(value: number): string {
     if (value <= 500) return "Less than $500/month";
     if (value <= 1250) return "$500–$2,000/month";
-    if (value <= 3500) return "$2,000��$5,000/month";
+    if (value <= 3500) return "$2,000-$5,000/month";
     return "$5,000+/month";
   }
 
