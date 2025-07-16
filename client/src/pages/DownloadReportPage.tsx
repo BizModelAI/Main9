@@ -5,7 +5,7 @@ import { Download, ArrowLeft, AlertCircle } from "lucide-react";
 import BusinessReportContent from "../components/BusinessReportContent";
 import { QuizData, AIAnalysis, BusinessPath } from "../types";
 import { AIService } from "../utils/aiService";
-import { aiCacheManager } from "../utils/aiCacheManager";
+import { AICacheManager } from "../utils/aiCacheManager";
 import { businessPaths } from "../data/businessPaths";
 import { generatePersonalizedPaths } from "../utils/quizLogic";
 
