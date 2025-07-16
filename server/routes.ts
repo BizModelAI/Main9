@@ -1018,10 +1018,23 @@ export async function registerRoutes(app: Express): Promise<void> {
       console.log(`Save quiz data: Saving quiz data for user ${userId}`);
 
       // Save quiz data to user's account
-      const attempt = await storage.recordQuizAttempt({
+      // Set expiration for unpaid users (3 months), no expiration for paid users
+      const attemptData: any = {
         userId: userId,
         quizData,
-      });
+      };
+
+      // Add expiration for unpaid users (3 months from now)
+      if (user && !user.isPaid) {
+        attemptData.expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
+        console.log(
+          `Save quiz data: Setting 3-month expiration for unpaid user ${userId}`,
+        );
+      } else {
+        console.log(`Save quiz data: No expiration for paid user ${userId}`);
+      }
+
+      const attempt = await storage.recordQuizAttempt(attemptData);
 
       console.log(
         `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for user ${userId}`,
