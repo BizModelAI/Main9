@@ -189,49 +189,50 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Basic access shows the first result, but full reports require payment for both auth/non-auth users
   const canViewFullReport = user ? isReportUnlocked : false;
 
-  useEffect(() => {
-    console.log("Results component received quizData:", quizData);
+    useEffect(() => {
+    const initializeResults = async () => {
+      console.log("Results component received quizData:", quizData);
 
-    // Ensure quiz data is preserved in localStorage to prevent navigation issues
-    if (quizData) {
-      localStorage.setItem("quizData", JSON.stringify(quizData));
-      localStorage.setItem("hasCompletedQuiz", "true");
-      console.log("✅ Quiz data safely stored in localStorage");
-    }
+      // Ensure quiz data is preserved in localStorage to prevent navigation issues
+      if (quizData) {
+        localStorage.setItem("quizData", JSON.stringify(quizData));
+        localStorage.setItem("hasCompletedQuiz", "true");
+        console.log("✅ Quiz data safely stored in localStorage");
+      }
 
-    // Trigger confetti blast only on first visit to results page
-    const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
-    const hasShownConfetti = localStorage.getItem(confettiKey);
+      // Trigger confetti blast only on first visit to results page
+      const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
+      const hasShownConfetti = localStorage.getItem(confettiKey);
 
-    if (!hasShownConfetti) {
-      const triggerConfetti = () => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      };
+      if (!hasShownConfetti) {
+        const triggerConfetti = () => {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        };
 
-      // Small delay to ensure page is mounted
-      setTimeout(triggerConfetti, 500);
+        // Small delay to ensure page is mounted
+        setTimeout(triggerConfetti, 500);
 
-      // Mark confetti as shown for this user
-      localStorage.setItem(confettiKey, "true");
-    }
+        // Mark confetti as shown for this user
+        localStorage.setItem(confettiKey, "true");
+      }
 
-    // Debug: Log quiz data to see if it's varying
-    console.log("Quiz Data used for scoring:", {
-      mainMotivation: quizData.mainMotivation,
-      weeklyTimeCommitment: quizData.weeklyTimeCommitment,
-      techSkillsRating: quizData.techSkillsRating,
-      riskComfortLevel: quizData.riskComfortLevel,
-      directCommunicationEnjoyment: quizData.directCommunicationEnjoyment,
-      socialMediaInterest: quizData.socialMediaInterest,
-    });
+      // Debug: Log quiz data to see if it's varying
+      console.log("Quiz Data used for scoring:", {
+        mainMotivation: quizData.mainMotivation,
+        weeklyTimeCommitment: quizData.weeklyTimeCommitment,
+        techSkillsRating: quizData.techSkillsRating,
+        riskComfortLevel: quizData.riskComfortLevel,
+        directCommunicationEnjoyment: quizData.directCommunicationEnjoyment,
+        socialMediaInterest: quizData.socialMediaInterest,
+      });
 
-    // Use database-stored business model results (with fallback to fresh calculation)
-    const advancedScores =
-      await businessModelStorageService.getBusinessModelResults(quizData);
+      try {
+        // Use database-stored business model results (with fallback to fresh calculation)
+        const advancedScores = await businessModelStorageService.getBusinessModelResults(quizData);
     console.log("All business model scores:", advancedScores);
     console.log(
       "Top 5 business models:",
