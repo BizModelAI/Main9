@@ -759,7 +759,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
           // Step 3: Generate AI insights (SINGLE API CALL)
           const step3Result = await executeStep(2, async () => {
-            console.log("��� Starting AI insights generation (single call)");
+            console.log("🔮 Starting AI insights generation (single call)");
             console.log("Quiz data being used:", {
               mainMotivation: activeQuizData.mainMotivation,
               successIncomeGoal: activeQuizData.successIncomeGoal,
