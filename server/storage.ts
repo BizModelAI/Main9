@@ -6,6 +6,7 @@ import {
   refunds,
   unpaidUserEmails,
   passwordResetTokens,
+  aiContent,
   type User,
   type InsertUser,
   type QuizAttempt,
@@ -18,6 +19,8 @@ import {
   type InsertUnpaidUserEmail,
   type PasswordResetToken,
   type InsertPasswordResetToken,
+  type AiContent,
+  type InsertAiContent,
 } from "../shared/schema.js";
 console.log("Schema imported successfully");
 import { db } from "./db.js";
