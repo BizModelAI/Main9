@@ -16,7 +16,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { calculateAllBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
+import { businessModelService } from "../utils/businessModelService";
 import { QuizData } from "../types";
 import { Link, useNavigate } from "react-router-dom";
 import { businessPaths } from "../data/businessPaths";
@@ -92,7 +92,7 @@ const Dashboard: React.FC = () => {
                 timeToProfit: "2-4 weeks",
                 potentialIncome: "$2K-15K/month",
                 difficulty: "Beginner",
-                icon: "📱",
+                icon: "��",
               },
               "affiliate-marketing": {
                 id: "affiliate-marketing",
