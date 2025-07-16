@@ -535,10 +535,13 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async getAllPayments(): Promise<Payment[]> {
-    return Array.from(this.payments.values()).sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  async getAllPayments(limit: number = 1000): Promise<Payment[]> {
+    console.warn(
+      "⚠️ getAllPayments() is deprecated. Use getPaymentsWithUsers() for better performance.",
     );
+    return Array.from(this.payments.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
   }
 
   async getPaymentsWithUsers(
