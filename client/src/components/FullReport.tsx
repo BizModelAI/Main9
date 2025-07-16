@@ -828,8 +828,16 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
             "Failed to load AI paths in Full Report, using fallback:",
             error,
           );
-          const fallbackMatches =
-            businessModelService.getBusinessModelMatches(quizData);
+          // Use cached scores from context, fallback to calculation if needed
+          let fallbackMatches = businessModelScores;
+          if (!fallbackMatches) {
+            console.warn(
+              "⚠️ No cached scores in FullReport fallback, calculating...",
+            );
+            fallbackMatches =
+              businessModelService.getBusinessModelMatches(quizData);
+          }
+
           const fallbackPaths = fallbackMatches.map((match) => {
             const businessPath = businessPaths.find(
               (path) => path.id === match.id,
