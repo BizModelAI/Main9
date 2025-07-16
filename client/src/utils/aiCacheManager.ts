@@ -89,15 +89,15 @@ export class AICacheManager {
   /**
    * Cache AI insights and analysis
    */
-  cacheAIContent(
+    cacheAIContent(
     quizData: QuizData,
     insights: AIInsights,
     analysis: AIAnalysis,
     topPath: BusinessPath,
   ): void {
-    try {
-      const quizHash = this.generateQuizDataHash(quizData);
-      const cacheData: CachedAIData = {
+    console.log("🚫 AI Cache disabled - not caching content");
+    // Cache disabled - all data goes directly to database
+    return;
         quizDataHash: quizHash,
         timestamp: Date.now(),
         insights,
