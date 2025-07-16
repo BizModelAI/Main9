@@ -445,6 +445,7 @@ const QuizCompletionLoadingWrapper: React.FC<{
   handleAILoadingComplete,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleLoadingComplete = () => {
     console.log(
