@@ -1166,7 +1166,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
               </div>
             </motion.div>
           ) : (
-            aiAnalysis && (
+            aiAnalysis &&
+            aiAnalysis.fullAnalysis && (
               <motion.div
                 className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 mb-12 text-white relative overflow-hidden"
                 initial={{ opacity: 0, y: 30 }}
