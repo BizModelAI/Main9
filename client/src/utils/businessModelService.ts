@@ -89,46 +89,6 @@ export class BusinessModelService {
     const allMatches = this.getBusinessModelMatches(quizData);
     return allMatches.find((match) => match.id === businessId);
   }
-
-  /**
-   * Clear cache for new quiz session
-   */
-  clearCache(): void {
-    this.cachedResults.clear();
-    console.log("🧹 Business model matches cache cleared");
-  }
-
-  /**
-   * Create cache key based on quiz data
-   */
-  private createCacheKey(quizData: QuizData): string {
-    // Create a key based on key quiz responses that affect scoring
-    const keyFields = [
-      quizData.mainMotivation,
-      quizData.successIncomeGoal,
-      quizData.weeklyTimeCommitment,
-      quizData.techSkillsRating,
-      quizData.riskComfortLevel,
-      quizData.passionIdentityAlignment,
-      quizData.selfMotivationLevel || quizData.selfMotivation,
-      quizData.organizationLevel,
-      quizData.creativeWorkEnjoyment,
-      quizData.brandFaceComfort,
-      quizData.directCommunicationEnjoyment,
-    ];
-
-    return `bm_matches_${keyFields.join("_")}`;
-  }
-
-  /**
-   * Get cache statistics for debugging
-   */
-  getCacheStats(): { size: number; keys: string[] } {
-    return {
-      size: this.cachedResults.size,
-      keys: Array.from(this.cachedResults.keys()),
-    };
-  }
 }
 
 // Export singleton instance
