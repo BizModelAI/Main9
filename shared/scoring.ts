@@ -988,19 +988,28 @@ export function calculateBusinessModelMatch(
     }
   }
 
-  // Return percentage
-  return totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
+  // Raw score is 0-100
+  const rawScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
+
+  // Rescale to 40-95 range for more dynamic and realistic spread
+  // scaled = 40 + (raw / 100) * (95 - 40)
+  const scaledScore = 40 + (rawScore / 100) * 55;
+  return Math.round(scaledScore);
 }
 
-// Helper for dynamic thresholds
+// Helper for dynamic thresholds (now based on 40-95 range)
 const categoryThresholds = {
-  "Best Fit": (max: number) => max * 0.9,
-  "Strong Fit": (max: number) => max * 0.7,
-  "Possible Fit": (max: number) => max * 0.4,
-  "Poor Fit": (max: number) => 0, // Always a poor fit if below possible
+  // Best Fit: top 3-5, or >= 85
+  "Best Fit": (max: number) => Math.max(85, max - 5),
+  // Strong Fit: >= 70
+  "Strong Fit": (max: number) => 70,
+  // Possible Fit: >= 55
+  "Possible Fit": (max: number) => 55,
+  // Poor Fit: < 55
+  "Poor Fit": (max: number) => 0,
 };
 
-// STEP 3: Categorize scores - REVISED for more dynamic thresholds
+// STEP 3: Categorize scores - REVISED for more dynamic thresholds and new range
 export function getCategoryFromScore(score: number, maxScore: number): string {
   if (score >= categoryThresholds["Best Fit"](maxScore)) return "Best Fit";
   if (score >= categoryThresholds["Strong Fit"](maxScore)) return "Strong Fit";
@@ -1029,11 +1038,11 @@ export function assignCategories(
   // Get the highest score from the sorted results
   const maxScore = sortedResults.length > 0 ? sortedResults[0].score : 0;
 
-  // Define limits for categories (optional, adjust as needed for display balance)
+  // Only top 3 are 'Best Fit', regardless of score
   const categoryLimits: Record<string, number> = {
     "Best Fit": 3,
-    "Strong Fit": 6,
-    "Possible Fit": 5,
+    "Strong Fit": Infinity,
+    "Possible Fit": Infinity,
     "Poor Fit": Infinity, // No limit for poor fit
   };
 
@@ -1051,28 +1060,18 @@ export function assignCategories(
     category: string;
   }> = [];
 
-  for (const result of sortedResults) {
+  for (let i = 0; i < sortedResults.length; i++) {
+    const result = sortedResults[i];
     let assignedCategory = "Poor Fit"; // Default to Poor Fit if no other category fits
 
-    // Try to assign the highest possible category based on dynamic thresholds and limits
-    if (
-      result.score >= categoryThresholds["Best Fit"](maxScore) &&
-      categoryCounts["Best Fit"] < categoryLimits["Best Fit"]
-    ) {
+    if (i < 3) {
       assignedCategory = "Best Fit";
-    } else if (
-      result.score >= categoryThresholds["Strong Fit"](maxScore) &&
-      categoryCounts["Strong Fit"] < categoryLimits["Strong Fit"]
-    ) {
+    } else if (result.score >= categoryThresholds["Strong Fit"](maxScore)) {
       assignedCategory = "Strong Fit";
-    } else if (
-      result.score >= categoryThresholds["Possible Fit"](maxScore) &&
-      categoryCounts["Possible Fit"] < categoryLimits["Possible Fit"]
-    ) {
+    } else if (result.score >= categoryThresholds["Possible Fit"](maxScore)) {
       assignedCategory = "Possible Fit";
     }
 
-    // Increment count for the assigned category
     categoryCounts[assignedCategory]++;
 
     finalCategorizedResults.push({
@@ -1081,8 +1080,6 @@ export function assignCategories(
     });
   }
 
-  // If you want to maintain the original sorting for the final output, re-sort by ID or some other stable key
-  // For now, it will return sorted by score, which is generally what's desired for presentation.
   return finalCategorizedResults;
 }
 
