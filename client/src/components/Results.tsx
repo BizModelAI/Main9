@@ -38,7 +38,6 @@ import {
   generatePersonalizedPaths,
   generateAIPersonalizedPaths,
 } from "../utils/quizLogic";
-import { calculateAdvancedBusinessModelMatches } from "../utils/advancedScoringAlgorithm";
 import { AIService } from "../utils/aiService";
 import { aiCacheManager } from "../utils/aiCacheManager";
 import FullReport from "./FullReport";
@@ -54,6 +53,8 @@ import { useReportUnlock } from "../hooks/useReportUnlock";
 import EmailResultsModal from "./EmailResultsModal";
 import { reportViewManager } from "../utils/reportViewManager";
 import { businessPaths } from "../../../shared/businessPaths";
+import { getSafeEmoji } from '../utils/emojiHelper';
+import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
 
 // Helper function to generate 2-sentence descriptions for business models
 const getBusinessModelDescription = (
@@ -69,7 +70,7 @@ const getBusinessModelDescription = (
       "Create engaging videos, photos, blogs, or social media content for brands or build your own following to monetize through sponsorships and partnerships. This creative path allows you to turn your personality, expertise, or interests into a profitable personal brand.",
     "social-media-agency":
       "Help businesses grow their online presence by managing their social media accounts, creating content, and running advertising campaigns. You'll combine creativity with strategic thinking to deliver measurable results for clients across various industries.",
-    "online-tutoring":
+    "online-coaching":
       "Share your knowledge and expertise by teaching others through one-on-one sessions, group classes, or online courses. This rewarding path lets you make a meaningful impact while building a scalable education business around subjects you're passionate about.",
     "e-commerce":
       "Build and grow an online store selling physical or digital products, managing everything from product sourcing to customer service. This scalable model offers the potential for significant passive income once systems are established and optimized.",
@@ -191,6 +192,9 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     hasMadeAnyPayment,
   } = usePaywall();
 
+  // Use centralized business model scores from context
+  const { scores: businessModelScores, calculateAndStoreScores } = useBusinessModelScores();
+
   // In pure pay-per-report model, check if this specific report is unlocked
   // Basic access is always available, but full reports require payment
   const canViewFullReport = user ? isReportUnlocked : true;
@@ -252,8 +256,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       localStorage.setItem(confettiKey, "true");
     }
 
-    // Use advanced scoring algorithm
-    const advancedScores = calculateAdvancedBusinessModelMatches(quizData);
+    // Use centralized business model scores from context
+    // If scores don't exist, calculate them once and store
+    if (!businessModelScores) {
+      console.log("No business model scores found, calculating once and storing...");
+      await calculateAndStoreScores(quizData, quizAttemptId || undefined);
+    }
+
+    // Use the centralized scores
+    const advancedScores = businessModelScores || [];
     console.log("Advanced algorithm scores:", advancedScores);
     console.log(
       "Top 3 business models:",
@@ -349,7 +360,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
     // Mark quiz as completed
     setHasCompletedQuiz(true);
-  }, [quizData, setHasCompletedQuiz]);
+    };
+
+    initializeResults();
+  }, [quizData, setHasCompletedQuiz, businessModelScores, calculateAndStoreScores, quizAttemptId]);
 
   // This function is no longer used - AI content comes from loading page
   const generateAIContent = async (paths: BusinessPath[]) => {
@@ -1082,9 +1096,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                 <div className="absolute inset-0 bg-black/10"></div>
                 <div className="relative">
                   <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mr-4 bg-yellow-500">
-                      <span className="text-white text-xl">{personalizedPaths[0]?.emoji || '💼'}</span>
-                    </div>
+                    <Sparkles className="w-10 h-10 text-white bg-white/20 rounded-full p-2 mr-4" />
                     <div>
                       <h2 className="text-2xl font-bold">
                         Your AI-Generated Insights
@@ -1185,44 +1197,24 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                             {/* Business Info Boxes */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2">⏱️</div>
-                                <div className="text-xs text-blue-200 mb-1">
-                                  Time to Start
-                                </div>
-                                <div className="font-bold text-sm">
-                                  {personalizedPaths[0]?.timeToProfit ||
-                                    "3-6 months"}
-                                </div>
+                                <div className="text-3xl mb-2">⏱️</div>
+                                <div className="text-xs text-blue-200 mb-1">Time to Start</div>
+                                <div className="font-bold text-sm">{personalizedPaths[0]?.timeToProfit || "3-6 months"}</div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2"></div>
-                                <div className="text-xs text-blue-200 mb-1">
-                                  Initial Investment
-                                </div>
-                                <div className="font-bold text-sm">
-                                  {personalizedPaths[0]?.startupCost ||
-                                    "$0-500"}
-                                </div>
+                                <div className="text-3xl mb-2">💰</div>
+                                <div className="text-xs text-blue-200 mb-1">Initial Investment</div>
+                                <div className="font-bold text-sm">{personalizedPaths[0]?.startupCost || "$0-500"}</div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2"></div>
-                                <div className="text-xs text-blue-200 mb-1">
-                                  Potential Income
-                                </div>
-                                <div className="font-bold text-sm">
-                                  {personalizedPaths[0]?.potentialIncome ||
-                                    "$2K-10K/mo"}
-                                </div>
+                                <div className="text-3xl mb-2">📈</div>
+                                <div className="text-xs text-blue-200 mb-1">Potential Income</div>
+                                <div className="font-bold text-sm">{personalizedPaths[0]?.potentialIncome || "$2K-10K/mo"}</div>
                               </div>
                               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-2xl mb-2"></div>
-                                <div className="text-xs text-blue-200 mb-1">
-                                  Time Commitment
-                                </div>
-                                <div className="font-bold text-sm">
-                                  {quizData.weeklyTimeCommitment || "10-20"}{" "}
-                                  hrs/week
-                                </div>
+                                <div className="text-3xl mb-2">🕒</div>
+                                <div className="text-xs text-blue-200 mb-1">Time Commitment</div>
+                                <div className="font-bold text-sm">{quizData.weeklyTimeCommitment || "10-20"} hrs/week</div>
                               </div>
                             </div>
 
@@ -1313,8 +1305,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                               <div className="grid md:grid-cols-2 gap-8">
                                 {/* Column 1 */}
                                 <div className="space-y-6">
-                                  <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1"></div>
+                                  <div className="flex items-start space-x-4 mb-6">
+                                    <div className="text-3xl mt-1">📋</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Your Business Blueprint
@@ -1327,7 +1319,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                     </div>
                                   </div>
 
-                                  <div className="flex items-start space-x-4">
+                                  <div className="flex items-start space-x-4 mb-6">
                                     <div className="text-3xl mt-1">⚠️</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
@@ -1341,8 +1333,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                     </div>
                                   </div>
 
-                                  <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1"></div>
+                                  <div className="flex items-start space-x-4 mb-6">
+                                    <div className="text-3xl mt-1">🚀</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Step-by-Step Launch Guidance
@@ -1358,8 +1350,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
                                 {/* Column 2 */}
                                 <div className="space-y-6">
-                                  <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1"></div>
+                                  <div className="flex items-start space-x-4 mb-6">
+                                    <div className="text-3xl mt-1">🧠</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Your Strengths & Blind Spots
@@ -1372,8 +1364,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                     </div>
                                   </div>
 
-                                  <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1"></div>
+                                  <div className="flex items-start space-x-4 mb-6">
+                                    <div className="text-3xl mt-1">💸</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Income Potential & Market Fit
@@ -1386,8 +1378,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                                     </div>
                                   </div>
 
-                                  <div className="flex items-start space-x-4">
-                                    <div className="text-3xl mt-1"></div>
+                                  <div className="flex items-start space-x-4 mb-0">
+                                    <div className="text-3xl mt-1">🛠️</div>
                                     <div>
                                       <h4 className="font-bold text-white text-lg mb-2">
                                         Skills You Need to Succeed
@@ -1514,13 +1506,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                   <div className="md:hidden h-full p-4 flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center">
-                        <div
-                          className={`w-10 h-10 rounded-2xl flex items-center justify-center mr-3 ${
-                            index === 0 ? "bg-yellow-500" : "bg-blue-600"
-                          }`}
-                        >
-                          <span className="text-white text-xl">{path.emoji || '💼'}</span>
-                        </div>
+                        <span className="text-3xl mr-3">{getSafeEmoji(path.id) || '💼'}</span>
                         <div>
                           <h3 className="text-xl font-bold text-gray-900">
                             {path.name}
@@ -1659,9 +1645,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       {/* Left Side */}
                       <div className="flex-1 md:pr-6 mb-6 md:mb-0">
                         <div className="flex items-center mb-4">
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mr-4 bg-yellow-500">
-                            <span className="text-white text-xl">{path.emoji || '💼'}</span>
-                          </div>
+                          <span className="text-3xl mr-4">{getSafeEmoji(path.id) || '💼'}</span>
                           <div>
                             <h3 className="text-2xl font-bold text-gray-900">
                               {path.name}

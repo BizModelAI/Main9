@@ -399,21 +399,21 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
         {/* Business Models Grid */}
         <div className="flex flex-wrap gap-6">
           {filteredModels.map((model) => (
-            <div key={model.id} className="w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]">
-              <BusinessModelCard
-                model={model}
-                onLearnMore={handleLearnMore}
+            <div key={model.id} className="w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] min-h-[420px] flex">
+            <BusinessModelCard
+              model={model}
+              onLearnMore={handleLearnMore}
                 onShowDetails={() => handleShowDetails(model)}
-                showFitBadge={
-                  !!(
-                    hasUnlockedAnalysis &&
-                    (quizData || (import.meta.env.MODE === "development" && user))
-                  )
-                }
-                fitCategory={model.fitCategory}
-                fitScore={model.fitScore}
-                getFitCategoryColor={getFitCategoryColor}
-              />
+              showFitBadge={
+                !!(
+                  hasUnlockedAnalysis &&
+                  (quizData || (import.meta.env.MODE === "development" && user))
+                )
+              }
+              fitCategory={model.fitCategory}
+              fitScore={model.fitScore}
+              getFitCategoryColor={getFitCategoryColor}
+            />
             </div>
           ))}
         </div>
@@ -556,7 +556,7 @@ const BusinessModelCard = ({
 
   return (
     <motion.div
-      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col"
+      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col h-full"
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{
@@ -569,14 +569,14 @@ const BusinessModelCard = ({
       }}
       whileHover={{ y: -5 }}
     >
-      <div className="p-4 flex flex-col h-full">
+      <div className="px-6 py-4 flex flex-col h-full">
         {/* Header */}
         <div className="flex justify-between items-start mb-4 relative">
           <div className="flex items-center flex-1 mr-2">
             <span className="text-3xl mr-3">{getSafeEmoji(model.id)}</span>
             <h3 className="text-xl font-bold text-gray-900 line-clamp-2">
-              {model.title}
-            </h3>
+            {model.title}
+          </h3>
           </div>
           <div className="flex flex-col gap-1 items-end">
             {/* Show fit percentage if user has paid and quiz data exists */}
@@ -739,12 +739,12 @@ const BusinessModelDetailsModal = ({
       >
         <div className="p-8 relative">
           {/* Close Button */}
-          <button
+                    <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 text-xl"
-          >
+                    >
             ×
-          </button>
+                    </button>
 
           {/* Header */}
           <Card className="mb-6 bg-white rounded-2xl shadow-lg mt-4">
@@ -796,11 +796,11 @@ const BusinessModelDetailsModal = ({
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="text-green-500 mr-2">✅</span>
                         Project-based work with flexible scheduling
-                      </div>
+                </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="text-green-500 mr-2">✅</span>
                         Choose your own rates and clients
-                      </div>
+              </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="text-green-500 mr-2">✅</span>
                         Build a portfolio and reputation
@@ -818,14 +818,14 @@ const BusinessModelDetailsModal = ({
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {getSkillsToShow().map((skill, index) => (
-                      <span
-                        key={index}
+                    <span
+                      key={index}
                         className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors"
-                      >
+                    >
                         {skill}
-                      </span>
-                    ))}
-                  </div>
+                    </span>
+                  ))}
+                </div>
                 </CardContent>
               </Card>
 
@@ -839,11 +839,11 @@ const BusinessModelDetailsModal = ({
                     <ul className="space-y-2">
                       {model.pros.map((pro, index) => (
                         <li key={index} className="flex items-center text-gray-700 text-sm">
-                          <span className="text-green-500 mr-2">✓</span>
-                          {pro}
-                        </li>
-                      ))}
-                    </ul>
+                      <span className="text-green-500 mr-2">✓</span>
+                      {pro}
+                    </li>
+                  ))}
+                </ul>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl shadow-lg border border-orange-200">
@@ -854,15 +854,15 @@ const BusinessModelDetailsModal = ({
                     <ul className="space-y-2">
                       {model.cons.map((con, index) => (
                         <li key={index} className="flex items-center text-gray-700 text-sm">
-                          <span className="text-red-500 mr-2">×</span>
-                          {con}
-                        </li>
-                      ))}
-                    </ul>
+                      <span className="text-red-500 mr-2">×</span>
+                      {con}
+                    </li>
+                  ))}
+                </ul>
                   </CardContent>
                 </Card>
               </div>
-            </div>
+              </div>
 
             {/* Right Column - 30% */}
             <div className="md:col-span-2 space-y-4">
@@ -872,7 +872,7 @@ const BusinessModelDetailsModal = ({
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                       <Clock className="h-5 w-5 text-blue-600" />
-                    </div>
+              </div>
                     <div>
                       <div className="text-sm text-gray-600">Time to Start</div>
                       <div className="font-semibold text-gray-900">{model.timeToStart}</div>
@@ -998,7 +998,7 @@ const BusinessModelDetailsModal = ({
             </button>
           </div>
 
-        </div>
+      </div>
       </motion.div>
     </motion.div>
   );
