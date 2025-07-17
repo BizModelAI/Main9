@@ -1083,6 +1083,40 @@ export function assignCategories(
   return finalCategorizedResults;
 }
 
+/**
+ * Enforce a minimum gap and non-uniform spacing between top N scores.
+ * Only adjusts downward, never upward, and preserves order/accuracy as much as possible.
+ * minGap: minimum allowed gap between consecutive scores (e.g., 3)
+ * topN: how many top scores to enforce this for (e.g., 3)
+ */
+export function enforceMinimumScoreGap(
+  results: Array<{ id: string; name: string; score: number; category: string }>,
+  minGap: number = 3,
+  topN: number = 3
+): Array<{ id: string; name: string; score: number; category: string }> {
+  if (results.length < 2) return results;
+  const adjusted = [...results];
+  let lastGap = null;
+  for (let i = 1; i < Math.min(topN, adjusted.length); i++) {
+    let prev = adjusted[i - 1].score;
+    let curr = adjusted[i].score;
+    let gap = prev - curr;
+    // If gap is too small, or same as last gap, adjust
+    if (gap < minGap || (lastGap !== null && gap === lastGap)) {
+      let newGap = minGap;
+      // If lastGap is not null, nudge this gap by ±1 (alternate)
+      if (lastGap !== null) {
+        newGap = minGap + ((i % 2 === 0) ? 1 : -1);
+        if (newGap < minGap) newGap = minGap;
+      }
+      adjusted[i].score = Math.max(0, prev - newGap);
+      gap = prev - adjusted[i].score;
+    }
+    lastGap = gap;
+  }
+  return adjusted;
+}
+
 // STEP 5: Calculate all business model matches
 export function calculateAllBusinessModelMatches(data: any): Array<{
   id: string;
@@ -1135,8 +1169,11 @@ export function calculateAllBusinessModelMatches(data: any): Array<{
   // Sort by score (highest first) before assigning categories based on max score
   results.sort((a, b) => b.score - a.score);
 
+  // Enforce minimum gap and non-uniformity for top N
+  const adjustedResults = enforceMinimumScoreGap(results, 3, 3);
+
   // Assign categories based on algorithm rules (now using max score for dynamic thresholds)
-  const categorizedResults = assignCategories(results);
+  const categorizedResults = assignCategories(adjustedResults);
 
   return categorizedResults;
 }
