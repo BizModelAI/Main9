@@ -1720,6 +1720,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                   user = await storage.createUser({
                     username: email,
                     password: password, // Already hashed
+                    firstName: '',
+                    lastName: '',
                   });
                 } catch (createUserError) {
                   // If user creation fails due to duplicate email, try to get the user again
@@ -2091,13 +2093,20 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Email endpoints
   app.post("/api/send-quiz-results", async (req: Request, res: Response) => {
     try {
-      const { email, quizData } = req.body;
+      const { email, quizData, attemptId } = req.body;
 
       if (!email || !quizData) {
         return res.status(400).json({ error: "Missing email or quiz data" });
       }
 
-      const success = await emailService.sendQuizResults(email, quizData);
+      // Add email and attempt ID to quiz data for the email link
+      const quizDataWithEmail = {
+        ...quizData,
+        email: email,
+        attemptId: attemptId || null
+      };
+
+      const success = await emailService.sendQuizResults(email, quizDataWithEmail);
 
       if (success) {
         res.json({ success: true, message: "Quiz results sent successfully" });
@@ -2133,13 +2142,20 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   app.post("/api/send-full-report", async (req: Request, res: Response) => {
     try {
-      const { email, quizData } = req.body;
+      const { email, quizData, attemptId } = req.body;
 
       if (!email || !quizData) {
         return res.status(400).json({ error: "Missing email or quiz data" });
       }
 
-      const success = await emailService.sendFullReport(email, quizData);
+      // Add email and attempt ID to quiz data for the email link
+      const quizDataWithEmail = {
+        ...quizData,
+        email: email,
+        attemptId: attemptId || null
+      };
+
+      const success = await emailService.sendFullReport(email, quizDataWithEmail);
 
       if (success) {
         res.json({ success: true, message: "Full report sent successfully" });
@@ -2665,6 +2681,63 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
       }
     },
   );
+
+  // Handle email links with quiz attempt ID and email
+  app.get("/api/email-link/:attemptId/:email", async (req: Request, res: Response) => {
+    try {
+      const { attemptId, email } = req.params;
+      const decodedEmail = decodeURIComponent(email);
+      
+      console.log(`Email link accessed: attemptId=${attemptId}, email=${decodedEmail}`);
+
+      // Get the quiz attempt
+      const attempt = await storage.getQuizAttempt(parseInt(attemptId));
+      
+      if (!attempt) {
+        console.log(`Quiz attempt ${attemptId} not found`);
+        return res.status(404).json({ error: "Quiz attempt not found" });
+      }
+
+      // Check if data has expired (3 months for unpaid users)
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      
+      if (attempt.completedAt < threeMonthsAgo) {
+        console.log(`Quiz attempt ${attemptId} has expired (completed: ${attempt.completedAt})`);
+        return res.json({
+          status: "expired",
+          message: "Your data has expired",
+          completedAt: attempt.completedAt
+        });
+      }
+
+      // Check if user has paid for this attempt
+      const isPaid = await storage.isPaidUser(attempt.userId);
+      
+      if (isPaid) {
+        console.log(`Quiz attempt ${attemptId} is paid - returning full access`);
+        return res.json({
+          status: "paid",
+          quizData: attempt.quizData,
+          attemptId: attempt.id,
+          email: decodedEmail,
+          isUnlocked: true
+        });
+      } else {
+        console.log(`Quiz attempt ${attemptId} is unpaid - returning preview access`);
+        return res.json({
+          status: "unpaid",
+          quizData: attempt.quizData,
+          attemptId: attempt.id,
+          email: decodedEmail,
+          isUnlocked: false
+        });
+      }
+    } catch (error) {
+      console.error("Error handling email link:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   // Get all collected emails endpoint for marketing/advertising
   app.get("/api/admin/all-emails", async (req: Request, res: Response) => {

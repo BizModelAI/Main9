@@ -19,7 +19,9 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(), // Email is now the primary identifier
   password: text("password").notNull(),
-  name: text("name"), // User's full name
+  firstName: text("first_name"), // User's first name
+  lastName: text("last_name"), // User's last name
+  // name: text("name"), // DEPRECATED: User's full name
   isUnsubscribed: boolean("is_unsubscribed").default(false).notNull(),
   // New fields to consolidate paid/unpaid users
   sessionId: text("session_id"), // Session ID for temporary/unpaid users
@@ -158,7 +160,8 @@ export const refunds = pgTable("refunds", {
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
-  name: true,
+  firstName: true,
+  lastName: true,
 });
 
 export const insertQuizAttemptSchema = createInsertSchema(quizAttempts);

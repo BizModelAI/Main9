@@ -1,5 +1,5 @@
 import React from 'react';
-import { safeguardBusinessModelEmoji, safeguardBusinessPathEmoji, safeguardBusinessDataArray } from '../utils/emojiHelper';
+import { safeguardBusinessModelEmoji, safeguardBusinessPathEmoji, safeguardBusinessDataArray } from '../utils/contentUtils';
 
 interface EmojiSafeguardProps {
   children: React.ReactNode;

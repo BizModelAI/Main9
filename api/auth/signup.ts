@@ -81,6 +81,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .json({ error: "Email, password, and name are required" });
     }
 
+    // Parse name into firstName and lastName
+    const [firstName, ...lastNameParts] = name.trim().split(" ");
+    const lastName = lastNameParts.length > 0 ? lastNameParts.join(" ") : "";
+
     // Basic email validation
     if (!email.includes("@") || email.length < 5) {
       return res
@@ -118,7 +122,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await storage.storeUnpaidUserEmail(sessionId, email, {
       email,
       password: hashedPassword,
-      name,
+      firstName,
+      lastName,
       quizData: req.body.quizData || {},
     });
 
@@ -127,7 +132,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: `temp_${sessionId}`,
       username: email,
       email: email,
-      name: name,
+      firstName: firstName,
+      lastName: lastName,
       hasAccessPass: false,
       quizRetakesRemaining: 0,
       isTemporary: true,

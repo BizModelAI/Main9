@@ -70,13 +70,6 @@ export class EmailService {
     }
 
     try {
-      // Check if user is unsubscribed before sending
-      const isUnsubscribed = await this.checkUnsubscribeStatus(options.to);
-      if (isUnsubscribed) {
-        console.log(`User ${options.to} is unsubscribed, skipping email`);
-        return false;
-      }
-
       console.log(`Attempting to send email to: ${options.to}`);
       console.log(`Subject: ${options.subject}`);
 
@@ -271,8 +264,8 @@ export class EmailService {
               </div>
 
               <div class="cta-container" style="text-align: center; padding: 30px; background: #FFFFFF !important; border-radius: 12px; border: 1px solid #F3F4F6; margin-top: 20px;">
-                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 20px 40px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 18px; text-align: center; margin: 30px 0; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);">
-                  View Your Full Results →
+                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results?email=${encodeURIComponent(quizData.email || '')}&attempt=${quizData.attemptId || ''}" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 20px 40px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 18px; text-align: center; margin: 30px 0; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);">
+                  View Your Results →
                 </a>
                 <p style="margin-top: 16px; font-size: 14px; color: #6B7280 !important;">
                   Your personalized business blueprint is ready to explore
@@ -917,7 +910,7 @@ export class EmailService {
                 <p style="font-size: 16px; color: #6B7280 !important; margin-bottom: 24px; max-width: 500px; margin-left: auto; margin-right: auto;">
                   Access your full interactive report with detailed business model guides, income projections, and step-by-step action plans.
                 </p>
-                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center; margin: 10px; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);">
+                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results?email=${encodeURIComponent(quizData.email || '')}&attempt=${quizData.attemptId || ''}" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center; margin: 10px; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);">
                   View Full Interactive Report →
                 </a>
                 <br>

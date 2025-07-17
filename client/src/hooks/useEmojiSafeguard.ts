@@ -4,7 +4,7 @@ import {
   getSafeEmoji, 
   isValidEmoji,
   BUSINESS_MODEL_EMOJIS 
-} from '../utils/emojiHelper';
+} from '../utils/contentUtils';
 
 /**
  * Hook to safely handle emojis in React components

@@ -42,6 +42,7 @@ export interface IStorage {
   ): Promise<QuizAttempt>;
   getQuizAttemptsCount(userId: number): Promise<number>;
   getQuizAttempts(userId: number): Promise<QuizAttempt[]>;
+  getQuizAttempt(attemptId: number): Promise<QuizAttempt | undefined>;
   canUserRetakeQuiz(userId: number): Promise<boolean>;
 
   // AI content operations (NEW TABLE-BASED)
@@ -167,7 +168,8 @@ export class MemStorage implements IStorage {
       id: 1,
       email: "test@example.com",
       password: "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // "password"
-      name: "Test User",
+      firstName: "Test",
+      lastName: "User",
       isUnsubscribed: false,
       sessionId: null,
       isPaid: true,
@@ -193,7 +195,8 @@ export class MemStorage implements IStorage {
     const id = this.currentId++;
     const user: User = {
       ...insertUser,
-      name: insertUser.name ?? null,
+      firstName: insertUser.firstName ?? null,
+      lastName: insertUser.lastName ?? null,
       id,
       isUnsubscribed: false,
       sessionId: null,
@@ -263,6 +266,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.quizAttempts.values())
       .filter((attempt) => attempt.userId === userId)
       .sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()); // Most recent first
+  }
+
+  async getQuizAttempt(attemptId: number): Promise<QuizAttempt | undefined> {
+    return this.quizAttempts.get(attemptId);
   }
 
   async canUserRetakeQuiz(userId: number): Promise<boolean> {
@@ -518,7 +525,8 @@ export class MemStorage implements IStorage {
       id,
       email,
       password: data.password || "",
-      name: data.name || null,
+      firstName: data.firstName || null,
+      lastName: data.lastName || null,
       isUnsubscribed: false,
       sessionId,
       isPaid: false,
@@ -782,7 +790,7 @@ export class DatabaseStorage implements IStorage {
 
     console.log(
       "Storage updateUser: Result:",
-      user ? { id: user.id, name: user.name, email: user.email } : "null",
+      user ? { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email } : "null",
     );
 
     if (!user) {
@@ -838,6 +846,14 @@ export class DatabaseStorage implements IStorage {
       .from(quizAttempts)
       .where(eq(quizAttempts.userId, userId))
       .orderBy(desc(quizAttempts.completedAt));
+  }
+
+  async getQuizAttempt(attemptId: number): Promise<QuizAttempt | undefined> {
+    const [attempt] = await this.ensureDb()
+      .select()
+      .from(quizAttempts)
+      .where(eq(quizAttempts.id, attemptId));
+    return attempt;
   }
 
   async canUserRetakeQuiz(userId: number): Promise<boolean> {
@@ -1271,7 +1287,8 @@ export class DatabaseStorage implements IStorage {
         version: payments.version,
         // User fields
         userEmail: users.email,
-        userName: users.name,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
       })
       .from(payments)
       .leftJoin(users, eq(payments.userId, users.id))
@@ -1302,7 +1319,8 @@ export class DatabaseStorage implements IStorage {
         ? {
             id: row.userId,
             email: row.userEmail,
-            username: row.userName || undefined,
+            firstName: row.userFirstName || undefined,
+            lastName: row.userLastName || undefined,
           }
         : null,
     }));
@@ -1474,7 +1492,8 @@ export class DatabaseStorage implements IStorage {
           .values({
             email,
             password: data.password || "",
-            name: data.name || null,
+            firstName: data.firstName || null,
+            lastName: data.lastName || null,
             sessionId,
             isPaid: false,
             isTemporary: true,

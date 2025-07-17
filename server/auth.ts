@@ -282,13 +282,13 @@ export function setupAuthRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid request body" });
       }
 
-      const { email, password, name } = req.body;
+      const { email, password, firstName, lastName } = req.body;
 
-      if (!email || !password || !name) {
+      if (!email || !password || !firstName || !lastName) {
         console.log("Signup validation failed: missing required fields");
         return res
           .status(400)
-          .json({ error: "Email, password, and name are required" });
+          .json({ error: "Email, password, first name, and last name are required" });
       }
 
       // Basic email validation
@@ -367,7 +367,8 @@ export function setupAuthRoutes(app: Express) {
         await storage.storeTemporaryUser(sessionId, email, {
           email,
           password: hashedPassword,
-          name,
+          firstName,
+          lastName,
           quizData,
         });
       } catch (storageError) {
@@ -388,7 +389,8 @@ export function setupAuthRoutes(app: Express) {
       res.json({
         id: `temp_${sessionId}`,
         email: email,
-        name: name,
+        firstName: firstName,
+        lastName: lastName,
         isTemporary: true,
       });
     } catch (error) {
@@ -465,7 +467,8 @@ export function setupAuthRoutes(app: Express) {
       const user = await storage.updateUser(userId, updates);
       console.log("Profile update: Updated user:", {
         id: user.id,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
       });
 

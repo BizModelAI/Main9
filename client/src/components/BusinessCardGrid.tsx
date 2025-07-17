@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Clock, DollarSign, TrendingUp, CheckCircle, AlertTriangle, Star } from 'lucide-react';
-import { getSafeEmoji } from '../utils/emojiHelper';
+import { getSafeEmoji } from '../utils/contentUtils';
 
 interface BusinessCardData {
   id: string;

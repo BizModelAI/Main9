@@ -36,7 +36,7 @@ import {
 } from "../../../shared/personalityScoring";
 import { renderMarkdownContent } from "../utils/markdownUtils";
 import { reportViewManager } from "../utils/reportViewManager";
-import { getSafeEmoji } from '../utils/emojiHelper';
+import { getSafeEmoji } from '../utils/contentUtils';
 import { businessPaths } from '../data/businessPaths'; // or the correct path if needed
 
 // Helper functions to convert stored numbers back to original quiz ranges

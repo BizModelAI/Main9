@@ -22,7 +22,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { businessPaths } from "../data/businessPaths";
 import { businessModels } from "../data/businessModels";
 import { QuizAttemptHistory } from "../components/QuizAttemptHistory";
-import { getSafeEmoji } from '../utils/emojiHelper';
+import { getSafeEmoji } from '../utils/contentUtils';
 import BusinessCard from "../components/BusinessCard";
 
 const Dashboard: React.FC = () => {

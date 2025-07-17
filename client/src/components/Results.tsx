@@ -54,7 +54,7 @@ import { useReportUnlock } from "../hooks/useReportUnlock";
 import EmailResultsModal from "./EmailResultsModal";
 import { reportViewManager } from "../utils/reportViewManager";
 import { businessPaths } from "../../../shared/businessPaths";
-import { getSafeEmoji } from '../utils/emojiHelper';
+import { getSafeEmoji } from '../utils/contentUtils';
 import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
 import { API_ROUTES, apiPost } from '../utils/apiClient';
 import { useAIInsights } from '../contexts/AIInsightsContext';
@@ -318,7 +318,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           ],
           skills: businessPathData?.skills || ["Basic business skills", "Communication", "Organization"],
           icon: businessPathData?.icon || "",
-          emoji: businessPathData?.emoji || "💼",
+          emoji: businessPathData?.emoji || "��",
           marketSize: businessPathData?.marketSize || "Large",
           averageIncome: businessPathData?.averageIncome || {
             beginner: "$1K-3K",
@@ -1376,7 +1376,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       {/* Primary CTA - Only show if card is not locked */}
                       {!(index > 0 && !canViewFullReport) && (
                         <button
-                          onClick={() => handleViewFullReport(path)}
+                          onClick={() => {
+                            if (!canViewFullReport) {
+                              setSelectedPath(path);
+                              setPaywallType("full-report");
+                              setShowUnlockModal(true);
+                              return;
+                            }
+                            handleViewFullReport(path);
+                          }}
                           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform group-hover:scale-[1.02] flex items-center justify-center text-sm"
                         >
                           <FileText className="h-3 w-3 mr-1" />
@@ -1388,14 +1396,30 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       {!(index > 0 && !canViewFullReport) && (
                         <div className="flex flex-col items-start space-y-2 mt-2">
                           <button
-                            onClick={() => handleLearnMore(path)}
+                            onClick={() => {
+                              if (!canViewFullReport) {
+                                setSelectedPath(path);
+                                setPaywallType("learn-more");
+                                setShowUnlockModal(true);
+                                return;
+                              }
+                              handleLearnMore(path);
+                            }}
                             className="text-left font-bold text-sm text-black hover:text-gray-600 transition-colors duration-300 flex items-center group"
                           >
                             Learn more about {path.name} for you
                             <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                           </button>
                           <button
-                            onClick={() => handleStartBusinessModel(path)}
+                            onClick={() => {
+                              if (!canViewFullReport) {
+                                setSelectedPath(path);
+                                setPaywallType("business-model");
+                                setShowUnlockModal(true);
+                                return;
+                              }
+                              handleStartBusinessModel(path);
+                            }}
                             className="text-left font-bold text-sm text-black hover:text-gray-600 transition-colors duration-300 flex items-center group"
                           >
                             Complete Guide to {path.name}
@@ -1812,6 +1836,14 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           title={selectedPath?.name}
         />
       </div>
+
+      <EmailResultsModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        quizData={quizData}
+        quizAttemptId={quizAttemptId}
+        userEmail={user?.email || userEmail || ''}
+      />
     </>
   );
 };

@@ -6,7 +6,7 @@ import App from './App.tsx';
 import './index.css';
 
 // Initialize emoji safeguards early
-import { initializeEmojiSafeguards, cleanCorruptedEmojisFromStorage } from './utils/emojiHelper';
+import { initializeEmojiSafeguards, cleanCorruptedEmojisFromStorage } from './utils/contentUtils';
 
 // Initialize emoji corruption prevention
 initializeEmojiSafeguards();

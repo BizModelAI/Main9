@@ -238,7 +238,7 @@ export function cleanCorruptedEmojisFromStorage(): void {
   });
   
   if (cleanedCount > 0) {
-    console.log(`🧹 Cleaned ${cleanedCount} corrupted emojis from localStorage`);
+    console.log(`Cleaned ${cleanedCount} corrupted emojis from localStorage`);
   }
 }
 

@@ -22,8 +22,8 @@ const Settings: React.FC = () => {
     return searchParams.get("tab") || "profile";
   });
   const [formData, setFormData] = useState({
-    firstName: user?.name?.split(" ")[0] || "",
-    lastName: user?.name?.split(" ").slice(1).join(" ") || "",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
     email: user?.email || "",
   });
   const [notifications, setNotifications] = useState({
@@ -56,8 +56,8 @@ const Settings: React.FC = () => {
     console.log("Settings: User data changed:", user);
     if (user) {
       const newFormData = {
-        firstName: user?.name?.split(" ")[0] || "",
-        lastName: user?.name?.split(" ").slice(1).join(" ") || "",
+        firstName: user?.firstName || "",
+        lastName: user?.lastName || "",
         email: user?.email || "",
       };
       console.log("Settings: Setting form data to:", newFormData);
@@ -105,10 +105,9 @@ const Settings: React.FC = () => {
       // Create clean server data with only valid User fields
       const firstName = formData.firstName.trim();
       const lastName = formData.lastName.trim();
-      const fullName = [firstName, lastName].filter(Boolean).join(" ");
-
       const serverData = {
-        name: fullName,
+        firstName,
+        lastName,
         email: formData.email.trim(),
       };
 

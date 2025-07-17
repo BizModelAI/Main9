@@ -17,7 +17,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { QuizData } from "../types";
 import { generateAIPersonalizedPaths } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
-import { getSafeEmoji } from '../utils/emojiHelper';
+import { getSafeEmoji } from '../utils/contentUtils';
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "../components/ui/card";
 

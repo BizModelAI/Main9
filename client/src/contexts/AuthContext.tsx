@@ -5,7 +5,8 @@ interface User {
   id: string;
   email: string;
   username: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   isTemporary?: boolean;
 }
 
@@ -16,7 +17,8 @@ interface AuthContextType {
   signup: (
     email: string,
     password: string,
-    name: string,
+    firstName: string,
+    lastName: string,
     quizData?: any,
   ) => Promise<void>;
   logout: () => void;
@@ -190,7 +192,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signup = async (
     email: string,
     password: string,
-    name: string,
+    firstName: string,
+    lastName: string,
     quizData?: any,
   ): Promise<void> => {
     setIsLoading(true);
@@ -201,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ email, password, name, quizData }),
+        body: JSON.stringify({ email, password, firstName, lastName, quizData }),
       });
 
       if (!response.ok) {

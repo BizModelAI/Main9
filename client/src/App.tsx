@@ -50,8 +50,10 @@ import QuizCompletionLoading from "./components/QuizCompletionLoading";
 import QuizPaymentRequired from "./pages/QuizPaymentRequired";
 import SaveResultsPayment from "./pages/SaveResultsPayment";
 import { NavigationGuardWrapper } from "./components/NavigationGuardWrapper";
-import { initializeEmojiSafeguards } from "./utils/emojiHelper";
+import { initializeEmojiSafeguards } from "./utils/contentUtils";
 import CongratulationsLoggedIn from "./components/CongratulationsLoggedIn";
+import DataExpiredMessage from "./components/DataExpiredMessage";
+import { cleanupExpiredAIContent } from "./utils/cleanupUtils";
 
 // Initialize emoji corruption prevention system
 initializeEmojiSafeguards();
@@ -68,6 +70,7 @@ function MainAppContent() {
   const [showAILoading, setShowAILoading] = React.useState(false);
   const [loadedReportData, setLoadedReportData] = React.useState<any>(null);
   const [showCongratulations, setShowCongratulations] = React.useState(false);
+  const [dataExpired, setDataExpired] = React.useState(false);
 
   // Restore data from localStorage on app start, but NOT on /quiz (handled in Quiz.tsx)
   React.useEffect(() => {
@@ -110,6 +113,76 @@ function MainAppContent() {
       }
     }
   }, []);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const hasLoggedQuizSkip = React.useRef(false);
+
+  console.log("MainAppContent - Current location:", location?.pathname);
+  console.log("MainAppContent - quizData:", !!quizData);
+  console.log("MainAppContent - userEmail:", userEmail);
+
+  // Handle email links with attempt ID and email parameters
+  React.useEffect(() => {
+    // Only run if location is properly initialized
+    if (!location || !location.pathname || !location.search) {
+      return;
+    }
+
+    if (location.pathname === "/results" && location.search) {
+      try {
+        const searchParams = new URLSearchParams(location.search);
+        const email = searchParams.get("email");
+        const attempt = searchParams.get("attempt");
+        
+        if (email && attempt) {
+          console.log(`Email link detected: email=${email}, attempt=${attempt}`);
+          
+          const loadEmailLinkData = async () => {
+            try {
+              const response = await fetch(`/api/email-link/${attempt}/${encodeURIComponent(email)}`);
+              
+              if (response.ok) {
+                const data = await response.json();
+                
+                if (data.status === "expired") {
+                  // Show expired data message
+                  console.log("Data has expired");
+                  setDataExpired(true);
+                  return;
+                }
+                
+                if (data.status === "paid" || data.status === "unpaid") {
+                  // Load the quiz data and set up the results page
+                  console.log(`Loading quiz data for ${data.status} user`);
+                  setQuizData(data.quizData);
+                  setUserEmail(data.email);
+                  
+                  if (data.attemptId) {
+                    localStorage.setItem("currentQuizAttemptId", data.attemptId.toString());
+                  }
+                  
+                  // If paid user, they have full access
+                  if (data.status === "paid") {
+                    localStorage.setItem("hasUnlockedAnalysis", "true");
+                    localStorage.setItem("hasCompletedQuiz", "true");
+                  }
+                }
+              } else {
+                console.error("Failed to load email link data");
+              }
+            } catch (error) {
+              console.error("Error loading email link data:", error);
+            }
+          };
+          
+          loadEmailLinkData();
+        }
+      } catch (error) {
+        console.error("Error parsing email link parameters:", error);
+      }
+    }
+  }, [location?.pathname, location?.search]);
 
   // Ensure quiz data persists even if React state gets reset
   React.useEffect(() => {
@@ -156,20 +229,17 @@ function MainAppContent() {
 
       // Clean up expired AI content for anonymous users
       try {
-        // Import dynamically to avoid issues with module loading
-        import("./utils/aiService")
-          .then(({ AIService }) => {
-            AIService.cleanupExpiredLocalStorageContent();
-          })
-          .catch((error) => {
-            console.error("Error cleaning up AI content:", error);
-          });
+        cleanupExpiredAIContent();
       } catch (error) {
         console.error("Error cleaning up AI content:", error);
       }
 
       // Clean up expired business model scores
-      cleanupExpiredBusinessModelScores();
+      try {
+        cleanupExpiredBusinessModelScores();
+      } catch (error) {
+        console.error("Error cleaning up business model scores:", error);
+      }
     };
 
     // Run cleanup immediately
@@ -283,19 +353,11 @@ function MainAppContent() {
     };
   };
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const hasLoggedQuizSkip = React.useRef(false);
-
-  console.log("MainAppContent - Current location:", location.pathname);
-  console.log("MainAppContent - quizData:", !!quizData);
-  console.log("MainAppContent - userEmail:", userEmail);
-
   // Load quiz data from localStorage first, then server if authenticated
   React.useEffect(() => {
     const loadQuizData = async () => {
       // Don't auto-load quiz data when user is on /quiz page (they want to start fresh)
-      if (location.pathname === "/quiz") {
+      if (location?.pathname === "/quiz") {
         if (!hasLoggedQuizSkip.current) {
           console.log(
             "MainAppContent - On /quiz page, skipping auto-load of existing quiz data",
@@ -366,12 +428,12 @@ function MainAppContent() {
 
   React.useEffect(() => {
     // Clear AI insights when navigating to home page
-    if (location.pathname === "/") {
+    if (location?.pathname === "/") {
       localStorage.removeItem("quiz-completion-ai-insights");
     }
-  }, [location.pathname]);
+  }, [location?.pathname]);
 
-  if (location.pathname === "/quiz") {
+  if (location?.pathname === "/quiz") {
     return (
       <QuizWithNavigation
         quizData={quizData}
@@ -392,7 +454,11 @@ function MainAppContent() {
     );
   }
 
-  if (location.pathname === "/results") {
+  if (location?.pathname === "/results") {
+    if (dataExpired) {
+      return <DataExpiredMessage />;
+    }
+    
     return (
       <Layout>
         <ResultsWrapperWithReset
@@ -407,8 +473,8 @@ function MainAppContent() {
   }
 
   if (
-    location.pathname === "/ai-loading" ||
-    location.pathname === "/quiz-loading"
+    location?.pathname === "/ai-loading" ||
+    location?.pathname === "/quiz-loading"
   ) {
     return (
       <AIReportLoadingWrapper

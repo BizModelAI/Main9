@@ -1,9 +1,9 @@
 // Import emoji safeguarding utilities
-import { cleanCorruptedEmojisFromStorage } from './emojiHelper';
+import { cleanCorruptedEmojisFromStorage } from './contentUtils';
 import { businessModelService } from './businessModelService';
 
 export function clearAllCaches() {
-  console.log("🧹 Clearing all caches and localStorage data...");
+  console.log("Clearing all caches and localStorage data...");
   
   // Clear all localStorage
   localStorage.clear();
@@ -29,11 +29,11 @@ export function clearAllCaches() {
     });
   }
   
-  console.log("✅ All caches cleared successfully");
+  console.log("All caches cleared successfully");
 }
 
 export function clearQuizRelatedCache() {
-  console.log("🧹 Clearing quiz-related cache...");
+  console.log("Clearing quiz-related cache...");
   
   // Clear quiz-specific localStorage items
   const quizKeys = [
@@ -54,11 +54,11 @@ export function clearQuizRelatedCache() {
   // Clear in-memory business model cache
   businessModelService.clearCache();
   
-  console.log("✅ Quiz-related cache cleared");
+  console.log("Quiz-related cache cleared");
 }
 
 export function clearAIContentCache() {
-  console.log("🧹 Clearing AI content cache...");
+  console.log("Clearing AI content cache...");
   
   // Clear AI-related localStorage items
   const aiKeys = [
@@ -72,19 +72,19 @@ export function clearAIContentCache() {
     localStorage.removeItem(key);
   });
   
-  console.log("✅ AI content cache cleared");
+  console.log("AI content cache cleared");
 }
 
 export function clearBusinessModelScores() {
-  console.log("🧹 Clearing business model scores...");
+  console.log("Clearing business model scores...");
   
   localStorage.removeItem('businessModelScores');
   
-  console.log("✅ Business model scores cleared");
+  console.log("Business model scores cleared");
 }
 
 export function cleanAndOptimizeStorage() {
-  console.log("🧹 Cleaning and optimizing storage...");
+  console.log("Cleaning and optimizing storage...");
   
   // Clean corrupted emojis
   cleanCorruptedEmojisFromStorage();
@@ -102,13 +102,13 @@ export function cleanAndOptimizeStorage() {
         // Check for expiration timestamps
         if (data.expiresAt && data.expiresAt < now) {
           localStorage.removeItem(key);
-          console.log(`🗑️ Removed expired data: ${key}`);
+          console.log(`Removed expired data: ${key}`);
         }
         
         // Check for old timestamps (older than 30 days)
         if (data.timestamp && (now - data.timestamp) > (30 * 24 * 60 * 60 * 1000)) {
           localStorage.removeItem(key);
-          console.log(`🗑️ Removed old data: ${key}`);
+          console.log(`Removed old data: ${key}`);
         }
       }
     } catch (e) {
@@ -116,7 +116,7 @@ export function cleanAndOptimizeStorage() {
     }
   });
   
-  console.log("✅ Storage cleaned and optimized");
+  console.log("Storage cleaned and optimized");
 }
 
 // Make functions available globally for debugging

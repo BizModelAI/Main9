@@ -94,9 +94,9 @@ export const BusinessModelScoresProvider: React.FC<BusinessModelScoresProviderPr
             setScores(scoresData.scores);
             setLastUpdated(scoresData.timestamp);
             setQuizAttemptId(scoresData.quizAttemptId || null);
-            console.log('✅ Loaded cached business model scores from localStorage');
+            console.log('Loaded cached business model scores from localStorage');
           } else {
-            console.log('⏰ Cached business model scores expired, clearing...');
+            console.log('Cached business model scores expired, clearing...');
             clearStoredScores();
           }
         }
@@ -122,7 +122,7 @@ export const BusinessModelScoresProvider: React.FC<BusinessModelScoresProviderPr
     setError(null);
 
     try {
-      console.log('🔄 Calculating business model scores for quiz data...');
+      console.log('Calculating business model scores for quiz data...');
 
       // Calculate scores using the sophisticated algorithm
       const calculatedScores = businessModelService.getBusinessModelMatches(quizData);
@@ -175,7 +175,7 @@ export const BusinessModelScoresProvider: React.FC<BusinessModelScoresProviderPr
     try {
       // This would save to database for authenticated users
       // For now, we'll just log it
-      console.log('💾 Business model scores would be saved to database', {
+      console.log('Business model scores would be saved to database', {
         attemptId,
         scoresCount: calculatedScores.length,
       });
@@ -191,7 +191,7 @@ export const BusinessModelScoresProvider: React.FC<BusinessModelScoresProviderPr
     setQuizAttemptId(null);
     setError(null);
     clearStoredScores();
-    console.log('🗑️ Business model scores cleared');
+    console.log('Business model scores cleared');
   };
 
   // Get top N matches

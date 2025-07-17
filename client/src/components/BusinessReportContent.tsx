@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { QuizData, AIAnalysis, BusinessPath } from '../types';
 import { renderMarkdownContent } from '../utils/markdownUtils';
-import { getSafeEmoji } from '../utils/emojiHelper';
+import { getSafeEmoji } from '../utils/contentUtils';
 
 interface BusinessReportContentProps {
   quizData: QuizData;

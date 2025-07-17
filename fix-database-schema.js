@@ -35,7 +35,7 @@ async function fixDatabaseSchema() {
 
     // Check if the caseyedunham@gmail.com user exists
     const user = await db.execute(sql`
-      SELECT id, email, name, is_paid, is_temporary 
+      SELECT id, email, first_name, last_name, is_paid, is_temporary 
       FROM users 
       WHERE email = 'caseyedunham@gmail.com'
     `);
@@ -46,7 +46,7 @@ async function fixDatabaseSchema() {
       console.log("❌ User caseyedunham@gmail.com not found in database");
       console.log(" Checking all users in database...");
       const allUsers = await db.execute(
-        sql`SELECT id, email, name FROM users LIMIT 10`,
+        sql`SELECT id, email, first_name, last_name FROM users LIMIT 10`,
       );
       console.log("Users found:", allUsers);
     }

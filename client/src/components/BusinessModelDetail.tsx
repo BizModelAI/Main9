@@ -52,7 +52,7 @@ import {
 } from "../data/businessTools";
 import { IncomeProjectionChart } from "./IncomeProjectionChart";
 import { renderMarkdownContent } from "../utils/markdownUtils";
-import { getSafeEmoji } from '../utils/emojiHelper';
+import { getSafeEmoji } from '../utils/contentUtils';
 
 // Generate psychological fit description based on fit category
 const getPsychologicalFitDescription = (

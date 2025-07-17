@@ -58,6 +58,8 @@ async function consolidateUsersTables() {
               isTemporary: true,
               tempQuizData: unpaidUser.quizData,
               expiresAt: unpaidUser.expiresAt,
+              firstName: '',
+              lastName: '',
             })
             .where(sql`${users.email} = ${unpaidUser.email}`);
         } else {
@@ -66,7 +68,8 @@ async function consolidateUsersTables() {
           await db.insert(users).values({
             email: unpaidUser.email,
             password: "", // Temporary users don't need passwords initially
-            name: null,
+            firstName: '',
+            lastName: '',
             sessionId: unpaidUser.sessionId,
             isPaid: false,
             isTemporary: true,

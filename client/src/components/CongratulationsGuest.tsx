@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { QuizData } from "../types";
 import { getSessionId } from "../../../shared/utils";
+import { useNavigate } from "react-router-dom";
 
 interface EmailCaptureProps {
   onEmailSubmit: (email: string) => void;
@@ -86,81 +87,100 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
   quizData,
   onStartAIGeneration,
 }) => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState("");
+
+  const validateEmail = (email: string) => {
+    // RFC 5322 Official Standard (simplified for practical use)
+    // Must have at least one dot after @, and TLD must be at least 2 chars
+    return (
+      email.length > 5 &&
+      /^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/.test(email.trim())
+    );
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    // Clear error when user starts typing
+    if (emailError) setEmailError("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !validateEmail(email)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    if (!quizData) {
+      setEmailError("An internal error occurred. Please refresh and try again.");
+      return;
+    }
 
     setIsSubmitting(true);
+    setEmailSent(false);
+    let quizAttemptId = null;
+    let saveSuccess = false;
 
     try {
-      // Use new 3-tier caching system to save quiz data and create temporary account
+      // Save quiz data and create temporary account
       if (quizData) {
-        console.log(
-          "EmailCapture: Saving quiz data with email to create temporary account",
-        );
-
         const response = await fetch("/api/save-quiz-data", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            quizData: quizData,
-            email: email.trim(),
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quizData, email: email.trim() }),
         });
-
         if (response.ok) {
           const result = await response.json();
-          console.log("EmailCapture: Quiz data saved successfully", result);
-
-          setEmailSent(true);
-
-          // Store email in localStorage so AI service knows user provided email
-          localStorage.setItem("userEmail", email.trim());
-
-          // Store the quiz attempt ID for future reference
+          saveSuccess = true;
           if (result.attemptId) {
-            localStorage.setItem("quizAttemptId", result.attemptId.toString());
+            quizAttemptId = result.attemptId;
+            localStorage.setItem("quizAttemptId", quizAttemptId.toString());
           }
-
-          // Removed /api/email-results preview email logic due to missing backend route.
-
-          // Retroactively save any existing AI content to database
-          try {
-            const { AIService } = await import("../utils/aiService");
-            const aiService = AIService.getInstance();
-            await aiService.saveExistingAIContentToDatabase();
-          } catch (error) {
-            console.error(
-              "Error saving existing AI content to database:",
-              error,
-            );
-          }
-
-          // Wait a moment to show success message
+          localStorage.setItem("userEmail", email.trim());
+        }
+      }
+      // Send the preview email (unpaid user)
+      if (saveSuccess) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const emailRes = await fetch("/api/send-quiz-results", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            email: email.trim(), 
+            quizData,
+            attemptId: quizAttemptId 
+          }),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (emailRes.ok) {
+          setEmailSent(true);
           setTimeout(() => {
             onStartAIGeneration(email);
           }, 1500);
         } else {
-          console.error("Failed to save quiz data with email");
-          const errorData = await response.json();
-          console.error("Error details:", errorData);
-          // Still proceed even if save fails
-          onStartAIGeneration(email);
+          setEmailSent(false);
+          // Optionally show error message
         }
       } else {
-        // No quiz data, just proceed
-        localStorage.setItem("userEmail", email.trim());
-        onStartAIGeneration(email);
+        setEmailSent(false);
+        // Optionally show error message
       }
     } catch (error) {
-      console.error("Error in email capture:", error);
-      // Still proceed even if there's an error
+      setEmailSent(false);
+      if (error instanceof Error && error.name === 'AbortError') {
+        setEmailError("Email sending timed out. Please try again.");
+      } else {
+        setEmailError("Failed to send email. Please try again.");
+      }
+      // Optionally show error message
       onStartAIGeneration(email);
     } finally {
       setIsSubmitting(false);
@@ -170,6 +190,15 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
   const handleGuestContinue = () => {
     onStartAIGeneration();
   };
+
+  useEffect(() => {
+    if (emailSent) {
+      const timeout = setTimeout(() => {
+        navigate("/results");
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [emailSent, navigate]);
 
   return (
     <>
@@ -288,17 +317,18 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
                     placeholder="Enter your email address"
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
                     required
                   />
+                  {emailError && <div className="text-red-600 text-sm mt-1">{emailError}</div>}
                 </div>
                 <button
                   type="submit"
-                  disabled={isSubmitting || !email.trim()}
-                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center ${
-                    isSubmitting || !email.trim()
+                  disabled={isSubmitting || !email.trim() || !!emailError || !validateEmail(email)}
+                  className={`w-44 px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center ${
+                    isSubmitting || !email.trim() || !!emailError || !validateEmail(email)
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 shadow-lg"
                   }`}
@@ -339,16 +369,14 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
                 className="text-center space-y-3"
               >
                 <p className="text-xs text-gray-500">
-                   We respect your privacy. Your results will be stored for 3
-                  months, then automatically deleted unless you upgrade to
-                  permanent storage.
+                  🔒 We respect your privacy. By inputting your email, your results will be stored for 3 months.
                 </p>
 
                 <button
                   onClick={handleGuestContinue}
                   className="text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center justify-center group text-sm mx-auto"
                 >
-                  Continue as Guest
+                  Continue as Guest (results won’t be saved)
                   <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
                 </button>
               </motion.div>
