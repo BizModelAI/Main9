@@ -33,6 +33,8 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
   const { user, getLatestQuizData, isLoading } = useAuth();
 
+  const isDev = process.env.NODE_ENV === 'development';
+
   // Check user's quiz completion and payment status when user changes
   useEffect(() => {
     let isMounted = true;
@@ -90,7 +92,7 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
   }, [hasCompletedQuiz, user]);
 
   const isUnlocked = () => {
-    // In pure pay-per-report model, global unlock is not relevant
+    if (isDev) return true;
     return hasUnlockedAnalysis;
   };
 
@@ -104,8 +106,7 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
   };
 
   const canAccessFullReport = () => {
-    // In pure pay-per-report model, users must pay for each full report
-    // Check if user has actually unlocked analysis (made payment)
+    if (isDev) return true;
     return hasUnlockedAnalysis;
   };
 
@@ -123,6 +124,12 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
 
     return hasUnlocked || hasBusinessAccess || hasPaidDownload || hasAnyPayment;
   };
+
+  useEffect(() => {
+    if (isDev) {
+      setHasUnlockedAnalysis(true);
+    }
+  }, [isDev]);
 
   return (
     <PaywallContext.Provider

@@ -34,6 +34,7 @@ import { quizSteps } from "../data/quizSteps";
 import { useToast } from "../hooks/use-toast";
 import { AICacheManager } from "../utils/aiCacheManager";
 import { businessModelService } from "../utils/businessModelService";
+import { useBusinessModelScores } from '../contexts/BusinessModelScoresContext';
 
 // Mobile-specific content for scale questions
 const mobileScaleContent: Record<
@@ -633,25 +634,22 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
   const [showExitModal, setShowExitModal] = useState(false);
 
   const { toast } = useToast();
+  const { clearScores } = useBusinessModelScores();
 
   // Everyone can take unlimited quizzes in the new pay-per-report system
 
   // Clear previous quiz cache when starting a new quiz (idempotent for React StrictMode)
   useEffect(() => {
-    // Check if we've already cleared cache for this session to prevent double-clearing in StrictMode
+    // Use sessionStorage to ensure this runs only once per session, even in StrictMode
     const cacheCleared = sessionStorage.getItem("quiz-cache-cleared");
     const currentSession = Date.now().toString();
 
     if (cacheCleared && Date.now() - parseInt(cacheCleared) < 5000) {
-      console.log(
-        " Quiz component re-mounted (React StrictMode), skipping cache clear",
-      );
+      // Already cleared cache for this session, skip (prevents duplicate logs and clearing)
       return;
     }
 
-    console.log(" Quiz component mounted - clearing previous quiz cache");
-
-    // Mark that we've cleared cache for this session
+    // SINGLE SOURCE OF TRUTH: All quiz/AI cache clearing happens here only
     sessionStorage.setItem("quiz-cache-cleared", currentSession);
 
     try {
@@ -667,7 +665,20 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
 
       // Clear AI service caches (with error handling)
       const aiCacheManager = AICacheManager.getInstance();
-      aiCacheManager.forceResetCache();
+      // aiCacheManager.forceResetCache();
+      // Instead, manually clear all ai-content-* keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("ai-content-")) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      // Clear business model scores for fresh calculation
+      clearScores();
+
+      // Clear in-memory business model cache
+      businessModelService.clearCache();
 
       // Clear any remaining localStorage AI cache keys from previous sessions
       // Note: AI content is now stored in database, not localStorage
@@ -676,9 +687,9 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
         const key = localStorage.key(i);
         if (
           key &&
-          (key.startsWith("ai_insights_") || // Legacy AI service cache keys
-            key.startsWith("preview_") || // Legacy preview cache keys
-            key.startsWith("fullreport_") || // Legacy full report cache keys
+          (key.startsWith("ai_insights_") ||
+            key.startsWith("preview_") ||
+            key.startsWith("fullreport_") ||
             key.startsWith("ai-analysis-") ||
             key.startsWith("skills-analysis-") ||
             key.startsWith("ai-cache-"))
@@ -687,14 +698,11 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
         }
       }
       keysToRemove.forEach((key) => localStorage.removeItem(key));
-
-      console.log(
-        `✅ Cleared AI caches and ${keysToRemove.length + 8} legacy cache entries for new quiz (AI content now stored in database)`,
-      );
+      // Only log once per session
+      // console.log(`✅ Cleared AI caches and ${keysToRemove.length + 8} legacy cache entries for new quiz (AI content now stored in database)`);
     } catch (error) {
+      // Only log errors
       console.error("Error cleaning up AI content:", error);
-      // Continue with quiz initialization even if cache clearing fails
-      console.log("⚠️ Cache clearing failed, but quiz will continue normally");
     }
   }, []); // Run only once when component mounts
 
@@ -1395,70 +1403,14 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
         </AnimatePresence>
       </div>
 
-      {/* TEMPORARY SKIP BUTTON - REMOVE LATER */}
-      <div className="fixed bottom-4 right-4 z-[9999]">
+      {process.env.NODE_ENV === 'development' && (
         <button
-          onClick={() => {
-            console.log(
-              "Skip button clicked! Generating mock data and navigating...",
-            );
-            const mockData = {
-              mainMotivation: "financial-freedom",
-              firstIncomeTimeline: "3-6-months",
-              successIncomeGoal: 5000,
-              upfrontInvestment: 1000,
-              passionIdentityAlignment: 4,
-              businessExitPlan: "not-sure",
-              businessGrowthSize: "full-time-income",
-              passiveIncomeImportance: 3,
-              weeklyTimeCommitment: 20,
-              longTermConsistency: 4,
-              trialErrorComfort: 3,
-              learningPreference: "hands-on",
-              systemsRoutinesEnjoyment: 3,
-              discouragementResilience: 4,
-              toolLearningWillingness: "yes",
-              organizationLevel: 3,
-              selfMotivationLevel: 4,
-              uncertaintyHandling: 3,
-              repetitiveTasksFeeling: "tolerate",
-              workCollaborationPreference: "mostly-solo",
-              brandFaceComfort: 3,
-              competitivenessLevel: 3,
-              creativeWorkEnjoyment: 4,
-              directCommunicationEnjoyment: 4,
-              workStructurePreference: "some-structure",
-              techSkillsRating: 3,
-              workspaceAvailability: "yes",
-              supportSystemStrength: "small-helpful-group",
-              internetDeviceReliability: 4,
-              familiarTools: ["google-docs-sheets", "canva"],
-              decisionMakingStyle: "after-some-research",
-              riskComfortLevel: 3,
-              feedbackRejectionResponse: 3,
-              pathPreference: "mix",
-              controlImportance: 4,
-              onlinePresenceComfort: "yes",
-              clientCallsComfort: "yes",
-              physicalShippingOpenness: "no",
-              workStylePreference: "mix-both",
-              socialMediaInterest: 3,
-              ecosystemParticipation: "yes",
-              existingAudience: "no",
-              promotingOthersOpenness: "yes",
-              teachVsSolvePreference: "both",
-              meaningfulContributionImportance: 4,
-            };
-            console.log("Generated mock data:", mockData);
-            onComplete(mockData as QuizData);
-          }}
-          className="bg-red-500 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl hover:bg-red-600 transition-all duration-300 transform hover:scale-105 border-2 border-white"
-          style={{ zIndex: 9999 }}
-          hidden
+          style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, background: '#f59e42', color: '#fff', padding: '10px 18px', borderRadius: 8, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
+          onClick={() => onComplete(formData as QuizData)}
         >
-           SKIP TO RESULTS (DEV)
+          Skip to Results (DEV)
         </button>
-      </div>
+      )}
 
       {/* Exit Warning Modal */}
       <ExitWarningModal
