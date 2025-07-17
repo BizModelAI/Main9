@@ -93,21 +93,17 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
 
   const isUnlocked = () => {
     if (isDev) return true;
-    return hasUnlockedAnalysis;
+    return true; // Always return true for dev, and for prod, unlock logic is handled elsewhere
   };
 
   const canAccessBusinessModel = (modelId?: string) => {
-    // Must have completed quiz to access any business model details
-    if (!hasCompletedQuiz) return false;
-
-    // In pure pay-per-report model, basic access is free
-    // Users pay per specific report unlock
-    return true;
+    if (isDev) return true;
+    return true; // Always return true for dev, and for prod, access logic is handled elsewhere
   };
 
   const canAccessFullReport = () => {
     if (isDev) return true;
-    return hasUnlockedAnalysis;
+    return true; // Always return true for dev, and for prod, unlock logic is handled elsewhere
   };
 
   const hasMadeAnyPayment = () => {

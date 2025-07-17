@@ -18,8 +18,7 @@ const BUSINESS_MODEL_EMOJIS: EmojiMapping = {
   // Services
   "freelancing": "💼",
   "virtual-assistant": "🤝",
-  "online-coaching": "🎓",
-  "online-coaching-consulting": "💡",
+  "online-coaching": "💡",
   "consulting": "💡",
   
   // Marketing & Sales
@@ -108,7 +107,7 @@ export function fixCorruptedEmoji(emoji: string, businessId?: string): string {
 export function safeguardBusinessModelEmoji(businessModel: any): any {
   if (!businessModel) return businessModel;
   
-  const fixed = { ...businessModel };
+  const fixed: Record<string, any> = { ...businessModel };
   
   // Fix emoji field
   if (fixed.emoji !== undefined) {
@@ -124,7 +123,7 @@ export function safeguardBusinessModelEmoji(businessModel: any): any {
 export function safeguardBusinessPathEmoji(businessPath: any): any {
   if (!businessPath) return businessPath;
   
-  const fixed = { ...businessPath };
+  const fixed: Record<string, any> = { ...businessPath };
   
   // Fix emoji field
   if (fixed.emoji !== undefined) {
@@ -166,8 +165,6 @@ export function validateComponentEmoji(emoji: string, businessId?: string): stri
  * Initialize emoji safeguards - call this early in the app
  */
 export function initializeEmojiSafeguards(): void {
-  console.log('🛡️ Initializing emoji safeguard system...');
-  
   // Override console.log to catch emoji corruption
   const originalLog = console.log;
   console.log = function(...args) {
@@ -187,7 +184,6 @@ export function initializeEmojiSafeguards(): void {
     originalSetItem.call(localStorage, key, value);
   };
   
-  console.log('✅ Emoji safeguard system initialized');
 }
 
 /**
@@ -208,7 +204,7 @@ export function cleanCorruptedEmojisFromStorage(): void {
         const fixEmojisInObject = (obj: any): any => {
           if (!obj || typeof obj !== 'object') return obj;
           
-          const fixed = Array.isArray(obj) ? [] : {};
+          const fixed: Record<string, any> = Array.isArray(obj) ? [] : {};
           
           for (const [key, value] of Object.entries(obj)) {
             if (key === 'emoji' && typeof value === 'string') {
@@ -221,7 +217,7 @@ export function cleanCorruptedEmojisFromStorage(): void {
               }
             } else if (typeof value === 'object') {
               fixed[key] = fixEmojisInObject(value);
-            } else {
+      } else {
               fixed[key] = value;
             }
           }

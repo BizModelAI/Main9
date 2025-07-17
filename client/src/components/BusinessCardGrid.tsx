@@ -159,7 +159,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
         </div>
 
         {/* Potential Income Highlight */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6 md:mb-6 sm:mb-4 mb-3">
           <div className="flex items-center mb-2">
             <TrendingUp className="h-5 w-5 text-green-600 mr-2 flex-shrink-0" />
             <span className="text-sm font-medium text-green-800">Potential Income</span>

@@ -997,24 +997,22 @@ export function calculateBusinessModelMatch(
   return Math.round(scaledScore);
 }
 
-// Helper for dynamic thresholds (now based on 40-95 range)
-const categoryThresholds = {
-  // Best Fit: top 3-5, or >= 85
-  "Best Fit": (max: number) => Math.max(85, max - 5),
-  // Strong Fit: >= 70
-  "Strong Fit": (max: number) => 70,
-  // Possible Fit: >= 55
-  "Possible Fit": (max: number) => 55,
-  // Poor Fit: < 55
-  "Poor Fit": (max: number) => 0,
+// Helper for static thresholds (after top 3 are Best Fit)
+const staticCategoryThresholds = {
+  // After top 3, these are the cutoffs:
+  // Strong Fit: 80% and above
+  // Possible Fit: 60% to 79%
+  // Poor Fit: below 60%
+  "Strong Fit": 80,
+  "Possible Fit": 60,
+  "Poor Fit": 0,
 };
 
-// STEP 3: Categorize scores - REVISED for more dynamic thresholds and new range
-export function getCategoryFromScore(score: number, maxScore: number): string {
-  if (score >= categoryThresholds["Best Fit"](maxScore)) return "Best Fit";
-  if (score >= categoryThresholds["Strong Fit"](maxScore)) return "Strong Fit";
-  if (score >= categoryThresholds["Possible Fit"](maxScore))
-    return "Possible Fit";
+// STEP 3: Categorize scores - Top 3 are always Best Fit, then static thresholds
+export function getCategoryFromScore(score: number, index: number): string {
+  if (index < 3) return "Best Fit";
+  if (score >= staticCategoryThresholds["Strong Fit"]) return "Strong Fit";
+  if (score >= staticCategoryThresholds["Possible Fit"]) return "Possible Fit";
   return "Poor Fit";
 }
 
@@ -1035,24 +1033,6 @@ export function assignCategories(
   // Sort by score (highest first)
   const sortedResults = [...results].sort((a, b) => b.score - a.score);
 
-  // Get the highest score from the sorted results
-  const maxScore = sortedResults.length > 0 ? sortedResults[0].score : 0;
-
-  // Only top 3 are 'Best Fit', regardless of score
-  const categoryLimits: Record<string, number> = {
-    "Best Fit": 3,
-    "Strong Fit": Infinity,
-    "Possible Fit": Infinity,
-    "Poor Fit": Infinity, // No limit for poor fit
-  };
-
-  const categoryCounts: Record<string, number> = {
-    "Best Fit": 0,
-    "Strong Fit": 0,
-    "Possible Fit": 0,
-    "Poor Fit": 0,
-  };
-
   const finalCategorizedResults: Array<{
     id: string;
     name: string;
@@ -1062,18 +1042,7 @@ export function assignCategories(
 
   for (let i = 0; i < sortedResults.length; i++) {
     const result = sortedResults[i];
-    let assignedCategory = "Poor Fit"; // Default to Poor Fit if no other category fits
-
-    if (i < 3) {
-      assignedCategory = "Best Fit";
-    } else if (result.score >= categoryThresholds["Strong Fit"](maxScore)) {
-      assignedCategory = "Strong Fit";
-    } else if (result.score >= categoryThresholds["Possible Fit"](maxScore)) {
-      assignedCategory = "Possible Fit";
-    }
-
-    categoryCounts[assignedCategory]++;
-
+    const assignedCategory = getCategoryFromScore(result.score, i);
     finalCategorizedResults.push({
       ...result,
       category: assignedCategory,
@@ -1109,6 +1078,33 @@ export function enforceMinimumScoreGap(
         newGap = minGap + ((i % 2 === 0) ? 1 : -1);
         if (newGap < minGap) newGap = minGap;
       }
+      adjusted[i].score = Math.max(0, prev - newGap);
+      gap = prev - adjusted[i].score;
+    }
+    lastGap = gap;
+  }
+  return adjusted;
+}
+
+// Adjusts scores to enforce a minimum gap and avoid repeated gaps between consecutive results
+export function adjustBusinessModelScores(
+  results: Array<{ id: string; name: string; score: number; category: string }>,
+  minGap: number = 2
+): Array<{ id: string; name: string; score: number; category: string }> {
+  if (results.length < 2) return results;
+  const adjusted = [...results];
+  let lastGap = null;
+  let altGap = minGap + 1; // Alternate gap size
+  for (let i = 1; i < adjusted.length; i++) {
+    let prev = adjusted[i - 1].score;
+    let curr = adjusted[i].score;
+    let gap = prev - curr;
+    // If gap is too small or same as last gap, adjust
+    if (gap < minGap || (lastGap !== null && gap === lastGap)) {
+      // Alternate between minGap and altGap to break up repeated gaps
+      let newGap = (lastGap === minGap) ? altGap : minGap;
+      // If still not enough, bump up by 1
+      if (gap < newGap) newGap = newGap + 1;
       adjusted[i].score = Math.max(0, prev - newGap);
       gap = prev - adjusted[i].score;
     }
@@ -1172,8 +1168,11 @@ export function calculateAllBusinessModelMatches(data: any): Array<{
   // Enforce minimum gap and non-uniformity for top N
   const adjustedResults = enforceMinimumScoreGap(results, 3, 3);
 
+  // Adjust scores to enforce a minimum gap and avoid repeated gaps between consecutive results
+  const finalAdjustedResults = adjustBusinessModelScores(adjustedResults, 2);
+
   // Assign categories based on algorithm rules (now using max score for dynamic thresholds)
-  const categorizedResults = assignCategories(adjustedResults);
+  const categorizedResults = assignCategories(finalAdjustedResults);
 
   return categorizedResults;
 }

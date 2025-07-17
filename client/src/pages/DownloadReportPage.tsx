@@ -107,10 +107,21 @@ const DownloadReportPage: React.FC = () => {
             };
           } else {
             const aiService = AIService.getInstance();
+            
+            // Get bottom 3 paths for the API call
+            const bottomThree = businessModelService.getBottomMatches(mockQuizData, 3);
+            const mockBottomPaths = bottomThree.map(match => {
+              const businessPath = businessPaths.find((path) => path.id === match.id);
+              return {
+                ...businessPath!,
+                fitScore: match.score,
+              };
+            });
+
             const mockPersonalizedInsights =
               await aiService.generatePersonalizedInsights(mockQuizData, [
                 mockTopBusinessPath,
-              ]);
+              ], mockBottomPaths);
             const mockDetailedAnalysis =
               await aiService.generateDetailedAnalysis(
                 mockQuizData,

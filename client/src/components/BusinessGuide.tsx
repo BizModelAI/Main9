@@ -973,7 +973,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
           ],
         };
 
-      case "online-coaching-consulting":
+      case "online-coaching":
         return {
           prerequisites: [
             "Expertise or experience in your coaching niche",

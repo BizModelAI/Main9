@@ -20,8 +20,10 @@ import { businessModelService } from "../utils/businessModelService";
 import { QuizData } from "../types";
 import { Link, useNavigate } from "react-router-dom";
 import { businessPaths } from "../data/businessPaths";
+import { businessModels } from "../data/businessModels";
 import { QuizAttemptHistory } from "../components/QuizAttemptHistory";
 import { getSafeEmoji } from '../utils/emojiHelper';
+import BusinessCard from "../components/BusinessCard";
 
 const Dashboard: React.FC = () => {
   const { user, getLatestQuizData, isLoading: authLoading } = useAuth();
@@ -79,145 +81,22 @@ const Dashboard: React.FC = () => {
 
         if (quizData) {
           // Calculate real business model matches using the BusinessModelService
-          const calculatedMatches =
-            businessModelService.getBusinessModelMatches(quizData);
+          const calculatedMatches = businessModelService.getBusinessModelMatches(quizData);
+          // Create a map of fit scores by business model id
+          const fitScoreMap = new Map(calculatedMatches.map(match => [match.id, match.score]));
 
-          // Map the calculated results to the format expected by the UI
-          const formattedBusinessModels = calculatedMatches.map((match) => {
-            // Map business model IDs to the UI format
-            const businessModelMap: Record<string, any> = {
-              "content-creation": {
-                id: "content-creation-ugc",
-                name: "Content Creation & UGC",
-                description:
-                  "Create engaging content and user-generated content for brands",
-                timeToProfit: "2-4 weeks",
-                potentialIncome: "$2K-15K/month",
-                difficulty: "Beginner",
-                icon: "📱",
-              },
-              "affiliate-marketing": {
-                id: "affiliate-marketing",
-                name: "Affiliate Marketing",
-                description:
-                  "Promote other people's products and earn commission on sales",
-                timeToProfit: "3-6 months",
-                potentialIncome: "$100-10K+/month",
-                difficulty: "Easy",
-                icon: "💰",
-              },
-              freelancing: {
-                id: "freelancing",
-                name: "Freelancing",
-                description:
-                  "Offer your skills and services to clients on a project basis",
-                timeToProfit: "1-2 weeks",
-                potentialIncome: "$500-8K/month",
-                difficulty: "Easy",
-                icon: "💼",
-              },
-              "e-commerce": {
-                id: "e-commerce-dropshipping",
-                name: "E-commerce / Dropshipping",
-                description: "Sell products online without holding inventory",
-                timeToProfit: "2-6 months",
-                potentialIncome: "$1K-50K/month",
-                difficulty: "Medium",
-                icon: "️",
-              },
-              "virtual-assistant": {
-                id: "virtual-assistant",
-                name: "Virtual Assistant",
-                description:
-                  "Provide administrative support to businesses remotely",
-                timeToProfit: "1-3 weeks",
-                potentialIncome: "$300-5K/month",
-                difficulty: "Easy",
-                icon: "",
-              },
-              "online-tutoring": {
-                id: "online-coaching-consulting",
-                name: "Online Coaching & Consulting",
-                description:
-                  "Share your expertise through 1-on-1 coaching or consulting",
-                timeToProfit: "4-8 weeks",
-                potentialIncome: "$1K-20K/month",
-                difficulty: "Medium",
-                icon: "",
-              },
-              "handmade-goods": {
-                id: "print-on-demand",
-                name: "Print on Demand",
-                description:
-                  "Design and sell custom products without inventory",
-                timeToProfit: "6-12 weeks",
-                potentialIncome: "$200-8K/month",
-                difficulty: "Easy",
-                icon: "",
-              },
-              "youtube-automation": {
-                id: "youtube-automation",
-                name: "YouTube Automation",
-                description:
-                  "Create and monetize YouTube channels with outsourced content",
-                timeToProfit: "3-9 months",
-                potentialIncome: "$500-15K/month",
-                difficulty: "Medium",
-                icon: "",
-              },
-              "local-service": {
-                id: "local-service-arbitrage",
-                name: "Local Service Arbitrage",
-                description: "Connect local customers with service providers",
-                timeToProfit: "2-8 weeks",
-                potentialIncome: "$1K-12K/month",
-                difficulty: "Medium",
-                icon: "",
-              },
-              "saas-development": {
-                id: "app-saas-development",
-                name: "App / SaaS Development",
-                description:
-                  "Build and launch software applications or SaaS products",
-                timeToProfit: "6-18 months",
-                potentialIncome: "$5K-100K+/month",
-                difficulty: "Hard",
-                icon: "",
-              },
-              "social-media-agency": {
-                id: "social-media-agency",
-                name: "Social Media Agency",
-                description:
-                  "Manage social media accounts and marketing for businesses",
-                timeToProfit: "2-6 months",
-                potentialIncome: "$2K-25K/month",
-                difficulty: "Medium",
-                icon: "",
-              },
-              copywriting: {
-                id: "copywriting",
-                name: "Copywriting",
-                description: "Write persuasive marketing copy for businesses",
-                timeToProfit: "2-8 weeks",
-                potentialIncome: "$1K-15K/month",
-                difficulty: "Easy",
-                icon: "✍️",
-              },
-            };
-
-            const baseModel = businessModelMap[match.id] || {
-              id: match.id,
-              name: match.name,
-              description: `Build a successful ${match.name.toLowerCase()} business`,
-              timeToProfit: "2-6 months",
-              potentialIncome: "$1K-10K/month",
-              difficulty: "Medium",
-              icon: "",
-            };
-
+          // Always show all business models, overlaying fitScore if available
+          const formattedBusinessModels = businessModels.map((model) => {
+            const fitScore = fitScoreMap.get(model.id);
             return {
-              ...baseModel,
-              fitScore: match.score, // Use the real calculated score
+              id: model.id,
+              name: model.title,
+              description: model.description,
+              timeToProfit: model.timeToStart,
+              startupCost: model.initialInvestment,
+              potentialIncome: model.potentialIncome,
+              emoji: model.emoji,
+              fitScore: fitScore !== undefined && fitScore !== null ? fitScore : 0,
             };
           });
 
@@ -257,155 +136,25 @@ const Dashboard: React.FC = () => {
 
   // Get fit category based on score
   const getFitCategory = (score: number) => {
-    if (score >= 70)
-      return {
-        label: "Best Fit",
-        color: "bg-green-500",
-        textColor: "text-green-700",
-      };
-    if (score >= 50)
-      return {
-        label: "Strong Fit",
-        color: "bg-blue-500",
-        textColor: "text-blue-700",
-      };
-    if (score >= 30)
-      return {
-        label: "Possible Fit",
-        color: "bg-yellow-500",
-        textColor: "text-yellow-700",
-      };
-    return {
-      label: "Poor Fit",
-      color: "bg-red-500",
-      textColor: "text-red-700",
-    };
+    if (score >= 70) return "Best Fit";
+    if (score >= 50) return "Strong Fit";
+    if (score >= 30) return "Possible Fit";
+    return "Poor Fit";
   };
 
   // Function to get default business models as fallback
-  const getDefaultBusinessModels = () => [
-    {
-      id: "content-creation",
-      name: "Content Creation & UGC",
-      description: "Create engaging content for brands and platforms",
-      fitScore: 85,
-      timeToProfit: "2-4 weeks",
-      potentialIncome: "$2K-15K/month",
-      difficulty: "Beginner",
-      icon: "📱",
-    },
-    {
-      id: "affiliate-marketing",
-      name: "Affiliate Marketing",
-      description: "Promote products and earn commission on sales",
-      fitScore: 78,
-      timeToProfit: "3-6 months",
-      potentialIncome: "$100-10K+/month",
-      difficulty: "Easy",
-      icon: "💰",
-    },
-    {
-      id: "freelancing",
-      name: "Freelancing",
-      description: "Offer your skills and services to clients",
-      fitScore: 75,
-      timeToProfit: "1-2 weeks",
-      potentialIncome: "$500-8K/month",
-      difficulty: "Easy",
-      icon: "💼",
-    },
-    {
-      id: "e-commerce",
-      name: "E-commerce Brand",
-      description: "Build and sell products online",
-      fitScore: 72,
-      timeToProfit: "3-9 months",
-      potentialIncome: "$1K-50K/month",
-      difficulty: "Medium",
-      icon: "🛍️",
-    },
-    {
-      id: "youtube-automation",
-      name: "YouTube Automation",
-      description: "Create and monetize YouTube channels",
-      fitScore: 68,
-      timeToProfit: "3-9 months",
-      potentialIncome: "$500-15K/month",
-      difficulty: "Medium",
-      icon: "📺",
-    },
-    {
-      id: "local-service-arbitrage",
-      name: "Local Service Arbitrage",
-      description: "Connect customers with local service providers",
-      fitScore: 65,
-      timeToProfit: "2-8 weeks",
-      potentialIncome: "$1K-12K/month",
-      difficulty: "Medium",
-      icon: "🎯",
-    },
-    {
-      id: "saas-development",
-      name: "SaaS Development",
-      description: "Build and sell software solutions",
-      fitScore: 62,
-      timeToProfit: "6-18 months",
-      potentialIncome: "$5K-100K+/month",
-      difficulty: "Hard",
-      icon: "💻",
-    },
-    {
-      id: "social-media-agency",
-      name: "Social Media Agency",
-      description: "Manage social media for businesses",
-      fitScore: 58,
-      timeToProfit: "2-6 months",
-      potentialIncome: "$2K-20K/month",
-      difficulty: "Medium",
-      icon: "👥",
-    },
-    {
-      id: "ai-marketing-agency",
-      name: "AI Marketing Agency",
-      description: "Leverage AI tools for marketing services",
-      fitScore: 55,
-      timeToProfit: "3-8 months",
-      potentialIncome: "$5K-50K+/month",
-      difficulty: "Hard",
-      icon: "🧠",
-    },
-    {
-      id: "print-on-demand",
-      name: "Print on Demand",
-      description: "Design and sell custom products without inventory",
-      fitScore: 55,
-      timeToProfit: "6-12 weeks",
-      potentialIncome: "$200-8K/month",
-      difficulty: "Easy",
-      icon: "🖼️",
-    },
-    {
-      id: "youtube-automation",
-      name: "YouTube Automation",
-      description:
-        "Create and monetize YouTube channels with outsourced content",
-      fitScore: 52,
-      timeToProfit: "3-9 months",
-      potentialIncome: "$500-15K/month",
-      difficulty: "Medium",
-      icon: "📺",
-    },
-    {
-      id: "local-service-arbitrage",
-      name: "Local Service Arbitrage",
-      description: "Connect local customers with service providers",
-      fitScore: 50,
-      timeToProfit: "2-8 weeks",
-      potentialIncome: "$1K-12K/month",
-      difficulty: "Medium",
-      icon: "🎯",
-    },
-  ];
+  const getDefaultBusinessModels = () => {
+    return businessModels.map((model, index) => ({
+      id: model.id,
+      name: model.title,
+      description: model.description,
+      fitScore: 85 - (index * 2), // Decreasing scores for variety
+      timeToProfit: model.timeToStart,
+      potentialIncome: model.potentialIncome,
+      startupCost: model.initialInvestment,
+      emoji: model.emoji,
+    }));
+  };
 
   const handleBusinessModelSelect = (businessModel: any) => {
     setSelectedBusinessModel(businessModel);
@@ -446,11 +195,13 @@ const Dashboard: React.FC = () => {
     quizData: QuizData,
     aiContent?: any,
     completedAt?: string,
+    isHistoricalView?: boolean,
   ) => {
     console.log("Quiz selected in Dashboard:", {
       quizData,
       aiContent,
       completedAt,
+      isHistoricalView,
     });
 
     // Set historical quiz date if provided
@@ -509,123 +260,6 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  // Dynamic Recent Activity based on real user data
-  const [recentActivity, setRecentActivity] = useState<
-    Array<{
-      action: string;
-      time: string;
-      icon: any;
-      color: string;
-    }>
-  >([]);
-  const [activityLoading, setActivityLoading] = useState(true);
-
-  // Generate recent activity from user data
-  useEffect(() => {
-    const generateRecentActivity = async () => {
-      if (!user || authLoading) {
-        setActivityLoading(false);
-        return;
-      }
-
-      setActivityLoading(true);
-      const activities = [];
-
-      try {
-        // Get quiz attempts to track quiz activity
-        const quizAttemptsResponse = await fetch(
-          `/api/quiz-attempts/${user.id}`,
-        );
-        if (quizAttemptsResponse.ok) {
-          const attempts = await quizAttemptsResponse.json();
-
-          // Add quiz completion activities
-          attempts.slice(0, 2).forEach((attempt: any, index: number) => {
-            const completedAt = new Date(attempt.completedAt);
-            const timeAgo = getTimeAgo(completedAt);
-
-            activities.push({
-              action:
-                index === 0
-                  ? "Completed Business Path Quiz"
-                  : "Retook Business Path Quiz",
-              time: timeAgo,
-              icon: BookOpen,
-              color: "blue",
-            });
-          });
-
-          // Add business model analysis activity if user has quiz data
-          if (attempts.length > 0) {
-            const latestAttempt = attempts[0];
-            const analysisTime = getTimeAgo(
-              new Date(latestAttempt.completedAt),
-            );
-            activities.push({
-              action: "Generated business model analysis",
-              time: analysisTime,
-              icon: BarChart3,
-              color: "purple",
-            });
-          }
-        }
-
-        // Add business model selection activity
-        if (selectedBusinessModel) {
-          activities.push({
-            action: `Exploring ${selectedBusinessModel.name}`,
-            time: "Current session",
-            icon: Target,
-            color: "green",
-          });
-        }
-
-        // Add dashboard access activity
-        activities.push({
-          action: "Accessed Dashboard",
-          time: "Just now",
-          icon: Calendar,
-          color: "blue",
-        });
-
-        // Sort by most recent and limit to 3
-        const sortedActivities = activities
-          .sort((a, b) => {
-            // Prioritize "just now" and recent activities
-            if (a.time === "Just now") return -1;
-            if (b.time === "Just now") return 1;
-            if (a.time === "Current session") return -1;
-            if (b.time === "Current session") return 1;
-            return 0;
-          })
-          .slice(0, 3);
-
-        setRecentActivity(sortedActivities);
-      } catch (error) {
-        console.error("Error generating recent activity:", error);
-        // Fallback to basic activity
-        setRecentActivity([
-          {
-            action: "Accessed Dashboard",
-            time: "Just now",
-            icon: Calendar,
-            color: "blue",
-          },
-          {
-            action: "Account authenticated",
-            time: "Today",
-            icon: Users,
-            color: "green",
-          },
-        ]);
-      } finally {
-        setActivityLoading(false);
-      }
-    };
-
-    generateRecentActivity();
-  }, [user, authLoading, selectedBusinessModel, refreshKey]);
-
   // Helper function to calculate time ago
   const getTimeAgo = (date: Date) => {
     const now = new Date();
@@ -679,7 +313,7 @@ const Dashboard: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto"
+          className="max-w-7xl mx-auto"
         >
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -690,83 +324,45 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto px-4">
             {isLoadingScores
               ? // Loading state
-                Array.from({ length: 18 }).map((_, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className="relative bg-white rounded-3xl p-6 shadow-xl border-2 border-gray-200 w-full aspect-[4/3] flex items-center justify-center"
-                  >
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  </motion.div>
-                ))
-              : topBusinessModels.map((model, index) => {
-                  const fitCategory = getFitCategory(model.fitScore);
-                  return (
+                Array.from({ length: businessModels.length }).map((_, index) => (
+                  <div key={index} className="w-full">
                     <motion.div
-                      key={model.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className="relative bg-white rounded-3xl p-6 md:p-8 lg:p-6 shadow-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 border-gray-200 hover:border-gray-300 w-full aspect-[4/3] sm:min-h-[320px] sm:aspect-auto md:min-h-[380px] md:aspect-auto lg:min-h-[380px] lg:aspect-auto flex flex-col"
-                      onClick={() => handleBusinessModelSelect(model)}
+                      className="bg-white rounded-2xl shadow-lg border border-gray-200 flex items-center justify-center"
+                      style={{ height: 480, minHeight: '480px' }}
                     >
-                      <div className="absolute -top-3 left-6">
-                        <div
-                          className={`${fitCategory.color} text-white px-4 py-1 rounded-full text-sm font-semibold`}
-                        >
-                          {fitCategory.label} • {model.fitScore}%
-                        </div>
-                      </div>
-
-                      <div className="flex items-start mb-3 sm:mb-4 md:mb-4 lg:mb-3">
-                        <div className="text-3xl sm:text-4xl md:text-4xl lg:text-3xl mr-3 sm:mr-4 md:mr-4 lg:mr-3 flex-shrink-0">
-                          {getSafeEmoji(model.id)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl md:text-xl lg:text-lg font-bold text-gray-900 mb-2 sm:mb-3 md:mb-3 lg:mb-2 leading-tight">
-                            {model.name}
-                          </h3>
-                          <p className="text-gray-600 text-sm sm:text-base md:text-base lg:text-sm mb-3 sm:mb-4 md:mb-4 lg:mb-3 leading-tight sm:leading-relaxed md:leading-relaxed lg:leading-normal">
-                            {model.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 mb-6 sm:mb-6 md:mb-6 lg:gap-3 lg:mb-6">
-                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
-                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
-                            Time to Profit
-                          </div>
-                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
-                            {model.timeToProfit}
-                          </div>
-                        </div>
-                        <div className="text-center sm:bg-gray-50 sm:rounded-xl sm:p-3 md:bg-gray-50 md:rounded-xl md:p-4 lg:bg-gray-50 lg:rounded-xl lg:p-3">
-                          <div className="text-xs text-gray-500 sm:font-medium sm:mb-1 md:font-medium md:mb-2 lg:text-xs lg:font-medium lg:mb-1">
-                            Income
-                          </div>
-                          <div className="font-semibold sm:font-bold md:font-bold lg:font-bold text-gray-900 text-sm md:text-base lg:text-sm">
-                            {model.potentialIncome}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Spacer to push button to bottom */}
-                      <div className="flex-grow"></div>
-
-                      <div className="flex items-center mt-auto">
-                        <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 sm:py-4 md:py-4 lg:py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-sm sm:text-base md:text-base lg:text-sm sm:shadow-lg md:shadow-lg hover:shadow-xl">
-                          Select This Model
-                        </button>
-                      </div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </motion.div>
-                  );
-                })}
+                  </div>
+                ))
+              : topBusinessModels
+                .slice()
+                .sort((a, b) => (b.fitScore ?? 0) - (a.fitScore ?? 0))
+                .map((model, index) => (
+                  <div key={model.id} className="w-full">
+                    <BusinessCard
+                      business={{
+                        id: model.id,
+                        name: model.name,
+                        description: model.description,
+                        timeToProfit: model.timeToStart || model.timeToProfit,
+                        startupCost: model.initialInvestment || model.startupCost || "",
+                        potentialIncome: model.potentialIncome,
+                        fitScore: model.fitScore,
+                        emoji: getSafeEmoji(model.id)
+                      }}
+                      onLearnMore={() => navigate(`/business-model/${model.id}`)}
+                      onGetStarted={() => handleBusinessModelSelect(model)}
+                      isTopMatch={model.fitScore && model.fitScore > 80}
+                      fitCategory={model.fitScore ? getFitCategory(model.fitScore) : undefined}
+                    />
+                  </div>
+                ))}
           </div>
 
           {/* Quick Actions Section */}
@@ -942,7 +538,7 @@ const Dashboard: React.FC = () => {
                         {selectedBusinessModel.name}
                       </h2>
                       <p className="text-blue-100 text-base sm:text-lg">
-                        Start your journey to financial freedom today.
+                        Start building wealth on your terms.
                       </p>
                     </div>
                   </div>
@@ -1102,57 +698,6 @@ const Dashboard: React.FC = () => {
                     );
                   }
                 })}
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">
-                Recent Activity
-              </h2>
-              <div className="space-y-4">
-                {activityLoading ? (
-                  // Loading state
-                  <>
-                    {[1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className="flex items-start space-x-3 animate-pulse"
-                      >
-                        <div className="w-8 h-8 bg-gray-200 rounded-xl flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : recentActivity.length > 0 ? (
-                  // Show actual activities
-                  recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div
-                        className={`w-8 h-8 bg-${activity.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}
-                      >
-                        <activity.icon
-                          className={`h-4 w-4 text-${activity.color}-600`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {activity.action}
-                        </p>
-                        <p className="text-xs text-gray-500">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  // Empty state
-                  <div className="text-center py-4">
-                    <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No recent activity</p>
-                  </div>
-                )}
               </div>
             </div>
           </motion.div>

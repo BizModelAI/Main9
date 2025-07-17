@@ -324,7 +324,26 @@ function calculateBusinessModelMatch(userProfile, businessProfile) {
     }
   }
 
-  return totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
+  // Raw score is 0-100
+  const rawScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
+  // Rescale to 40-95
+  const scaledScore = 40 + (rawScore / 100) * 55;
+  return Math.round(scaledScore);
+}
+
+// Category thresholds for 40-95 range
+const categoryThresholds = {
+  "Best Fit": (max) => Math.max(85, max - 5),
+  "Strong Fit": () => 70,
+  "Possible Fit": () => 55,
+  "Poor Fit": () => 0,
+};
+
+function getCategoryFromScore(score, maxScore) {
+  if (score >= categoryThresholds["Best Fit"](maxScore)) return "Best Fit";
+  if (score >= categoryThresholds["Strong Fit"](maxScore)) return "Strong Fit";
+  if (score >= categoryThresholds["Possible Fit"](maxScore)) return "Possible Fit";
+  return "Poor Fit";
 }
 
 // Run the test
@@ -395,21 +414,27 @@ const saasProfile = {
   technicalComfort: 1.0,
 };
 
-console.log(`\nTesting multiple business models:`);
-console.log(`Freelancing: ${calculateBusinessModelMatch(userProfile, freelancingProfile).toFixed(2)}%`);
-console.log(`E-commerce: ${calculateBusinessModelMatch(userProfile, ecommerceProfile).toFixed(2)}%`);
-console.log(`SaaS: ${calculateBusinessModelMatch(userProfile, saasProfile).toFixed(2)}%`);
+console.log("\nTesting multiple business models:");
+const freelancingScore = calculateBusinessModelMatch(userProfile, freelancingProfile);
+const ecommerceScore = calculateBusinessModelMatch(userProfile, ecommerceProfile);
+const saasScore = calculateBusinessModelMatch(userProfile, saasProfile);
 
-// Check if all scores are around 80%
 const scores = [
-  calculateBusinessModelMatch(userProfile, freelancingProfile),
-  calculateBusinessModelMatch(userProfile, ecommerceProfile),
-  calculateBusinessModelMatch(userProfile, saasProfile)
+  { name: "Freelancing", score: freelancingScore },
+  { name: "E-commerce", score: ecommerceScore },
+  { name: "SaaS", score: saasScore },
 ];
 
-const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+const maxScore = Math.max(...scores.map(s => s.score));
+
+scores.forEach(s => {
+  const category = getCategoryFromScore(s.score, maxScore);
+  console.log(`${s.name}: ${s.score}% (${category})`);
+});
+
+const averageScore = scores.reduce((a, b) => a + b.score, 0) / scores.length;
 console.log(`\nAverage score: ${averageScore.toFixed(2)}%`);
-console.log(`Score range: ${Math.min(...scores).toFixed(2)}% - ${Math.max(...scores).toFixed(2)}%`);
+console.log(`Score range: ${Math.min(...scores.map(s => s.score)).toFixed(2)}% - ${Math.max(...scores.map(s => s.score)).toFixed(2)}%`);
 
 if (Math.abs(averageScore - 80) < 5) {
   console.log("\n🚨 ISSUE DETECTED: All scores are clustering around 80%!");

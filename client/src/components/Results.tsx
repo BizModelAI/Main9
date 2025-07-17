@@ -31,6 +31,7 @@ import {
   Download,
   Mail,
   Share2,
+  ArrowUpRight,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
@@ -967,36 +968,28 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
                       <div className="text-2xl mb-2">⏱️</div>
-                      <div className="text-xs text-blue-200 mb-1 font-bold">
-                        Time to Start
-                      </div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">Time to Start</div>
                       <div className="text-sm font-normal">
                         {personalizedPaths[0]?.timeToProfit || "3-6 months"}
                       </div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
                       <div className="text-2xl mb-2">💰</div>
-                      <div className="text-xs text-blue-200 mb-1 font-bold">
-                        Initial Investment
-                      </div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">Initial Investment</div>
                       <div className="text-sm font-normal">
                         {personalizedPaths[0]?.startupCost || "$0-500"}
                       </div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
                       <div className="text-2xl mb-2">📈</div>
-                      <div className="text-xs text-blue-200 mb-1 font-bold">
-                        Potential Income
-                      </div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">Potential Income</div>
                       <div className="text-sm font-normal">
                         {personalizedPaths[0]?.potentialIncome || "$2K-10K/mo"}
                       </div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
                       <div className="text-2xl mb-2">🕒</div>
-                      <div className="text-xs text-blue-200 mb-1 font-bold">
-                        Time Commitment
-                      </div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">Time Commitment</div>
                       <div className="text-sm font-normal">
                         {quizData.weeklyTimeCommitment ? `${quizData.weeklyTimeCommitment} hours/week` : "10-40 hours/week"}
                       </div>

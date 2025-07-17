@@ -1,5 +1,5 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import {
   Clock,
   Calendar,
@@ -12,6 +12,9 @@ import {
 import { format } from "date-fns";
 import { QuizData } from "../types";
 import { businessModelService } from "../utils/businessModelService";
+import { useAuth } from "../contexts/AuthContext";
+import { PaywallModal } from './PaywallModals';
+import { PaymentAccountModal } from './PaymentAccountModal';
 
 interface QuizAttempt {
   id: number;
@@ -20,12 +23,18 @@ interface QuizAttempt {
   completedAt: string;
 }
 
+interface PaymentStatus {
+  isUnlocked: boolean;
+  paymentId: number | null;
+}
+
 interface QuizAttemptHistoryProps {
   userId: number;
   onQuizSelected?: (
     quizData: QuizData,
     aiContent?: any,
     completedAt?: string,
+    isHistoricalView?: boolean,
   ) => void;
 }
 
@@ -34,6 +43,8 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
   onQuizSelected,
 }) => {
   console.log("QuizAttemptHistory: Rendered with userId:", userId);
+
+  const { user } = useAuth();
 
   const {
     data: attempts = [],
@@ -44,6 +55,15 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
     enabled: !!userId,
   });
 
+  // Check payment status for each attempt using useQueries
+  const paymentStatusQueries = useQueries({
+    queries: attempts.map((attempt) => ({
+      queryKey: [`/api/report-unlock-status/${userId}/${attempt.id}`],
+      enabled: !!userId && !!attempt.id,
+      staleTime: 5 * 60 * 10, // 5 minutes
+    })),
+  });
+
   console.log("QuizAttemptHistory: Query state:", {
     userId,
     isLoading,
@@ -51,33 +71,11 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
     attemptsCount: attempts?.length || 0,
   });
 
-  const [selectedAttemptId, setSelectedAttemptId] = React.useState<
-    number | null
-  >(null);
-  const [loadingAttemptId, setLoadingAttemptId] = React.useState<number | null>(
-    null,
-  );
+  // Remove selectedAttemptId, loadingAttemptId, and click-to-activate logic
   const [showAllAttempts, setShowAllAttempts] = React.useState(false);
-
-  // Check if current localStorage quiz data matches any attempt
-  React.useEffect(() => {
-    const currentQuizData = localStorage.getItem("quizData");
-    if (currentQuizData && attempts.length > 0) {
-      try {
-        const parsedCurrent = JSON.parse(currentQuizData);
-        // Find if current quiz data matches any attempt
-        const matchingAttempt = attempts.find(
-          (attempt) =>
-            JSON.stringify(attempt.quizData) === JSON.stringify(parsedCurrent),
-        );
-        if (matchingAttempt) {
-          setSelectedAttemptId(matchingAttempt.id);
-        }
-      } catch (e) {
-        // Ignore parsing errors
-      }
-    }
-  }, [attempts]);
+  const [showUnlockModal, setShowUnlockModal] = React.useState(false);
+  const [showPaymentModal, setShowPaymentModal] = React.useState(false);
+  const [selectedAttemptId, setSelectedAttemptId] = React.useState<number | null>(null);
 
   if (isLoading) {
     return (
@@ -122,17 +120,9 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
     );
   }
 
-  const handleSelectQuiz = async (attempt: QuizAttempt) => {
-    setLoadingAttemptId(attempt.id);
-
+  const handleViewFullReport = async (attempt: QuizAttempt, isPaid: boolean) => {
     try {
-      // Store the selected quiz data in localStorage
-      localStorage.setItem("quizData", JSON.stringify(attempt.quizData));
-      localStorage.setItem("currentQuizAttemptId", attempt.id.toString());
-      setSelectedAttemptId(attempt.id);
-
       // Fetch AI content for this attempt
-      console.log(`Fetching AI content for quiz attempt ${attempt.id}...`);
       const response = await fetch(
         `/api/quiz-attempts/${attempt.id}/ai-content`,
         {
@@ -140,65 +130,35 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
         },
       );
       let aiContent = null;
-
       if (response.ok) {
         const data = await response.json();
         aiContent = data.aiContent;
-        console.log(
-          `AI content fetched for attempt ${attempt.id}:`,
-          aiContent ? "Found" : "None",
-        );
-
-        // Store AI content in localStorage if it exists
-        if (aiContent) {
-          localStorage.setItem("loadedReportData", JSON.stringify(aiContent));
-          console.log(
-            `AI content stored in localStorage for attempt ${attempt.id}`,
-          );
-        } else {
-          localStorage.removeItem("loadedReportData");
-          console.log(`No AI content to store for attempt ${attempt.id}`);
-        }
-      } else {
-        console.log(
-          `AI content fetch failed for attempt ${attempt.id}:`,
-          response.status,
-          response.statusText,
-        );
-        if (response.status === 500) {
-          console.log(
-            "This might be due to missing ai_content column in database",
-          );
-        }
-        localStorage.removeItem("loadedReportData");
       }
-
-      // Call the callback if provided
       if (onQuizSelected) {
-        onQuizSelected(attempt.quizData, aiContent, attempt.completedAt);
+        // Pass isHistoricalView=true for all historical attempts (both paid and unpaid)
+        onQuizSelected(attempt.quizData, aiContent, attempt.completedAt, true);
       }
-
-      // Show success notification
-      const attemptDate = format(new Date(attempt.completedAt), "MMM d, yyyy");
-      // You can customize this notification system as needed
-      console.log(`Successfully loaded quiz from ${attemptDate}`);
-
-      // Instead of page reload, trigger a React state update
-      console.log("Quiz attempt switched successfully without page reload");
     } catch (error) {
-      console.error("Error switching quiz attempt:", error);
-
-      // Show error message
-      alert("Failed to load quiz data. Falling back to current quiz.");
-
-      // Reset loading state
-      setLoadingAttemptId(null);
-
-      // Don't reload on error - just show message and keep current state
-      return;
-    } finally {
-      setLoadingAttemptId(null);
+      console.error("Error loading full report:", error);
+      alert("Failed to load full report for this quiz attempt.");
     }
+  };
+
+  const handlePurchaseFullReport = (attempt: QuizAttempt) => {
+    setSelectedAttemptId(attempt.id);
+    setShowUnlockModal(true);
+  };
+
+  const handlePaymentWithAccount = () => {
+    setShowPaymentModal(true);
+    setShowUnlockModal(false);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    setShowUnlockModal(false);
+    // Optionally, trigger a refetch or update payment status for this attempt
+    // You might want to refetch the payment status queries here
   };
 
   // Since users can't create accounts without taking the quiz,
@@ -248,16 +208,14 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
       >
         {(showAllAttempts ? attempts : attempts.slice(0, 3)).map(
           (attempt: QuizAttempt, index: number) => {
-            const isSelected = selectedAttemptId === attempt.id;
+            const paymentStatus = paymentStatusQueries[index]?.data;
+            const isPaid = (paymentStatus as any)?.isUnlocked || false;
+            const isLoadingPaymentStatus = paymentStatusQueries[index]?.isLoading;
+
             return (
               <div
                 key={attempt.id}
-                className={`flex items-center space-x-4 p-4 rounded-xl transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700"
-                    : "bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent"
-                }`}
-                onClick={() => handleSelectQuiz(attempt)}
+                className="flex items-center space-x-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent"
               >
                 {/* Attempt Number Icon */}
                 <div className="flex-shrink-0">
@@ -269,11 +227,6 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
                     }`}
                   >
                     {attempts.length - index}
-                    {isSelected && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                        <CheckCircle2 className="w-3 h-3 text-white" />
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -288,9 +241,9 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
                         Latest
                       </span>
                     )}
-                    {isSelected && (
+                    {isPaid && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        Active
+                        Paid
                       </span>
                     )}
                   </div>
@@ -302,31 +255,29 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
                         {format(new Date(attempt.completedAt), "MMM d, yyyy")}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>{getIncomeGoal(attempt.quizData)}</span>
-                    </div>
                   </div>
                 </div>
 
-                {/* Select Button */}
+                {/* Action Button */}
                 <div className="flex-shrink-0">
-                  {isSelected ? (
-                    <div className="p-2 text-blue-600 dark:text-blue-400">
-                      <CheckCircle2 className="w-5 h-5" />
+                  {isLoadingPaymentStatus ? (
+                    <div className="px-4 py-2 rounded-lg bg-gray-200 text-gray-500 font-semibold text-sm">
+                      <Loader2 className="w-4 animate-spin inline mr-1" />
+                      Loading...
                     </div>
+                  ) : isPaid ? (
+                    <button
+                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-sm hover:from-blue-700 hover:to-purple-700 transition-all"
+                      onClick={() => handleViewFullReport(attempt, true)}
+                    >
+                      View Full Report
+                    </button>
                   ) : (
                     <button
-                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={() => handleSelectQuiz(attempt)}
-                      disabled={loadingAttemptId === attempt.id}
-                      title={`View quiz from ${format(new Date(attempt.completedAt), "MMM d, yyyy")}`}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-sm hover:from-blue-700 hover:to-purple-700 transition-all"
+                      onClick={() => handlePurchaseFullReport(attempt)}
                     >
-                      {loadingAttemptId === attempt.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
+                      Purchase Full Report
                     </button>
                   )}
                 </div>
@@ -349,6 +300,23 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
           </button>
         </div>
       )}
+      {showUnlockModal && selectedAttemptId && (
+        <PaywallModal
+          isOpen={showUnlockModal}
+          onClose={() => setShowUnlockModal(false)}
+          onUnlock={handlePaymentWithAccount}
+          type="full-report"
+        />
+      )}
+
+      {/* Payment Account Modal - For handling actual payment */}
+      <PaymentAccountModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={handlePaymentSuccess}
+        type="full-report"
+        title="Historical Quiz Report"
+      />
     </div>
   );
 };

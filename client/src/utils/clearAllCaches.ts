@@ -1,5 +1,6 @@
 // Import emoji safeguarding utilities
 import { cleanCorruptedEmojisFromStorage } from './emojiHelper';
+import { businessModelService } from './businessModelService';
 
 export function clearAllCaches() {
   console.log("🧹 Clearing all caches and localStorage data...");
@@ -49,6 +50,9 @@ export function clearQuizRelatedCache() {
   quizKeys.forEach(key => {
     localStorage.removeItem(key);
   });
+  
+  // Clear in-memory business model cache
+  businessModelService.clearCache();
   
   console.log("✅ Quiz-related cache cleared");
 }

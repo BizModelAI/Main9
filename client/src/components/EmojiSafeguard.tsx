@@ -44,26 +44,26 @@ export function withEmojiSafeguard<P extends object>(
 ): React.ComponentType<P> {
   return React.forwardRef<any, P>((props, ref) => {
     // Safeguard any business-related props
-    const safeguardedProps = { ...props };
+    const safeguardedProps: Partial<P> = { ...props };
     
     // Check for common business data prop names
     const businessProps = ['business', 'businessData', 'businesses', 'businessDataArray', 'model', 'path'];
     
     businessProps.forEach(propName => {
       if (propName in safeguardedProps) {
-        const data = safeguardedProps[propName as keyof P];
+        const data = (safeguardedProps as any)[propName];
         if (Array.isArray(data)) {
-          safeguardedProps[propName as keyof P] = safeguardBusinessDataArray(data) as any;
+          (safeguardedProps as any)[propName] = safeguardBusinessDataArray(data) as any;
         } else if (data && typeof data === 'object' && data.id) {
           if (data.emoji !== undefined) {
-            safeguardedProps[propName as keyof P] = safeguardBusinessModelEmoji(data) as any;
+            (safeguardedProps as any)[propName] = safeguardBusinessModelEmoji(data) as any;
           }
         }
       }
     });
 
     return <Component {...safeguardedProps} ref={ref} />;
-  });
+  }) as unknown as React.ComponentType<P>;
 }
 
 /**

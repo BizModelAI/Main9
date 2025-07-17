@@ -1,7 +1,7 @@
 import { QuizData, BusinessPath } from "../types";
 import { businessPaths } from "../data/businessPaths";
 import { apiPost } from "./apiClient";
-import { businessModelService } from "./businessModelService";
+import { businessModelService } from './businessModelService';
 
 // AI-powered business fit analysis
 export async function generateAIPersonalizedPaths(
@@ -78,7 +78,6 @@ export async function generateAIPersonalizedPaths(
 }
 
 // MODERN SCORING: Use BusinessModelService with sophisticated shared/scoring.ts algorithm
-import { businessModelService } from "./businessModelService";
 
 // DEPRECATED: This function is replaced by BusinessModelService
 export function calculateFitScore(pathId: string, data: QuizData): number {

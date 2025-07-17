@@ -80,45 +80,8 @@ const LoggedInCongratulations: React.FC<LoggedInCongratulationsProps> = ({
   const [emailSent, setEmailSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendEmail = async () => {
-    if (!user?.email || !quizData) return;
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/email-results", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: user.email,
-          quizData: quizData,
-          isPaidUser: true, // This is for logged-in users
-        }),
-      });
-
-      if (response.ok) {
-        setEmailSent(true);
-        onSendEmailPreview();
-        // Wait a moment to show success message
-        setTimeout(() => {
-          onStartAIGeneration();
-        }, 1500);
-      } else {
-        console.error("Failed to send email");
-        // Still proceed even if email fails
-        onStartAIGeneration();
-      }
-    } catch (error) {
-      console.error("Error sending email:", error);
-      // Still proceed even if email fails
-      onStartAIGeneration();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Removed handleSendEmail and all /api/email-results logic due to missing backend route.
+  // If email sending is needed, use /api/send-quiz-results instead.
 
   const handleContinue = () => {
     onStartAIGeneration();
@@ -266,26 +229,6 @@ const LoggedInCongratulations: React.FC<LoggedInCongratulationsProps> = ({
                 className="space-y-3"
               >
                 {/* Send Email Preview Button */}
-                <button
-                  onClick={handleSendEmail}
-                  disabled={isSubmitting}
-                  className={`w-full px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center ${
-                    isSubmitting
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 shadow-lg"
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Send Email Preview
-                    </>
-                  )}
-                </button>
-
-                {/* Continue Button */}
                 <button
                   onClick={handleContinue}
                   className="w-full text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center justify-center group text-sm py-2"

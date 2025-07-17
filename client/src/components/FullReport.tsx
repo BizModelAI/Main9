@@ -26,6 +26,7 @@ import { QuizData, BusinessPath } from "../types";
 import { generateAIPersonalizedPaths } from "../utils/quizLogic";
 import { businessModelService } from "../utils/businessModelService";
 import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
+import { useAIInsights } from "../contexts/AIInsightsContext";
 import { AIService } from "../utils/aiService";
 import { AICacheManager } from "../utils/aiCacheManager";
 import { useNavigate } from "react-router-dom";
@@ -35,6 +36,8 @@ import {
 } from "../../../shared/personalityScoring";
 import { renderMarkdownContent } from "../utils/markdownUtils";
 import { reportViewManager } from "../utils/reportViewManager";
+import { getSafeEmoji } from '../utils/emojiHelper';
+import { businessPaths } from '../data/businessPaths'; // or the correct path if needed
 
 // Helper functions to convert stored numbers back to original quiz ranges
 const getIncomeRangeLabel = (value: number): string => {
@@ -82,7 +85,7 @@ const getBusinessModelDescription = (businessId: string): string => {
       "Create valuable content and monetize through multiple channels including sponsorships, ads, and product sales.",
     "social-media-agency":
       "Help businesses grow their social media presence and engagement through strategic content and campaigns.",
-    "online-tutoring":
+    "online-coaching":
       "Share your expertise through 1-on-1 or group coaching programs. Teach skills you've already mastered.",
     "e-commerce":
       "Sell physical or digital products through your own online store. Build a brand around products you're passionate about.",
@@ -121,7 +124,7 @@ const getBusinessModelTimeToProfit = (businessId: string): string => {
     freelancing: "1-2 weeks",
     "content-creation": "3-8 months",
     "social-media-agency": "1-3 months",
-    "online-tutoring": "2-4 weeks",
+    "online-coaching": "2-4 weeks",
     "e-commerce": "2-6 months",
     "local-service": "1-4 weeks",
     "ai-marketing-agency": "2-4 months",
@@ -144,7 +147,7 @@ const getBusinessModelStartupCost = (businessId: string): string => {
     freelancing: "$0-$200",
     "content-creation": "$100-$1,000",
     "social-media-agency": "$200-$800",
-    "online-tutoring": "$0-$300",
+    "online-coaching": "$0-$300",
     "e-commerce": "$500-$5,000",
     "local-service": "$100-$1,000",
     "ai-marketing-agency": "$300-$1,500",
@@ -167,7 +170,7 @@ const getBusinessModelPotentialIncome = (businessId: string): string => {
     freelancing: "$1K-$15K+/month",
     "content-creation": "$500-$20K+/month",
     "social-media-agency": "$2K-$25K+/month",
-    "online-tutoring": "$500-$8K+/month",
+    "online-coaching": "$500-$8K+/month",
     "e-commerce": "$1K-$50K+/month",
     "local-service": "$1K-$20K+/month",
     "ai-marketing-agency": "$3K-$30K+/month",
@@ -197,6 +200,7 @@ interface FullReportProps {
     businessFitDescriptions: { [key: string]: string };
     businessAvoidDescriptions: { [key: string]: string };
   };
+  isHistoricalView?: boolean;
 }
 
 interface TraitSliderProps {
@@ -246,6 +250,7 @@ const FullReport: React.FC<FullReportProps> = ({
   topPath,
   allPaths,
   preloadedData,
+  isHistoricalView = false,
 }) => {
   const [personalizedPaths, setPersonalizedPaths] = useState<BusinessPath[]>(
     [],
@@ -268,6 +273,9 @@ const FullReport: React.FC<FullReportProps> = ({
     getTopMatches,
     getBottomMatches,
   } = useBusinessModelScores();
+  
+  // Get AI insights from Results page
+  const { aiInsights: resultsPageInsights } = useAIInsights();
 
   // Use cached business model scores from context (calculated once at quiz completion)
   const advancedScores = businessModelScores || [];
@@ -533,11 +541,68 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
     const generateInsights = async (paths: BusinessPath[]) => {
       try {
         const aiService = AIService.getInstance();
+        
+        // Get bottom 3 paths for the API call
+        const bottomThree = getBottomMatches(3);
+        const bottomPaths = bottomThree.map(match => ({
+          id: match.id,
+          name: match.name,
+          fitScore: match.score,
+          description: `${match.name} with ${match.score}% compatibility`,
+          detailedDescription: `This business model scored ${match.score}% based on your quiz responses`,
+          difficulty: match.score >= 75 ? "Easy" : match.score >= 50 ? "Medium" : "Hard",
+          timeToProfit: match.score >= 80 ? "1-3 months" : match.score >= 60 ? "3-6 months" : "6+ months",
+          startupCost: match.score >= 70 ? "$0-500" : match.score >= 50 ? "$500-2000" : "$2000+",
+          potentialIncome: match.score >= 80 ? "$3K-10K+/month" : match.score >= 60 ? "$1K-5K/month" : "$500-2K/month",
+          pros: [`${match.score}% compatibility match`],
+          cons: match.score < 70 ? ["Lower compatibility score", "May require skill development"] : ["Minor adjustments needed"],
+          tools: ["Standard business tools"],
+          skills: ["Basic business skills"],
+          icon: "",
+          emoji: "💼",
+          marketSize: "Large",
+          averageIncome: { beginner: "$1K-3K", intermediate: "$3K-8K", advanced: "$8K-20K+" },
+          userStruggles: ["Getting started"],
+          solutions: ["Step-by-step guidance"],
+          bestFitPersonality: ["Motivated"],
+          resources: { platforms: ["LinkedIn"], learning: ["Online courses"], tools: ["CRM"] },
+          actionPlan: { phase1: ["Setup"], phase2: ["Launch"], phase3: ["Scale"] }
+        }));
+
         const insights = await aiService.generatePersonalizedInsights(
           quizData,
           paths.slice(0, 3),
+          bottomPaths,
         );
-        setAiInsights(insights);
+        
+        // Import hardcoded content
+        const { getActionPlanForModel, MOTIVATIONAL_MESSAGE } = await import("../utils/hardcodedContent");
+        
+        // Construct complete AI insights object
+        const completeInsights = {
+          // AI-generated content from the API call
+          personalizedRecommendations: insights.personalizedRecommendations,
+          potentialChallenges: insights.potentialChallenges,
+          top3Fits: insights.top3Fits,
+          bottom3Avoid: insights.bottom3Avoid,
+          
+          // Use 3-paragraph insights from Results page
+          personalizedSummary: resultsPageInsights?.analysis?.fullAnalysis || "Analysis will be pulled from Results page cache",
+          
+          // Hardcoded content
+          personalizedActionPlan: getActionPlanForModel(paths[0]?.name || ""),
+          motivationalMessage: MOTIVATIONAL_MESSAGE,
+          
+          // Hardcoded success strategies
+          successStrategies: [
+            "Focus on your top-scoring business model to maximize success potential",
+            "Leverage your strong skills while addressing identified challenges",
+            "Start small and scale gradually based on market feedback",
+            "Build a support network of mentors and fellow entrepreneurs",
+          ],
+        };
+        
+        setAiInsights(completeInsights);
       } catch (error) {
         console.error("Error generating AI insights:", error);
         // Set fallback insights that use actual quiz data
@@ -554,112 +619,47 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
           `Time commitment of ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} allows for realistic progress`,
         ];
 
+        // Import hardcoded content for fallback
+        const { getActionPlanForModel, MOTIVATIONAL_MESSAGE } = await import("../utils/hardcodedContent");
+        
         setAiInsights({
-          // New structure (priority)
-          insights: fallbackInsights,
-          keySuccessIndicators: fallbackKeyIndicators,
+          // AI-generated content (fallback)
           personalizedRecommendations: [
             `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
             `Your ${quizData.learningPreference} learning preference suggests ${quizData.learningPreference === "hands_on" ? "jumping into projects quickly" : "studying comprehensive guides first"}`,
-            `With ${quizData.riskComfortLevel}/5 risk tolerance, ${quizData.riskComfortLevel >= 4 ? "explore innovative approaches" : "stick to proven methods initially"}`,
-            `Focus on ${quizData.workCollaborationPreference === "solo-only" ? "independent execution" : "collaborative opportunities"} that match your work style`,
-            `Your ${quizData.organizationLevel}/5 organization level suggests ${quizData.organizationLevel >= 4 ? "creating detailed systems" : "using simple tracking methods"}`,
-            `Your motivation toward ${quizData.mainMotivation} provides clear direction for business focus`,
           ],
           potentialChallenges: [
-            `Your ${quizData.firstIncomeTimeline} timeline expectation may need adjustment based on typical ${paths[0]?.name || "business"} growth patterns`,
-            `Budget of ${getInvestmentRangeLabel(quizData.upfrontInvestment)} ${quizData.upfrontInvestment < 1000 ? "may require creative bootstrapping strategies" : "provides good foundation for getting started"}`,
-            `${quizData.selfMotivationLevel <= 3 ? "Building consistent daily habits" : "Maintaining momentum during slow periods"} will be important`,
-            `Balancing ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} availability with business building requirements`,
+            "Initial learning curve may require patience and persistence",
+            "Income may be inconsistent in the first few months",
+            "Success requires consistent daily action and follow-through",
           ],
-          keyInsights: [
-            `Your ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance aligns well with entrepreneurial requirements`,
-            `Time commitment of ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} matches realistic business building pace`,
-            `Technical skills level provides ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} foundation for business tools`,
-            `Communication comfort supports ${quizData.directCommunicationEnjoyment >= 4 ? "strong" : "developing"} customer relationships`,
+          top3Fits: [
+            { model: paths[0]?.name || "Business Model", reason: "Strong alignment with your profile and goals" },
+            { model: paths[1]?.name || "Business Model", reason: "Good secondary option based on your skills" },
+            { model: paths[2]?.name || "Business Model", reason: "Solid alternative path for your capabilities" },
           ],
-          bestFitCharacteristics: [
-            quizData.selfMotivationLevel >= 4
-              ? "Highly self-motivated"
-              : "Self-directed",
-            quizData.riskComfortLevel >= 4
-              ? "High risk tolerance"
-              : "Calculated risk-taker",
-            quizData.techSkillsRating >= 4
-              ? "Strong tech skills"
-              : "Tech-capable",
-            quizData.directCommunicationEnjoyment >= 4
-              ? "Excellent communicator"
-              : "Good communicator",
-            quizData.organizationLevel >= 4
-              ? "Highly organized"
-              : "Structured approach",
-            quizData.creativeWorkEnjoyment >= 4
-              ? "Creative problem solver"
-              : "Analytical thinker",
-          ],
-          top3Fits: paths.slice(0, 3).map((path, index) => ({
-            model: path.name,
-            reason: `This business model aligns well with your ${index === 0 ? "top" : index === 1 ? "secondary" : "alternative"} strengths and offers a ${path.fitScore}% compatibility match with your profile.`,
-          })),
           bottom3Avoid: [
-            {
-              model: "High-risk speculation",
-              reason: "Requires risk tolerance beyond your comfort level",
-              futureConsideration:
-                "Could be viable after building experience and capital",
-            },
-            {
-              model: "Complex technical development",
-              reason:
-                "May require more technical expertise than currently available",
-              futureConsideration:
-                "Consider after developing stronger technical skills",
-            },
-            {
-              model: "High-investment businesses",
-              reason: "Investment requirements exceed your current budget",
-              futureConsideration:
-                "Revisit when you have more capital available",
-            },
+            { model: "Business Model", reason: "Lower compatibility with your current profile" },
+            { model: "Business Model", reason: "Misaligned with your goals and preferences" },
+            { model: "Business Model", reason: "Requires skills you haven't developed yet" },
           ],
-
-          // Backward compatibility fields
-          personalizedSummary: fallbackInsights,
-          customRecommendations: [
-            `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
-            `Your ${quizData.learningPreference} learning preference suggests ${quizData.learningPreference === "hands_on" ? "jumping into projects quickly" : "studying comprehensive guides first"}`,
-            `With ${quizData.riskComfortLevel}/5 risk tolerance, ${quizData.riskComfortLevel >= 4 ? "explore innovative approaches" : "stick to proven methods initially"}`,
+          
+          // Use 3-paragraph insights from Results page
+          personalizedSummary: resultsPageInsights?.analysis?.fullAnalysis || fallbackInsights,
+          
+          // Hardcoded content
+          personalizedActionPlan: getActionPlanForModel(paths[0]?.name || ""),
+          motivationalMessage: MOTIVATIONAL_MESSAGE,
+          
+          // Hardcoded success strategies
+          successStrategies: [
+            "Focus on your top-scoring business model to maximize success potential",
+            "Leverage your strong skills while addressing identified challenges",
+            "Start small and scale gradually based on market feedback",
+            "Build a support network of mentors and fellow entrepreneurs",
           ],
-          successStrategies: fallbackKeyIndicators,
-          personalizedActionPlan: {
-            week1: [
-              `Research ${paths[0]?.name || "your chosen business model"} thoroughly`,
-              `Set up ${quizData.techSkillsRating >= 4 ? "advanced" : "basic"} tools and systems`,
-              `Define target market aligned with your ${quizData.mainMotivation} motivation`,
-            ],
-            month1: [
-              `Launch MVP with ${getInvestmentRangeLabel(quizData.upfrontInvestment)} budget allocation`,
-              `Create content that matches your ${quizData.creativeWorkEnjoyment >= 4 ? "high" : "moderate"} creativity level`,
-              `Gather feedback and iterate based on responses`,
-              `Establish basic business processes and tracking systems`,
-            ],
-            month3: [
-              `Scale based on ${quizData.weeklyTimeCommitment >= 25 ? "full-time" : "part-time"} growth expectations`,
-              `Optimize for sustainable income generation`,
-              `Build partnerships that align with ${quizData.workCollaborationPreference} preference`,
-              `Develop systems for consistent delivery and customer service`,
-            ],
-            month6: [
-              `Evaluate progress toward ${getIncomeRangeLabel(quizData.successIncomeGoal)} goal`,
-              `Consider expansion opportunities based on success`,
-              `Adjust strategy based on market feedback and results`,
-              `Plan next phase of growth and development`,
-            ],
-          },
-          motivationalMessage:
-            "Your unique combination of skills and drive positions you perfectly for entrepreneurial success.",
         });
+        // DO NOT cache fallback insights or analysis!
       } finally {
         setIsLoadingInsights(false);
       }
@@ -993,7 +993,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
       "affiliate-marketing": "affiliate-marketing",
       // Add more mappings as needed when more business paths are added
       "e-commerce": "content-creation-ugc", // Fallback to available path
-      "online-tutoring": "freelancing", // Fallback to available path
+      "online-coaching": "freelancing", // Fallback to available path
       "youtube-automation": "content-creation-ugc", // Fallback to available path
       "local-service": "freelancing", // Fallback to available path
       "high-ticket-sales": "freelancing", // Fallback to available path
@@ -1253,12 +1253,13 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                           {(() => {
                             // Get the cached AI analysis that was generated on the Results page
                             const aiCacheManager = AICacheManager.getInstance();
-                            const cachedData =
-                              aiCacheManager.getCachedAIContent(quizData);
+                            // const cachedData =
+                            //   aiCacheManager.getCachedAIContent(quizData);
+                            const cachedData = null; // Temporarily disabled
 
                             // Use the fullAnalysis from the cached data, or fall back to the summary
                             const analysisText =
-                              cachedData.analysis?.fullAnalysis ||
+                              cachedData?.analysis?.fullAnalysis ||
                               aiInsights?.personalizedSummary ||
                               "";
 
@@ -1461,7 +1462,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                             {index + 1}
                           </div>
                           <h3 className="text-xl font-bold text-gray-900">
-                            {(path.emoji || '💼') + ' ' + path.name}
+                            {(getSafeEmoji(path.id) || '💼') + ' ' + path.name}
                           </h3>
                         </div>
                         <div className="text-2xl font-bold text-blue-600">
@@ -1518,12 +1519,14 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                         )}
                       </div>
 
-                      <button
-                        onClick={() => handleGetStarted(path.id)}
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
-                      >
-                        Learn More About {(path.emoji || '💼') + ' ' + path.name}
-                      </button>
+                      {!isHistoricalView && (
+                        <button
+                          onClick={() => handleGetStarted(path.id)}
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                        >
+                          Learn More About {(getSafeEmoji(path.id) || '💼') + ' ' + path.name}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1564,7 +1567,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                             <AlertTriangle className="h-4 w-4" />
                           </div>
                           <h3 className="text-xl font-bold text-gray-900">
-                            {(path.emoji || '💼') + ' ' + path.name}
+                            {(getSafeEmoji(path.id) || '💼') + ' ' + path.name}
                           </h3>
                         </div>
                         <div className="text-2xl font-bold text-red-600">

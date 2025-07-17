@@ -150,11 +150,9 @@ export const BusinessModelScoresProvider: React.FC<BusinessModelScoresProviderPr
       const expiresAt = timestamp + 60 * 60 * 1000;
       localStorage.setItem(STORAGE_KEYS.SCORES_EXPIRES, expiresAt.toString());
 
-      console.log('✅ Business model scores calculated and stored, {
+      console.log('Business model scores calculated and stored', {
         count: calculatedScores.length,
         topScore: calculatedScores[0].score,
-        quizAttemptId: attemptId,
-        expiresAt: new Date(expiresAt),
       });
 
       // Store in database if user is authenticated or provided email

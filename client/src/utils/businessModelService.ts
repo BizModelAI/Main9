@@ -57,11 +57,9 @@ export class BusinessModelService {
     const now = Date.now();
 
     if (cached && now - cached.timestamp < this.CACHE_DURATION) {
-      console.log("✨ Using cached business model matches");
       return cached.matches;
     }
 
-    console.log(" Calculating fresh business model matches");
     const rawMatches = calculateAdvancedBusinessModelMatches(quizData);
 
     // Transform to consistent format
@@ -72,10 +70,6 @@ export class BusinessModelService {
       category: match.category,
       fitScore: match.score, // For backward compatibility
     }));
-
-    console.log(
-      `✅ Calculated fresh matches for ${matches.length} business models`,
-    );
 
     // Cache the results
     this.cache.set(cacheKey, { matches, timestamp: now });

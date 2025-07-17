@@ -9,7 +9,6 @@ export const businessPaths: BusinessPath[] = [
     detailedDescription:
       "Content creation and user-generated content (UGC) involve producing videos, photos, blogs, or social media posts for personal brands or other businesses. UGC creators are often paid by companies to create native-style content that aligns with the brand's identity but feels organic to viewers.",
     fitScore: 0,
-    difficulty: "Easy",
     timeToProfit: "2-4 weeks",
     startupCost: "$0-300",
     potentialIncome: "$0-20K/month",
@@ -97,7 +96,6 @@ export const businessPaths: BusinessPath[] = [
     detailedDescription:
       "Freelancing involves offering specialized services to clients on a project or contract basis. This could include writing, graphic design, web development, marketing, consulting, or any skill-based service. Freelancers work independently, often with multiple clients, and have the flexibility to choose their projects and set their rates.",
     fitScore: 0,
-    difficulty: "Easy",
     timeToProfit: "1-2 weeks",
     startupCost: "$0-500",
     potentialIncome: "$1K-15K+/month",
@@ -186,7 +184,6 @@ export const businessPaths: BusinessPath[] = [
     detailedDescription:
       "Affiliate marketing involves promoting other companies' products or services and earning a commission for each sale or lead generated through your referral. This can be done through blogs, social media, email marketing, or paid advertising.",
     fitScore: 0,
-    difficulty: "Medium",
     timeToProfit: "3-6 months",
     startupCost: "$0-1000",
     potentialIncome: "$0-50K+/month",
@@ -278,14 +275,13 @@ export const businessPaths: BusinessPath[] = [
     },
   },
   {
-    id: "online-tutoring",
-    name: "Online Tutoring",
+    id: "online-coaching",
+    name: "Online Coaching",
     description:
-      "Teach students online through one-on-one sessions or group classes",
+      "Provide expertise and guidance to clients in your area of specialization",
     detailedDescription:
-      "Online tutoring involves providing educational services to students through video calls, online platforms, or course creation. This can include academic subjects, language learning, test preparation, or skill-based instruction.",
+      "Online coaching involves providing expertise, guidance, and strategic advice to clients in your area of specialization. This could range from business consulting to life coaching, fitness training, or career guidance. Sessions are typically conducted via video calls, and packages can include one-on-one sessions, group coaching, or digital courses.",
     fitScore: 0,
-    difficulty: "Easy",
     timeToProfit: "1-2 weeks",
     startupCost: "$0-200",
     potentialIncome: "$1K-10K/month",

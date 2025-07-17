@@ -15,6 +15,7 @@ import {
   cleanupExpiredBusinessModelScores,
   useBusinessModelScores,
 } from "./contexts/BusinessModelScoresContext";
+import { AIInsightsProvider } from './contexts/AIInsightsContext';
 
 // Import debug utilities (available as window.debugOpenAI and window.debugAIContent)
 import "./utils/debugOpenAI";
@@ -69,8 +70,12 @@ function MainAppContent() {
   const [showCongratulations, setShowCongratulations] = React.useState(false);
   const [congratulationsShown, setCongratulationsShown] = React.useState(false);
 
-  // Restore data from localStorage on app start
+  // Restore data from localStorage on app start, but NOT on /quiz (handled in Quiz.tsx)
   React.useEffect(() => {
+    if (window.location.pathname === "/quiz") {
+      // All cache clearing and quiz data reset is handled in Quiz.tsx
+      return;
+    }
     console.log(
       "App component initializing - restoring data from localStorage",
     );
@@ -301,6 +306,7 @@ function MainAppContent() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const hasLoggedQuizSkip = React.useRef(false);
 
   console.log("MainAppContent - Current location:", location.pathname);
   console.log("MainAppContent - quizData:", !!quizData);
@@ -311,9 +317,12 @@ function MainAppContent() {
     const loadQuizData = async () => {
       // Don't auto-load quiz data when user is on /quiz page (they want to start fresh)
       if (location.pathname === "/quiz") {
-        console.log(
-          "MainAppContent - On /quiz page, skipping auto-load of existing quiz data",
-        );
+        if (!hasLoggedQuizSkip.current) {
+          console.log(
+            "MainAppContent - On /quiz page, skipping auto-load of existing quiz data",
+          );
+          hasLoggedQuizSkip.current = true;
+        }
         return;
       }
 
@@ -1096,160 +1105,162 @@ const ResultsWrapperWithReset: React.FC<{
 function App() {
   return (
     <AuthProvider>
-      <PaywallProvider>
-        <BusinessModelScoresProvider>
-          <Router>
-            <NavigationGuardWrapper>
-              <Analytics />
-              <SpeedInsights />
-              <Routes>
-                {/* Public routes with layout */}
-                <Route
-                  path="/"
-                  element={
-                    <Layout>
-                      <Index />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/business-explorer"
-                  element={
-                    <Layout>
-                      <BusinessExplorer />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/explore"
-                  element={
-                    <Layout>
-                      <BusinessExplorer />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/business-model/:id"
-                  element={
-                    <Layout>
-                      <BusinessModelDetail />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/business-guide"
-                  element={
-                    <Layout>
-                      <BusinessGuide />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/contact"
-                  element={
-                    <Layout>
-                      <ContactUs />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/login"
-                  element={
-                    <Layout>
-                      <Login />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/forgot-password"
-                  element={
-                    <Layout>
-                      <ForgotPassword />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/reset-password"
-                  element={
-                    <Layout>
-                      <ResetPassword />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/privacy-policy"
-                  element={
-                    <Layout>
-                      <PrivacyPolicy />
-                    </Layout>
-                  }
-                />
-
-                {/* Protected routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
+      <AIInsightsProvider>
+        <PaywallProvider>
+          <BusinessModelScoresProvider>
+            <Router>
+              <NavigationGuardWrapper>
+                <Analytics />
+                <SpeedInsights />
+                <Routes>
+                  {/* Public routes with layout */}
+                  <Route
+                    path="/"
+                    element={
                       <Layout>
-                        <Dashboard />
+                        <Index />
                       </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/business-explorer"
+                    element={
                       <Layout>
-                        <Settings />
+                        <BusinessExplorer />
                       </Layout>
-                    </ProtectedRoute>
-                  }
-                />
+                    }
+                  />
+                  <Route
+                    path="/explore"
+                    element={
+                      <Layout>
+                        <BusinessExplorer />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/business-model/:id"
+                    element={
+                      <Layout>
+                        <BusinessModelDetail />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/business-guide"
+                    element={
+                      <Layout>
+                        <BusinessGuide />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/contact"
+                    element={
+                      <Layout>
+                        <ContactUs />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/login"
+                    element={
+                      <Layout>
+                        <Login />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/forgot-password"
+                    element={
+                      <Layout>
+                        <ForgotPassword />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/reset-password"
+                    element={
+                      <Layout>
+                        <ResetPassword />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/privacy-policy"
+                    element={
+                      <Layout>
+                        <PrivacyPolicy />
+                      </Layout>
+                    }
+                  />
 
-                {/* Direct routes (no layout) */}
-                <Route path="/quiz" element={<MainAppContent />} />
-                <Route path="/results" element={<MainAppContent />} />
-                <Route path="/ai-loading" element={<MainAppContent />} />
-                <Route path="/quiz-loading" element={<MainAppContent />} />
-                <Route
-                  path="/download-report"
-                  element={
-                    <Layout>
-                      <DownloadReportPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/pdf-report"
-                  element={
-                    <Layout>
-                      <PDFReportPage />
-                    </Layout>
-                  }
-                />
+                  {/* Protected routes */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Dashboard />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Settings />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-                <Route path="/unsubscribe" element={<UnsubscribePage />} />
+                  {/* Direct routes (no layout) */}
+                  <Route path="/quiz" element={<MainAppContent />} />
+                  <Route path="/results" element={<MainAppContent />} />
+                  <Route path="/ai-loading" element={<MainAppContent />} />
+                  <Route path="/quiz-loading" element={<MainAppContent />} />
+                  <Route
+                    path="/download-report"
+                    element={
+                      <Layout>
+                        <DownloadReportPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/pdf-report"
+                    element={
+                      <Layout>
+                        <PDFReportPage />
+                      </Layout>
+                    }
+                  />
 
-                {/* Admin Page */}
-                <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
-                {/* Quiz Payment Required */}
-                <Route
-                  path="/quiz-payment-required"
-                  element={<QuizPaymentRequired />}
-                />
+                  {/* Admin Page */}
+                  <Route path="/admin" element={<AdminPage />} />
 
-                {/* Save Results Payment */}
-                <Route
-                  path="/save-results-payment"
-                  element={<SaveResultsPayment />}
-                />
-              </Routes>
-            </NavigationGuardWrapper>
-          </Router>
-        </BusinessModelScoresProvider>
-      </PaywallProvider>
+                  {/* Quiz Payment Required */}
+                  <Route
+                    path="/quiz-payment-required"
+                    element={<QuizPaymentRequired />}
+                  />
+
+                  {/* Save Results Payment */}
+                  <Route
+                    path="/save-results-payment"
+                    element={<SaveResultsPayment />}
+                  />
+                </Routes>
+              </NavigationGuardWrapper>
+            </Router>
+          </BusinessModelScoresProvider>
+        </PaywallProvider>
+      </AIInsightsProvider>
     </AuthProvider>
   );
 }

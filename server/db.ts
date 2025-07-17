@@ -49,18 +49,18 @@ if (pool) {
       ),
     ])
       .then((client: any) => {
-        console.log("✅ Database connection test successful");
+        console.log("Database connection test successful");
         if (client && typeof client.release === "function") {
           client.release();
         }
       })
       .catch((err) => {
-        console.error("❌ Database connection test failed:", err.message);
+        console.error("Database connection test failed:", err.message);
         console.log("Continuing server startup without database...");
       });
   });
 } else {
-  console.log("⚠️ Database pool not created - DATABASE_URL not available");
+  console.log("Database pool not created - DATABASE_URL not available");
 }
 
 export const db = pool ? drizzle({ client: pool, schema }) : null;

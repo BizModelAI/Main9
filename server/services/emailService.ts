@@ -362,7 +362,7 @@ export class EmailService {
         "Promote other people's products and earn commission on sales",
       "Content Creation / UGC":
         "Create valuable content and monetize through multiple channels",
-      "Online Tutoring / Coaching":
+      "Online Coaching":
         "Share your expertise through 1-on-1 or group coaching programs",
       "E-commerce Brand Building":
         "Sell physical or digital products through your own online store",
@@ -435,8 +435,8 @@ export class EmailService {
         startupCost: "$200-$1,500",
         potentialIncome: "$1,000-$50,000+/month",
       },
-      "Online Tutoring / Coaching": {
-        id: "online-tutoring",
+      "Online Coaching": {
+        id: "online-coaching",
         description:
           "Share your expertise through 1-on-1 or group coaching programs. Help others achieve their goals while building a profitable business.",
         difficulty: "Medium",

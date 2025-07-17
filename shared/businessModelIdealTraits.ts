@@ -120,7 +120,7 @@ export const businessModelIdealTraits: Record<string, IdealTraits> = {
     consistency: 85,
     learningAgility: 90
   },
-  'online-tutoring': {
+  'online-coaching': {
     riskTolerance: 40,
     selfMotivation: 75,
     techComfort: 65,

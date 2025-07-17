@@ -598,21 +598,19 @@ const BusinessModelCard = ({
         {/* Key Metrics */}
         <div className="space-y-2 mb-4 flex-shrink-0">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Time to Start:</span>
-            <span className="font-medium">{model.timeToStart}</span>
+            <span className="text-gray-500" style={{ fontWeight: 'bold' }}>Time to Start:</span>
+            <span style={{ fontWeight: 'normal' }}>{model.timeToStart}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Initial Investment:</span>
-            <span className="font-medium">{model.initialInvestment}</span>
+            <span className="text-gray-500" style={{ fontWeight: 'bold' }}>Initial Investment:</span>
+            <span style={{ fontWeight: 'normal' }}>{model.initialInvestment}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Potential Income:</span>
-            <span className="font-medium text-green-600">
-              {model.potentialIncome}
-            </span>
+            <span className="text-gray-500" style={{ fontWeight: 'bold' }}>Potential Income:</span>
+            <span style={{ fontWeight: 'normal' }}>{model.potentialIncome}</span>
           </div>
           <div className="flex justify-between text-sm items-center">
-            <span className="text-gray-500">Scalability:</span>
+            <span className="text-gray-500" style={{ fontWeight: 'bold' }}>Scalability:</span>
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium ${getScalabilityColor(model.scalability)}`}
             >
@@ -620,7 +618,7 @@ const BusinessModelCard = ({
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Best Fit:</span>
+            <span className="text-gray-500" style={{ fontWeight: 'bold' }}>Best Fit:</span>
             <span className="font-medium text-blue-600 text-right text-xs">
               {model.fit}
             </span>
@@ -751,7 +749,7 @@ const BusinessModelDetailsModal = ({
             <CardHeader className="flex-row items-center gap-4">
               <span className="text-4xl mr-2 hover:scale-110 transition-transform duration-300 flex-shrink-0">{getSafeEmoji(model.id)}</span>
               <div className="flex-1">
-                <CardTitle className="text-3xl font-semibold text-gray-900 mb-1">{model.title}</CardTitle>
+                <CardTitle className="text-3xl font-bold text-gray-900 leading-tight mb-1">{model.title}</CardTitle>
                 <CardDescription className="text-lg text-gray-600 leading-relaxed">{model.description}</CardDescription>
               </div>
             </CardHeader>
@@ -789,9 +787,7 @@ const BusinessModelDetailsModal = ({
                 </CardHeader>
                 <CardContent>
                   <div className="max-w-prose">
-                    <p className="text-gray-600 leading-relaxed text-base mb-4">
-                      {model.detailedDescription}
-                    </p>
+                    <p className="text-gray-600 leading-relaxed text-base mb-4">{model.detailedDescription}</p>
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="text-green-500 mr-2">✅</span>

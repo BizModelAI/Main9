@@ -39,13 +39,14 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
 
+  // Set all step durations to 5 seconds
   const processingSteps: ProcessingStep[] = [
     {
       id: "analyzing",
       title: "Analyzing Your Responses",
       subtitle: "Processing your unique answers and preferences",
       icon: Brain,
-      duration: 2.5,
+      duration: 5.0,
       completed: false,
     },
     {
@@ -53,7 +54,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Finding Perfect Matches",
       subtitle: "AI is comparing you with business models",
       icon: Target,
-      duration: 3,
+      duration: 5.0,
       completed: false,
     },
     {
@@ -61,7 +62,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Generating Complete AI Analysis",
       subtitle: "Creating all insights and recommendations for your results",
       icon: Sparkles,
-      duration: 6,
+      duration: 5.0,
       completed: false,
     },
     {
@@ -69,7 +70,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Building Your Profile",
       subtitle: "Identifying your entrepreneurial strengths",
       icon: Users,
-      duration: 2.5,
+      duration: 5.0,
       completed: false,
     },
     {
@@ -77,7 +78,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Preparing Results",
       subtitle: "Putting the finishing touches on your report",
       icon: Award,
-      duration: 3,
+      duration: 5.0,
       completed: false,
     },
     {
@@ -85,7 +86,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Optimizing Recommendations",
       subtitle: "Fine-tuning your personalized business strategy",
       icon: BarChart3,
-      duration: 2,
+      duration: 5.0,
       completed: false,
     },
   ];
@@ -120,7 +121,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       // Process each step with smooth progress
       for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
         const stepStartTime = Date.now();
-        const stepDuration = stepIndex === 2 ? 4000 : 2000; // AI insights step takes longer
+        const stepDuration = steps[stepIndex].duration * 1000;
 
         // Mark current step as active
         setCurrentStepIndex(stepIndex);
@@ -250,6 +251,11 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
 
   const [motivationalText] = useState(getRandomMotivationalText());
 
+  const [lastProgress, setLastProgress] = useState(0);
+  useEffect(() => {
+    setLastProgress((prev) => Math.max(prev, progress));
+  }, [progress]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
@@ -326,14 +332,14 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
                 Overall Progress
               </span>
               <span className="text-lg font-bold text-purple-600">
-                {Math.round(progress)}%
+                {Math.round(lastProgress)}%
               </span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
               <motion.div
                 className="h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full relative"
                 initial={{ width: "0%" }}
-                animate={{ width: `${progress}%` }}
+                animate={{ width: `${lastProgress}%` }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
               >
                 {/* Animated shine effect */}
@@ -409,97 +415,52 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
           {/* Mobile Enhanced Step Cards with Switching */}
           <div className="md:hidden">
             <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStepIndex}
-                className="bg-gradient-to-br from-white to-purple-50 rounded-3xl shadow-xl p-6 border-2 border-purple-200"
-                initial={{ opacity: 0, scale: 0.8, x: 100, rotateY: 90 }}
-                animate={{ opacity: 1, scale: 1, x: 0, rotateY: 0 }}
-                exit={{ opacity: 0, scale: 0.8, x: -100, rotateY: -90 }}
-                transition={{
-                  duration: 0.6,
-                  ease: "easeInOut",
-                  type: "spring",
-                  stiffness: 100,
-                }}
-              >
-                <div className="text-center">
-                  {/* Large Mobile Step Icon */}
+              {steps.map((step, index) =>
+                index === currentStepIndex ? (
                   <motion.div
-                    className="w-20 h-20 bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl"
-                    animate={{
-                      rotate: [0, 10, -10, 0],
-                      scale: [1, 1.1, 1],
-                    }}
-                    transition={{
-                      duration: 2.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
+                    key={step.id}
+                    className={`rounded-3xl shadow-xl p-6 border-2 transition-all duration-500 ${index < steps.length - 1 ? 'bg-blue-100 border-blue-200' : 'bg-green-200 border-green-300'}`}
+                    initial={{ opacity: 0, scale: 0.8, x: 100, rotateY: 90 }}
+                    animate={{ opacity: 1, scale: 1, x: 0, rotateY: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, x: -100, rotateY: -90 }}
+                    transition={{ duration: 0.6, ease: 'easeInOut', type: 'spring', stiffness: 100 }}
                   >
-                    {React.createElement(steps[currentStepIndex].icon, {
-                      className: "w-10 h-10 text-white",
-                    })}
-                  </motion.div>
-
-                  {/* Mobile Step Info */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.4 }}
-                  >
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                      {steps[currentStepIndex].title}
-                    </h3>
-                    <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                      {steps[currentStepIndex].subtitle}
-                    </p>
-                  </motion.div>
-
-                  {/* Large Mobile Loading Dots - VERY Prominent */}
-                  <motion.div
-                    className="flex justify-center space-x-4 mb-6"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3, duration: 0.4 }}
-                  >
-                    {[0, 1, 2].map((dot) => (
+                    <div className="text-center">
+                      {/* Large Mobile Step Icon */}
                       <motion.div
-                        key={dot}
-                        className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-2xl"
-                        animate={{
-                          scale: [1, 1.8, 1],
-                          opacity: [0.4, 1, 0.4],
-                          y: [0, -12, 0],
-                        }}
-                        transition={{
-                          duration: 1.2,
-                          repeat: Infinity,
-                          delay: dot * 0.25,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    ))}
-                  </motion.div>
-
-                  {/* Mobile Step Counter with Enhanced Visibility */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4, duration: 0.4 }}
-                  >
-                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-full mx-auto w-fit shadow-lg">
-                      <p className="text-lg font-bold">
-                        Step {currentStepIndex + 1} of {steps.length}
-                      </p>
+                        className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl transition-all duration-500 ${index < steps.length - 1 ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-green-500 to-green-400'}`}
+                        animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                      >
+                        {React.createElement(step.icon, { className: 'w-10 h-10 text-white' })}
+                      </motion.div>
+                      {/* Mobile Step Info */}
+                      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                        <p className="text-gray-600 mb-6 text-lg leading-relaxed">{step.subtitle}</p>
+                      </motion.div>
+                      {/* Large Mobile Loading Dots - Prominent */}
+                      <motion.div className="flex justify-center space-x-4 mb-6" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3, duration: 0.4 }}>
+                        {[0, 1, 2].map((dot) => (
+                          <motion.div
+                            key={dot}
+                            className={`w-6 h-6 rounded-full shadow-2xl ${index < steps.length - 1 ? 'bg-blue-400' : 'bg-green-500'}`}
+                            animate={{ scale: [1, 1.8, 1], opacity: [0.4, 1, 0.4], y: [0, -12, 0] }}
+                            transition={{ duration: 1.2, repeat: Infinity, delay: dot * 0.25, ease: 'easeInOut' }}
+                          />
+                        ))}
+                      </motion.div>
+                      {/* Mobile Step Counter */}
+                      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, duration: 0.4 }}>
+                        <div className={`py-2 px-4 rounded-full mx-auto w-fit shadow-lg text-lg font-bold transition-all duration-500 ${index < steps.length - 1 ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'}`}>
+                          Step {index + 1} of {steps.length}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">{index < steps.length - 1 ? 'Next: ' + steps[index + 1]?.title : 'Almost done!'}</p>
+                      </motion.div>
                     </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      {currentStepIndex < steps.length - 1
-                        ? "Next: " + steps[currentStepIndex + 1]?.title
-                        : "Almost done!"}
-                    </p>
                   </motion.div>
-                </div>
-              </motion.div>
+                ) : null
+              )}
             </AnimatePresence>
           </div>
         </motion.div>

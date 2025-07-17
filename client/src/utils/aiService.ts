@@ -99,10 +99,11 @@ Personality Traits (0–5 scale):
             role: "user",
             content: `Based on this user's quiz data and their top business model, generate the following in JSON format:
 
-1. "previewInsights": Write 3 concise paragraphs analyzing why this user is a strong fit for ${topPaths[0].name}, based on their quiz results.
+1. "previewInsights": Write 3 paragraphs analyzing why this user is a strong fit for ${topPaths[0].name}, based on their quiz results.
    - Paragraph 1: Explain why this business model aligns with the user's goals, constraints, and personality traits.
    - Paragraph 2: Describe the user's natural advantages in executing this model (skills, traits, or behaviors).
    - Paragraph 3: Identify one potential challenge the user may face based on their profile, and how to overcome it.
+   Each paragraph must be a minimum of 3 sentences. Longer, more detailed paragraphs are encouraged. Do not write any paragraph shorter than 3 sentences.
    Use specific references to user traits. Avoid generic phrases. Keep the tone analytical and professional.
 
 2. "keyInsights": 4 bullet points summarizing the most important findings about the user's business style, risk tolerance, or strategic fit.
@@ -198,11 +199,10 @@ ${userProfile}`,
   async generatePersonalizedInsights(
     quizData: QuizData,
     topPaths: BusinessPath[],
+    bottomPaths: BusinessPath[],
   ): Promise<{
     personalizedRecommendations: string[];
     potentialChallenges: string[];
-    keyInsights: string[];
-    bestFitCharacteristics: string[];
     top3Fits: { model: string; reason: string }[];
     bottom3Avoid: {
       model: string;
@@ -236,15 +236,13 @@ ${userProfile}`,
           },
           {
             role: "user",
-            content: `Based only on the quiz data and top 3 business matches, generate the following JSON output. This is for a full business analysis report. Do NOT include formatting or markdown. Be specific and use only known data.
+            content: `Based only on the quiz data and the provided top 3 and bottom 3 business matches, generate the following JSON output. This is for a full business analysis report. Do NOT include formatting or markdown. Be specific and use only known data.
 
 Return exactly this structure:
 
 {
   "personalizedRecommendations": ["...", "...", "...", "...", "...", "..."],
   "potentialChallenges": ["...", "...", "...", "..."],
-  "keyInsights": ["...", "...", "...", "..."],
-  "bestFitCharacteristics": ["...", "...", "...", "...", "...", "..."],
   "top3Fits": [
     {
       "model": "${topPaths[0]?.name || "Business Model"}",
@@ -261,17 +259,17 @@ Return exactly this structure:
   ],
   "bottom3Avoid": [
     {
-      "model": "App or SaaS Development",
+      "model": "${bottomPaths[0]?.name || "Business Model"}",
       "reason": "Why this model doesn't align with current profile",
       "futureConsideration": "How it could become viable in the future (optional)"
     },
     {
-      "model": "E-commerce",
+      "model": "${bottomPaths[1]?.name || "Business Model"}",
       "reason": "Why this model doesn't align with current profile",
       "futureConsideration": "How it could become viable in the future (optional)"
     },
     {
-      "model": "Franchise Ownership",
+      "model": "${bottomPaths[2]?.name || "Business Model"}",
       "reason": "Why this model doesn't align with current profile",
       "futureConsideration": "How it could become viable in the future (optional)"
     }
@@ -281,10 +279,14 @@ Return exactly this structure:
 CRITICAL RULES:
 - Use ONLY the following data:
   ${userProfile}
-  - Top matches:
+  - Top matches (already determined by algorithm):
     1. ${topPaths[0]?.name || "N/A"} (${topPaths[0]?.fitScore || "N/A"}%)
     2. ${topPaths[1]?.name || "N/A"} (${topPaths[1]?.fitScore || "N/A"}%)
     3. ${topPaths[2]?.name || "N/A"} (${topPaths[2]?.fitScore || "N/A"}%)
+  - Bottom matches (already determined by algorithm):
+    1. ${bottomPaths[0]?.name || "N/A"} (${bottomPaths[0]?.fitScore || "N/A"}%)
+    2. ${bottomPaths[1]?.name || "N/A"} (${bottomPaths[1]?.fitScore || "N/A"}%)
+    3. ${bottomPaths[2]?.name || "N/A"} (${bottomPaths[2]?.fitScore || "N/A"}%)
 - DO NOT generate previewInsights or keySuccessIndicators (already created).
 - Use clean, specific, professional language only.
 - Do NOT invent numbers, ratings, or filler traits.`,
@@ -339,12 +341,6 @@ CRITICAL RULES:
               "Contact support if issue persists",
             ],
             potentialChallenges: ["System temporarily unavailable"],
-            keyInsights: [
-              "Retry analysis generation",
-              "Check internet connection",
-              "Contact support if needed",
-            ],
-            bestFitCharacteristics: ["Analysis unavailable"],
             top3Fits: [
               { model: "Analysis unavailable", reason: "System error" },
             ],
@@ -836,7 +832,32 @@ ${userProfile}`,
     console.warn(
       "generateDetailedAnalysis is deprecated. Use generatePersonalizedInsights instead.",
     );
-    return this.generatePersonalizedInsights(quizData, [topPath]);
+    // Create a mock bottom path for backward compatibility
+    const mockBottomPath = {
+      id: "mock-bottom",
+      name: "Mock Business Model",
+      fitScore: 25,
+      description: "Mock business model for backward compatibility",
+      detailedDescription: "Mock business model for backward compatibility",
+      difficulty: "Hard",
+      timeToProfit: "6+ months",
+      startupCost: "$2000+",
+      potentialIncome: "$500-2K/month",
+      pros: ["Mock compatibility"],
+      cons: ["Low compatibility score"],
+      tools: ["Mock tools"],
+      skills: ["Mock skills"],
+      icon: "",
+      emoji: "💼",
+      marketSize: "Small",
+      averageIncome: { beginner: "$1K-3K", intermediate: "$3K-8K", advanced: "$8K-20K+" },
+      userStruggles: ["Mock struggles"],
+      solutions: ["Mock solutions"],
+      bestFitPersonality: ["Mock personality"],
+      resources: { platforms: ["Mock"], learning: ["Mock"], tools: ["Mock"] },
+      actionPlan: { phase1: ["Mock"], phase2: ["Mock"], phase3: ["Mock"] }
+    };
+    return this.generatePersonalizedInsights(quizData, [topPath], [mockBottomPath]);
   }
 
   // Consolidated full report generation - replaces 4 separate calls with 1 call

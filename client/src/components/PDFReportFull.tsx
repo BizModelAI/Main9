@@ -56,9 +56,10 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
   } else {
     // Fallback to cached data if no AI data was passed
     const aiCacheManager = AICacheManager.getInstance();
-    const cachedData = aiCacheManager.getCachedAIContent(quizData);
-    aiInsights = cachedData.insights;
-    aiAnalysis = cachedData.analysis;
+    // const cachedData = aiCacheManager.getCachedAIContent(quizData);
+    const cachedData = null; // Temporarily disabled
+    aiInsights = cachedData?.insights || null;
+    aiAnalysis = cachedData?.analysis || null;
   }
 
   // Extract AI analysis components for comprehensive reporting
@@ -371,7 +372,7 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
                     </div>
                     <div>
                       <span className="font-medium">Difficulty:</span>{" "}
-                      {topThreePaths[0]?.difficulty}
+                      {topThreePaths[0]?.fitScore >= 75 ? "Easy" : topThreePaths[0]?.fitScore >= 50 ? "Medium" : "Hard"}
                     </div>
                     <div>
                       <span className="font-medium">Income Potential:</span>{" "}
@@ -527,7 +528,7 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
                         </span>
                       </div>
                       <p className="font-bold text-lg text-orange-800">
-                        {path.difficulty}
+                        {path.fitScore >= 75 ? "Easy" : path.fitScore >= 50 ? "Medium" : "Hard"}
                       </p>
                     </div>
                   </div>
@@ -769,7 +770,7 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
           </div>
 
           <div className="space-y-6">
-            {paths
+            {topThreePaths
               .slice(-3)
               .reverse()
               .map((path, index) => (

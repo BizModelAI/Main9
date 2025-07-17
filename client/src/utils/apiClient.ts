@@ -1,164 +1,101 @@
-export interface ApiRequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  headers?: Record<string, string>;
-  body?: any;
-  timeout?: number;
-}
+// Centralized API client for all backend calls with type safety
 
-export async function apiRequest(
-  url: string,
-  options: ApiRequestOptions = {},
-): Promise<Response> {
-  const { method = "GET", headers = {}, body, timeout = 30000 } = options;
+/**
+ * API endpoint constants
+ * NOTE: All routes must match backend implementation in server/routes.ts and server/auth.ts
+ */
+export const API_ROUTES = {
+  GENERATE_PDF: "/api/generate-pdf",
+  SEND_QUIZ_RESULTS: "/api/send-quiz-results",
+  GENERATE_AI_BUSINESS_FIT: "/api/ai-business-fit-analysis",
+  GENERATE_PERSONALITY_ANALYSIS: "/api/ai-personality-analysis",
+  GENERATE_INCOME_PROJECTIONS: "/api/generate-income-projections",
+  SEND_WELCOME_EMAIL: "/api/send-welcome-email",
+  // Removed: EMAIL_RESULTS, SEND_FULL_REPORT (no backend implementation)
+  // Add more as needed, but ensure backend route exists
+} as const;
 
-  let lastError: Error | null = null;
+export type ApiRoute = typeof API_ROUTES[keyof typeof API_ROUTES];
 
-  // Retry up to 3 times with exponential backoff
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      // Use XMLHttpRequest first to avoid FullStory interference
-      const response = await attemptXMLHttpRequest(
-        url,
-        method,
-        headers,
-        body,
-        timeout,
-      );
-      return response; // Success, return immediately
-    } catch (xhrError) {
-      console.log(
-        `apiClient: XMLHttpRequest attempt ${attempt} failed for ${url}, trying fetch fallback`,
-      );
+/**
+ * Generic API response type
+ */
+export type ApiResponse<T = any> = Promise<T>;
 
-      try {
-        // Fallback to fetch
-        const response = await attemptFetch(url, method, headers, body);
-        return response; // Success, return immediately
-      } catch (fetchError) {
-        lastError = new Error(
-          `Attempt ${attempt} failed - XHR: ${(xhrError as Error).message}, Fetch: ${(fetchError as Error).message}`,
-        );
-
-        if (attempt < 3) {
-          // Wait before retry with exponential backoff
-          const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-          console.log(
-            `apiClient: Attempt ${attempt} failed, retrying in ${delay}ms...`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-  }
-
-  // All attempts failed
-  console.error(`apiClient: All attempts failed for ${url}:`, lastError);
-  throw new Error(
-    `Failed to ${method} ${url}: All request methods failed after 3 attempts`,
-  );
-}
-
-async function attemptXMLHttpRequest(
-  url: string,
-  method: string,
-  headers: Record<string, string>,
-  body: any,
-  timeout: number,
-): Promise<Response> {
-  const xhr = new XMLHttpRequest();
-  xhr.open(method, url, true);
-  xhr.withCredentials = true;
-
-  // Set headers
-  xhr.setRequestHeader("Content-Type", "application/json");
-  Object.entries(headers).forEach(([key, value]) => {
-    xhr.setRequestHeader(key, value);
-  });
-
-  return new Promise<Response>((resolve, reject) => {
-    xhr.onload = () => {
-      const responseText = xhr.responseText;
-      resolve({
-        ok: xhr.status >= 200 && xhr.status < 300,
-        status: xhr.status,
-        statusText: xhr.statusText,
-        json: () => {
-          try {
-            return Promise.resolve(JSON.parse(responseText));
-          } catch (e) {
-            return Promise.reject(new Error("Invalid JSON response"));
-          }
-        },
-        text: () => Promise.resolve(responseText),
-        headers: new Headers(),
-        url: url,
-        redirected: false,
-        type: "basic",
-        clone: () => {
-          throw new Error(
-            "Response.clone() not supported in XMLHttpRequest fallback",
-          );
-        },
-        body: null,
-        bodyUsed: false,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
-        blob: () => Promise.resolve(new Blob()),
-        formData: () => Promise.resolve(new FormData()),
-      } as Response);
-    };
-    xhr.onerror = () => reject(new Error("XMLHttpRequest network error"));
-    xhr.ontimeout = () => reject(new Error("XMLHttpRequest timeout"));
-    xhr.timeout = timeout;
-
-    if (body && method !== "GET") {
-      xhr.send(JSON.stringify(body));
-    } else {
-      xhr.send();
-    }
-  });
-}
-
-async function attemptFetch(
-  url: string,
-  method: string,
-  headers: Record<string, string>,
-  body: any,
-): Promise<Response> {
-  const fetchOptions: RequestInit = {
-    method,
+/**
+ * POST request with type safety
+ */
+export async function apiPost<T = any, B = any>(url: ApiRoute, data: B, options: RequestInit = {}): ApiResponse<T> {
+  const response = await fetch(url, {
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...headers,
+      ...(options.headers || {}),
     },
-    credentials: "include",
-  };
-
-  if (body && method !== "GET") {
-    fetchOptions.body = JSON.stringify(body);
+    body: JSON.stringify(data),
+    ...options,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Request failed: ${response.status}`);
   }
-
-  return await fetch(url, fetchOptions);
+  return response.json();
 }
 
-// Convenience methods
-export const apiGet = (
-  url: string,
-  options?: Omit<ApiRequestOptions, "method">,
-) => apiRequest(url, { ...options, method: "GET" });
+/**
+ * GET request with type safety
+ */
+export async function apiGet<T = any>(url: ApiRoute, options: RequestInit = {}): ApiResponse<T> {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Request failed: ${response.status}`);
+  }
+  return response.json();
+}
 
-export const apiPost = (
-  url: string,
-  body?: any,
-  options?: Omit<ApiRequestOptions, "method" | "body">,
-) => apiRequest(url, { ...options, method: "POST", body });
+/**
+ * PUT request with type safety
+ */
+export async function apiPut<T = any, B = any>(url: ApiRoute, data: B, options: RequestInit = {}): ApiResponse<T> {
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    body: JSON.stringify(data),
+    ...options,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Request failed: ${response.status}`);
+  }
+  return response.json();
+}
 
-export const apiPut = (
-  url: string,
-  body?: any,
-  options?: Omit<ApiRequestOptions, "method" | "body">,
-) => apiRequest(url, { ...options, method: "PUT", body });
-
-export const apiDelete = (
-  url: string,
-  options?: Omit<ApiRequestOptions, "method">,
-) => apiRequest(url, { ...options, method: "DELETE" });
+/**
+ * DELETE request with type safety
+ */
+export async function apiDelete<T = any>(url: ApiRoute, options: RequestInit = {}): ApiResponse<T> {
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Request failed: ${response.status}`);
+  }
+  return response.json();
+}

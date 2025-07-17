@@ -625,6 +625,58 @@ const ExitWarningModal: React.FC<ExitWarningModalProps> = ({
   );
 };
 
+// Helper to generate mock quiz data for dev skip
+function generateMockQuizData(): QuizData {
+  return {
+    mainMotivation: "financial-freedom",
+    firstIncomeTimeline: "Under 1 month",
+    successIncomeGoal: 5000,
+    upfrontInvestment: 500,
+    passionIdentityAlignment: 4,
+    businessExitPlan: "No",
+    businessGrowthSize: "Full-time income",
+    passiveIncomeImportance: 4,
+    weeklyTimeCommitment: 20,
+    longTermConsistency: 4,
+    trialErrorComfort: 4,
+    learningPreference: "hands-on",
+    systemsRoutinesEnjoyment: 3,
+    discouragementResilience: 3,
+    toolLearningWillingness: "yes",
+    organizationLevel: 3,
+    selfMotivationLevel: 4,
+    uncertaintyHandling: 3,
+    repetitiveTasksFeeling: "I don't mind them",
+    workCollaborationPreference: "independent",
+    brandFaceComfort: 3,
+    competitivenessLevel: 3,
+    creativeWorkEnjoyment: 4,
+    directCommunicationEnjoyment: 3,
+    workStructurePreference: "some-structure",
+    techSkillsRating: 4,
+    workspaceAvailability: "yes",
+    supportSystemStrength: "small-helpful-group",
+    internetDeviceReliability: 4,
+    familiarTools: ["google-docs-sheets", "canva"],
+    decisionMakingStyle: "after-some-research",
+    riskComfortLevel: 4,
+    feedbackRejectionResponse: 3,
+    pathPreference: "mix",
+    controlImportance: 3,
+    onlinePresenceComfort: "yes",
+    clientCallsComfort: "yes",
+    physicalShippingOpenness: "no",
+    workStylePreference: "mix-both",
+    socialMediaInterest: 3,
+    ecosystemParticipation: "some",
+    existingAudience: "none",
+    promotingOthersOpenness: "yes",
+    teachVsSolvePreference: "teach",
+    meaningfulContributionImportance: 4,
+    // Optionally add adaptive fields if needed
+  };
+}
+
 const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<Partial<QuizData>>({});
@@ -954,6 +1006,12 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
   const progressPercentage =
     currentStep === 0 ? 0 : (currentStep / quizSteps.length) * 100;
 
+  // Move isDev and handleDevSkip to the top of the Quiz component so they are always in scope for JSX.
+  const isDev = process.env.NODE_ENV === "development";
+  const handleDevSkip = () => {
+    onComplete(generateMockQuizData());
+  };
+
   // Round Introduction Page
   if (showRoundIntro) {
     const RoundIcon = currentRoundInfo.icon;
@@ -962,6 +1020,15 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
       <div
         className={`min-h-screen flex items-center justify-center px-2 py-4 md:p-4 bg-gradient-to-br ${currentRoundInfo.bgColor} relative`}
       >
+        {isDev && (
+          <button
+            onClick={handleDevSkip}
+            style={{ position: 'fixed', top: 10, right: 10, zIndex: 1000 }}
+            className="bg-yellow-400 text-black px-4 py-2 rounded shadow hover:bg-yellow-300 font-bold"
+          >
+            DEV: Skip to Results
+          </button>
+        )}
         {/* Back Arrow Button - Shows Exit Modal */}
         <motion.button
           onClick={handleBackButtonClick}
@@ -1118,6 +1185,15 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
   // Regular Quiz Question
   return (
     <div className="min-h-screen flex items-center justify-center px-2 py-4 md:p-4 bg-gradient-to-br from-slate-50 to-blue-50 relative">
+      {isDev && (
+        <button
+          onClick={handleDevSkip}
+          style={{ position: 'fixed', top: 10, right: 10, zIndex: 1000 }}
+          className="bg-yellow-400 text-black px-4 py-2 rounded shadow hover:bg-yellow-300 font-bold"
+        >
+          DEV: Skip to Results
+        </button>
+      )}
       {/* Back Arrow Button - Shows Exit Modal */}
       <motion.button
         onClick={handleBackButtonClick}
@@ -1402,15 +1478,6 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {process.env.NODE_ENV === 'development' && (
-        <button
-          style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000, background: '#f59e42', color: '#fff', padding: '10px 18px', borderRadius: 8, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
-          onClick={() => onComplete(formData as QuizData)}
-        >
-          Skip to Results (DEV)
-        </button>
-      )}
 
       {/* Exit Warning Modal */}
       <ExitWarningModal

@@ -121,7 +121,6 @@ export interface BusinessPath {
   description: string;
   detailedDescription: string;
   fitScore: number;
-  difficulty: "Easy" | "Medium" | "Hard";
   timeToProfit: string;
   startupCost: string;
   potentialIncome: string;
@@ -151,6 +150,12 @@ export interface BusinessPath {
     phase3: string[];
   };
   aiAnalysis?: BusinessFitAnalysis;
+  difficulty?: string;
+}
+
+export interface BusinessModel {
+  // ... existing fields ...
+  difficulty?: string;
 }
 
 export interface BusinessFitAnalysis {

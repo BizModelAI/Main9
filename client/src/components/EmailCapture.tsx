@@ -128,28 +128,7 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
             localStorage.setItem("quizAttemptId", result.attemptId.toString());
           }
 
-          // Also send preview email to user
-          try {
-            const emailResponse = await fetch("/api/email-results", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                sessionId: result.attemptId || Date.now(), // Use attempt ID or fallback
-                email: email.trim(),
-                quizData: quizData,
-                isPaidUser: false,
-              }),
-            });
-
-            if (!emailResponse.ok) {
-              console.warn("Failed to send preview email, but continuing...");
-            }
-          } catch (emailError) {
-            console.warn("Error sending preview email:", emailError);
-            // Don't block the flow for email issues
-          }
+          // Removed /api/email-results preview email logic due to missing backend route.
 
           // Retroactively save any existing AI content to database
           try {

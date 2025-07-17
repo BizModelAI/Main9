@@ -4,7 +4,6 @@ export interface BusinessModel {
   description: string;
   detailedDescription: string;
   category: string;
-  difficulty: "Beginner" | "Intermediate" | "Advanced";
   scalability: "Low" | "Medium" | "High" | "Very High";
   fit: string;
   timeToStart: string;
@@ -29,11 +28,10 @@ export const businessModels: BusinessModel[] = [
     id: "freelancing",
     title: "Freelancing",
     description:
-      "Offer specialized services to clients on a project or contract basis",
+      "Offer specialized services to clients on a project or contract basis with flexible scheduling and remote work options",
     detailedDescription:
       "Freelancing involves offering specialized services to clients on a project or contract basis. This could include writing, graphic design, web development, marketing, consulting, or any skill-based service. Freelancers work independently, often with multiple clients, and have the flexibility to choose their projects and set their rates.",
     category: "Service",
-    difficulty: "Beginner",
     scalability: "Medium",
     fit: "Skilled professionals, independent workers",
     timeToStart: "Less than 1 week",
@@ -101,11 +99,10 @@ export const businessModels: BusinessModel[] = [
     id: "content-creation",
     title: "Content Creation / UGC",
     description:
-      "Create videos, photos, blogs, or social media posts for personal brands or other businesses",
+      "Create videos, photos, blogs, or social media posts for personal brands or other businesses to build audience and monetize content",
     detailedDescription:
       "Content creation and user-generated content (UGC) involve producing videos, photos, blogs, or social media posts for personal brands or other businesses. UGC creators are often paid by companies to create native-style content that aligns with the brand's identity but feels organic to viewers. Monetization can come through brand deals, platform revenue sharing, affiliate marketing, or selling personal products.",
     category: "Creative",
-    difficulty: "Beginner",
     scalability: "High",
     fit: "Outgoing creatives, niche enthusiasts",
     timeToStart: "Less than 1 week",
@@ -173,11 +170,10 @@ export const businessModels: BusinessModel[] = [
     id: "youtube-automation",
     title: "YouTube Automation Channels",
     description:
-      "Build faceless YouTube channels where content is outsourced to a team",
+      "Build faceless YouTube channels where content is outsourced to a team while you focus on strategy and monetization",
     detailedDescription:
       "YouTube automation involves building faceless YouTube channels where the content is outsourced—scripts, voiceovers, video editing, and thumbnails. The owner manages the strategy and monetization while a team handles production. These channels typically cover broad niches such as finance, health, or motivation and earn through AdSense, sponsorships, and affiliate links.",
     category: "Media",
-    difficulty: "Intermediate",
     scalability: "High",
     fit: "Systems thinkers, content strategists",
     timeToStart: "1–4 weeks",
@@ -239,11 +235,10 @@ export const businessModels: BusinessModel[] = [
     id: "local-service-arbitrage",
     title: "Local Service Arbitrage",
     description:
-      "Generate leads for local services and hire others to fulfill the work",
+      "Generate leads for local services and hire others to fulfill the work while you manage client relationships and quality control",
     detailedDescription:
       "Local service arbitrage is the process of generating leads for a local service (like lawn care, pressure washing, or cleaning), then hiring someone else to fulfill the job. The business owner makes the margin between the client's fee and the vendor's cost. It's a way to build a service business without doing the work directly.",
     category: "Service",
-    difficulty: "Intermediate",
     scalability: "Medium",
     fit: "Hustlers, sales-driven, organized operators",
     timeToStart: "Less than 1 week",
@@ -299,11 +294,10 @@ export const businessModels: BusinessModel[] = [
     id: "high-ticket-sales",
     title: "High-Ticket Sales / Closing",
     description:
-      "Sell expensive products or services over phone/Zoom for commission",
+      "Sell expensive products or services over phone/Zoom for commission with high earning potential and flexible hours",
     detailedDescription:
       "High-ticket sales is the process of selling expensive products or services, often $2,000+, over the phone or via Zoom. Closers are typically paid commission (10–20%) per sale and don't need to generate leads—the company handles marketing and passes warm leads to closers. It's a role that rewards persuasion, follow-up, and confidence.",
     category: "Sales",
-    difficulty: "Intermediate",
     scalability: "Medium",
     fit: "Persuasive, competitive, self-starters",
     timeToStart: "1–2 weeks",
@@ -359,11 +353,10 @@ export const businessModels: BusinessModel[] = [
     id: "app-saas-development",
     title: "App or SaaS Development",
     description:
-      "Create tech-based products with subscription or license monetization",
+      "Create tech-based products with subscription or license monetization that can scale to serve unlimited users globally",
     detailedDescription:
       "App or SaaS development involves creating a tech-based product (mobile or web) that solves a problem and can be monetized through subscriptions, licenses, or ads. This model is known for its high leverage—once built, the product can serve unlimited users without much added cost.",
     category: "Tech",
-    difficulty: "Advanced",
     scalability: "Very High",
     fit: "Problem-solvers, engineers, product thinkers",
     timeToStart: "4–12 weeks",
@@ -425,11 +418,10 @@ export const businessModels: BusinessModel[] = [
     id: "smma",
     title: "Social Media Marketing Agency (SMMA)",
     description:
-      "Deliver marketing services like paid ads and content to businesses",
+      "Deliver marketing services like paid ads and content to businesses with monthly retainers and performance-based pricing",
     detailedDescription:
       "An SMMA delivers marketing services—typically paid ads, content, or lead gen—to small businesses or personal brands. You charge clients on a monthly retainer or performance basis, managing their digital presence to generate traffic and revenue.",
     category: "Service",
-    difficulty: "Intermediate",
     scalability: "High",
     fit: "Results-driven marketers",
     timeToStart: "1–3 weeks",
@@ -485,11 +477,10 @@ export const businessModels: BusinessModel[] = [
     id: "ai-marketing-agency",
     title: "AI Marketing Agency",
     description:
-      "Help businesses automate and enhance marketing using artificial intelligence",
+      "Help businesses automate and enhance marketing using artificial intelligence tools to improve efficiency and results",
     detailedDescription:
       "AI Marketing Agencies help businesses automate and enhance their marketing using artificial intelligence. These agencies typically implement tools like ChatGPT, Zapier, and Make to create personalized customer journeys, automate content, and streamline analytics. With businesses increasingly seeking tech-forward solutions, AI marketing is becoming a high-demand, high-margin niche.",
     category: "Service",
-    difficulty: "Advanced",
     scalability: "High",
     fit: "Early adopters, tech-forward thinkers",
     timeToStart: "2–4 weeks",
@@ -543,11 +534,10 @@ export const businessModels: BusinessModel[] = [
     id: "digital-services-agency",
     title: "Digital Services Agency",
     description:
-      "Offer range of online services including branding, web dev, email marketing, SEO",
+      "Offer range of online services including branding, web dev, email marketing, SEO with flexible project-based pricing",
     detailedDescription:
       "Digital Services Agencies offer a range of online services including branding, web development, email marketing, SEO, and more. These businesses typically start by solving one problem (e.g., building landing pages) and grow into multi-service providers. The model provides flexibility and consistent demand, especially for businesses expanding online.",
     category: "Service",
-    difficulty: "Intermediate",
     scalability: "Medium",
     fit: "Organized operators, digital generalists",
     timeToStart: "1–2 weeks",
@@ -600,11 +590,10 @@ export const businessModels: BusinessModel[] = [
     id: "investing-trading",
     title: "Investing / Trading",
     description:
-      "Allocate capital into assets like stocks, crypto, or forex for returns",
+      "Allocate capital into assets like stocks, crypto, or forex for returns with various strategies and risk management",
     detailedDescription:
       "Investing and trading involve allocating capital into assets like stocks, crypto, or forex with the goal of generating returns. Traders tend to pursue short-term strategies based on price movement, while investors take a long-term approach based on fundamentals. Both paths require risk management, emotional control, and technical proficiency.",
     category: "Finance",
-    difficulty: "Advanced",
     scalability: "Medium",
     fit: "Analytical, risk-tolerant, data-driven",
     timeToStart: "2–6 weeks",
@@ -657,11 +646,10 @@ export const businessModels: BusinessModel[] = [
     id: "online-reselling",
     title: "Online Reselling",
     description:
-      "Source physical products and flip them for profit on platforms like eBay",
+      "Source physical products and flip them for profit on platforms like eBay with low startup costs and flexible inventory",
     detailedDescription:
       "Online reselling involves sourcing physical products and flipping them for a profit on platforms like eBay, Mercari, and Poshmark. Sellers identify undervalued items locally or through liquidation sites and resell at markup. It's ideal for individuals who enjoy deal-hunting, niche categories, or sustainable fashion.",
     category: "Commerce",
-    difficulty: "Intermediate",
     scalability: "Medium",
     fit: "Resourceful, deal-hunting",
     timeToStart: "Less than 1 week",
@@ -714,11 +702,10 @@ export const businessModels: BusinessModel[] = [
     id: "handmade-goods",
     title: "Handmade Goods",
     description:
-      "Sell physical, handcrafted items like jewelry, home decor, clothing",
+      "Sell physical, handcrafted items like jewelry, home decor, clothing with unique designs and premium pricing potential",
     detailedDescription:
       "Handmade Goods is a business model focused on selling physical, handcrafted items such as jewelry, home decor, clothing, or accessories. These products often have unique aesthetic value and can attract niche audiences who value craftsmanship and authenticity. Entrepreneurs in this space typically manage the entire process—design, production, marketing, and shipping—either solo or with a small team.",
     category: "Creative",
-    difficulty: "Intermediate",
     scalability: "Medium",
     fit: "Creatives, artisans, detail-oriented makers",
     timeToStart: "1–2 weeks",
@@ -773,11 +760,10 @@ export const businessModels: BusinessModel[] = [
     id: "copywriting-ghostwriting",
     title: "Copywriting / Ghostwriting",
     description:
-      "Use written communication skills to create persuasive content for businesses",
+      "Use written communication skills to create persuasive content for businesses with high demand and remote flexibility",
     detailedDescription:
       "This business model revolves around using written communication skills to create persuasive content for businesses, brands, or individuals. Copywriters focus on conversion-driven writing such as ads, landing pages, and email sequences. Ghostwriters typically write articles, books, or thought-leadership content under someone else's name.",
     category: "Creative",
-    difficulty: "Intermediate",
     scalability: "Medium",
     fit: "Writers, marketers, strategic thinkers",
     timeToStart: "< 1 week",
@@ -831,11 +817,10 @@ export const businessModels: BusinessModel[] = [
   {
     id: "affiliate-marketing",
     title: "Affiliate Marketing",
-    description: "Promote other people's products and earn commission on sales",
+    description: "Promote other people's products and earn commission on sales through content creation and traffic generation",
     detailedDescription:
       "Affiliate marketing involves promoting other people's products and earning a commission on each sale made through your referral link. You don't need to own a product or handle fulfillment; instead, you focus on generating traffic and conversions. Common formats include blogs, email lists, review sites, and social media content.",
     category: "Marketing",
-    difficulty: "Intermediate",
     scalability: "High",
     fit: "Strategists, content creators, long-term thinkers",
     timeToStart: "1–2 weeks",
@@ -890,11 +875,10 @@ export const businessModels: BusinessModel[] = [
     id: "virtual-assistant",
     title: "Virtual Assistant",
     description:
-      "Provide remote administrative support to entrepreneurs and businesses",
+      "Provide remote administrative support to entrepreneurs and businesses with flexible scheduling and diverse skill sets",
     detailedDescription:
       "A Virtual Assistant (VA) provides remote administrative support to entrepreneurs, businesses, or executives. Tasks might include email management, scheduling, customer service, research, or social media coordination. Some VAs specialize in areas like e-commerce, podcast production, or bookkeeping.",
     category: "Admin",
-    difficulty: "Beginner",
     scalability: "Low",
     fit: "Organized, responsive, professional multitaskers",
     timeToStart: "< 1 week",
@@ -949,11 +933,10 @@ export const businessModels: BusinessModel[] = [
     id: "e-commerce-dropshipping",
     title: "E-commerce / Dropshipping",
     description:
-      "Sell products online without holding inventory through supplier partnerships",
+      "Sell products online without holding inventory through supplier partnerships with global reach and low overhead",
     detailedDescription:
       "E-commerce and dropshipping involve selling products online without holding inventory. In dropshipping, when a customer places an order, the retailer purchases the item from a third-party supplier who ships it directly to the customer. This model allows entrepreneurs to start an online store with minimal upfront investment.",
     category: "Commerce",
-    difficulty: "Intermediate",
     scalability: "High",
     fit: "Marketing-focused, product researchers",
     timeToStart: "1–3 weeks",
@@ -1005,14 +988,13 @@ export const businessModels: BusinessModel[] = [
     ],
   },
   {
-    id: "online-coaching-consulting",
-    title: "Online Coaching / Consulting",
+    id: "online-coaching",
+    title: "Online Coaching",
     description:
-      "Provide expertise and guidance to clients in your area of specialization",
+      "Provide expertise and guidance to clients in your area of specialization with high hourly rates and meaningful impact",
     detailedDescription:
       "Online coaching and consulting involve providing expertise, guidance, and strategic advice to clients in your area of specialization. This could range from business consulting to life coaching, fitness training, or career guidance. Sessions are typically conducted via video calls, and packages can include one-on-one sessions, group coaching, or digital courses.",
     category: "Service",
-    difficulty: "Intermediate",
     scalability: "Medium",
     fit: "Subject matter experts, natural teachers",
     timeToStart: "1–2 weeks",
@@ -1066,11 +1048,10 @@ export const businessModels: BusinessModel[] = [
     id: "print-on-demand",
     title: "Print on Demand",
     description:
-      "Create and sell custom designs on products without inventory management",
+      "Create and sell custom designs on products without inventory management through automated fulfillment and global reach",
     detailedDescription:
       "Print on Demand (POD) allows creators to design custom graphics, artwork, or text that gets printed on products like t-shirts, mugs, phone cases, and more only when orders are placed. Platforms like Printful, Printify, and Redbubble handle production and shipping, while creators focus on design and marketing.",
     category: "Creative",
-    difficulty: "Beginner",
     scalability: "Medium",
     fit: "Designers, artists, creative entrepreneurs",
     timeToStart: "1–2 weeks",
