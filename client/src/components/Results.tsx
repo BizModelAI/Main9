@@ -1341,7 +1341,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     </div>
 
                     {/* Potential Income */}
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4" style={{ marginBottom: '4rem' }}>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4" style={{ marginBottom: '0.25rem' }}>
                       <div className="flex items-center mb-2">
                         <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
                         <span className="text-sm font-medium text-green-800">
