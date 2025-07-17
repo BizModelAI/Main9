@@ -56,6 +56,7 @@ interface LoadingStep {
   icon: React.ComponentType<any>;
   status: "pending" | "active" | "completed";
   estimatedTime: number; // in seconds
+  completed: boolean; // New field for completion status
 }
 
 const AIReportLoading: React.FC<AIReportLoadingProps> = ({
@@ -66,6 +67,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [maxProgress, setMaxProgress] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [loadingResults, setLoadingResults] = useState<any>({});
   const isMobile = useIsMobile();
@@ -85,6 +87,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       icon: Brain,
       status: "pending",
       estimatedTime: 3,
+      completed: false,
     },
     {
       id: "generating-matches",
@@ -93,6 +96,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       icon: Target,
       status: "pending",
       estimatedTime: 5,
+      completed: false,
     },
     {
       id: "creating-insights",
@@ -101,6 +105,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       icon: Sparkles,
       status: "pending",
       estimatedTime: 4,
+      completed: false,
     },
     {
       id: "building-characteristics",
@@ -109,6 +114,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       icon: Users,
       status: "pending",
       estimatedTime: 3,
+      completed: false,
     },
     {
       id: "generating-descriptions",
@@ -117,6 +123,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       icon: BarChart3,
       status: "pending",
       estimatedTime: 4,
+      completed: false,
     },
     {
       id: "finalizing-report",
@@ -126,10 +133,96 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       icon: Award,
       status: "pending",
       estimatedTime: 5,
+      completed: false,
     },
   ];
 
-  const [steps, setSteps] = useState<LoadingStep[]>(loadingSteps);
+  // --- REFACTORED LOGIC START ---
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+
+  // Remove duplicate steps state
+  // const [steps, setSteps] = useState<LoadingStep[]>(loadingSteps);
+  const [steps, setSteps] = useState<LoadingStep[]>(loadingSteps.map((s) => ({ ...s, completed: false })));
+
+  useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    let isUnmounted = false;
+
+    const runSteps = async () => {
+      if (isComplete) return;
+      for (let stepIndex = 0; stepIndex < loadingSteps.length; stepIndex++) {
+        if (isUnmounted || isComplete) return;
+        setCurrentStepIndex(stepIndex);
+        setSteps((prev) =>
+          prev.map((step, index) => ({
+            ...step,
+            status: index === stepIndex ? "active" : index < stepIndex ? "completed" : "pending",
+            completed: index < stepIndex,
+          }))
+        );
+        // Animate progress for this step
+        const stepStartProgress = (stepIndex / loadingSteps.length) * 100;
+        const stepEndProgress = ((stepIndex + 1) / loadingSteps.length) * 100;
+        const stepDuration = 3500; // 3.5 seconds per card
+        const stepStartTime = Date.now();
+        let animationFrame: number;
+        const animateStepProgress = () => {
+          if (isUnmounted || isComplete) return;
+          const stepElapsed = Date.now() - stepStartTime;
+          const stepProgressRatio = Math.min(stepElapsed / stepDuration, 1);
+          // Ease in-out
+          const easedRatio = stepProgressRatio - ((Math.cos(stepProgressRatio * Math.PI) - 1) / 2) * 0.1;
+          const currentProgress = stepStartProgress + (stepEndProgress - stepStartProgress) * easedRatio;
+          setProgress(currentProgress);
+          if (stepProgressRatio < 1 && !isComplete) {
+            animationFrame = requestAnimationFrame(animateStepProgress);
+          }
+        };
+        animationFrame = requestAnimationFrame(animateStepProgress);
+        cleanup = () => {
+          if (animationFrame) cancelAnimationFrame(animationFrame);
+        };
+        await new Promise((resolve) => setTimeout(resolve, stepDuration));
+        setSteps((prev) =>
+          prev.map((step, index) => ({
+            ...step,
+            completed: index <= stepIndex,
+            status: index < stepIndex + 1 ? "completed" : index === stepIndex + 1 ? "active" : "pending",
+          }))
+        );
+        cancelAnimationFrame(animationFrame);
+      }
+      // Final progress animation to 100%
+      let finalAnimationFrame: number;
+      const animateFinalProgress = () => {
+        setProgress((prev) => {
+          const remaining = 100 - prev;
+          const increment = remaining * 0.1;
+          const newProgress = Math.min(prev + increment, 100);
+          if (newProgress < 100) {
+            finalAnimationFrame = requestAnimationFrame(animateFinalProgress);
+          }
+          return newProgress;
+        });
+      };
+      finalAnimationFrame = requestAnimationFrame(animateFinalProgress);
+      setTimeout(() => {
+        if (finalAnimationFrame) cancelAnimationFrame(finalAnimationFrame);
+        setProgress(100);
+        setSteps((prev) => prev.map((step) => ({ ...step, completed: true, status: "completed" })));
+        setCurrentStepIndex(loadingSteps.length - 1);
+        setIsComplete(true);
+        if (typeof onComplete === "function") onComplete(loadingResults);
+      }, 1000);
+    };
+    runSteps();
+    return () => {
+      isUnmounted = true;
+      if (cleanup) cleanup();
+    };
+  }, [quizData]);
+// --- REFACTORED LOGIC END ---
 
   // Clear any potentially stuck state on component mount and handle mobile detection
   useEffect(() => {
@@ -1151,6 +1244,15 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
     return <IconComponent className="h-6 w-6 text-gray-400" />;
   };
 
+  // Track the maximum progress reached so far to prevent flicker or decrease
+  useEffect(() => {
+    setMaxProgress((prev) => Math.max(prev, progress));
+  }, [progress]);
+
+  // Always display the max progress reached so far, clamped and rounded
+  const displayProgress = Math.round(Math.max(0, Math.min(100, maxProgress)));
+
+  // --- BEGIN NEW VISUAL LAYOUT ---
   return (
     <div className="min-h-screen bg-white py-4">
       <div className="max-w-4xl mx-auto px-4 relative pt-12">
@@ -1164,15 +1266,8 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           <div className="flex justify-center mb-4">
             <motion.div
               className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center"
-              animate={{
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
+              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             >
               <Brain className="h-6 w-6 text-white" />
             </motion.div>
@@ -1181,8 +1276,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
             AI is Creating Your Personalized Report
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Our advanced AI is analyzing your responses and generating custom
-            insights just for you. This will take about 15-30 seconds.
+            Our advanced AI is analyzing your responses and generating custom insights just for you. This will take about 15-30 seconds.
           </p>
         </motion.div>
 
@@ -1193,13 +1287,13 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
               <motion.div
                 className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full"
                 initial={{ width: "0%" }}
-                animate={{ width: `${progress}%` }}
+                animate={{ width: `${displayProgress}%` }}
                 transition={{ duration: 0.3, ease: "linear", type: "tween" }}
               />
             </div>
             <div className="flex justify-between text-xs text-gray-600">
               <span>Loading</span>
-              <span>{Math.round(progress)}%</span>
+              <span>{displayProgress}%</span>
             </div>
           </div>
         ) : (
@@ -1211,18 +1305,14 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           >
             <div className="bg-gray-50 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Progress
-                </span>
-                <span className="text-sm font-medium text-gray-900">
-                  {Math.round(progress)}%
-                </span>
+                <span className="text-sm font-medium text-gray-700">Progress</span>
+                <span className="text-sm font-medium text-gray-900">{displayProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <motion.div
                   className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full"
                   initial={{ width: "0%" }}
-                  animate={{ width: `${progress}%` }}
+                  animate={{ width: `${displayProgress}%` }}
                   transition={{ duration: 0.3, ease: "linear", type: "tween" }}
                 />
               </div>
@@ -1230,42 +1320,76 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           </motion.div>
         )}
         {/* Compact Loading Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-2 md:mb-6">
           {isMobile ? (
-            // Mobile: Show a unified, single animated loading page
-            <motion.div
-              className="flex flex-col items-center justify-center min-h-[300px] bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 shadow-xl border-2 ring-4 ring-blue-500 border-blue-200 w-full"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, type: "spring", stiffness: 120 }}
-            >
-              {/* Animated 3 Dots Loader */}
-              <div className="flex items-center justify-center mb-6 h-16">
-                {[0, 1, 2].map((dot) => (
-                  <motion.div
-                    key={dot}
-                    className="w-3 h-3 mx-1 rounded-full bg-blue-500"
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{
-                      duration: 1.2,
-                      repeat: Infinity,
-                      delay: dot * 0.2,
-                    }}
-                  />
-                ))}
-              </div>
-              <h3 className="text-2xl font-bold text-blue-900 mb-2 text-center">
-                Generating Your Personalized Report
-              </h3>
-              <p className="text-base text-blue-700 mb-6 text-center max-w-xs">
-                Our advanced AI is analyzing your responses and creating custom
-                insights just for you. This usually takes 15-30 seconds.
-              </p>
-              {/* Removed duplicate progress bar from inside the card */}
-            </motion.div>
+            <div style={{ minHeight: 160 }} className="w-full">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={steps[currentMobileStep].id}
+                  className={`bg-gray-50 rounded-xl p-4 shadow-sm transition-all duration-300 w-full` +
+                    (steps[currentMobileStep].status === "active"
+                      ? " ring-2 ring-blue-500 bg-blue-50"
+                      : steps[currentMobileStep].status === "completed"
+                      ? " ring-2 ring-green-500 bg-green-50"
+                      : " ring-1 ring-gray-200")}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.7, ease: [0.4, 0.0, 0.2, 1] }}
+                >
+                  <div className="flex items-center mb-2">
+                    <div className="flex-shrink-0 mr-3">
+                      {getStepIcon(steps[currentMobileStep], currentMobileStep)}
+                    </div>
+                    {steps[currentMobileStep].status === "active" && (
+                      <motion.div
+                        className="flex space-x-1 ml-auto"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        {[0, 1, 2].map((dot) => (
+                          <motion.div
+                            key={dot}
+                            className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                            animate={{
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 1, 0.5],
+                            }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              delay: dot * 0.2,
+                            }}
+                          />
+                        ))}
+                      </motion.div>
+                    )}
+                  </div>
+                  <h3
+                    className={`text-lg font-semibold mb-1 ${
+                      steps[currentMobileStep].status === "active"
+                        ? "text-blue-900"
+                        : steps[currentMobileStep].status === "completed"
+                        ? "text-green-900"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {steps[currentMobileStep].title}
+                  </h3>
+                  <p
+                    className={`text-sm ${
+                      steps[currentMobileStep].status === "active"
+                        ? "text-blue-600"
+                        : steps[currentMobileStep].status === "completed"
+                        ? "text-green-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {steps[currentMobileStep].description}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           ) : (
             // Desktop: Show all cards
             steps.map((step, index) => (
@@ -1348,41 +1472,31 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           )}
         </div>
 
-        {/* Compact Fun Facts */}
+        {/* Fun Facts / Did you know block at the bottom */}
         <motion.div
-          className="bg-gray-50 rounded-2xl p-4 shadow-sm"
+          className="bg-gray-50 rounded-2xl p-4 shadow-sm mt-2 md:mt-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
         >
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-            <Lightbulb className="h-5 w-5 text-yellow-500 mr-2" />
-            Did you know?
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex items-center mb-2">
+            <span className="text-yellow-500 text-xl mr-2">💡</span>
+            <span className="font-semibold text-lg">Did you know?</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <div className="flex items-start">
-              <div className="text-xl mr-3"></div>
-              <div>
-                <p className="text-sm text-gray-600">
-                  Our AI analyzes over 50 different personality traits and
-                  business factors to find your perfect match.
-                </p>
-              </div>
+              <span className="text-2xl mr-2">🧠</span>
+              <span>Our AI analyzes over 50 different personality traits and business factors to find your perfect match.</span>
             </div>
             <div className="flex items-start">
-              <div className="text-xl mr-3"></div>
-              <div>
-                <p className="text-sm text-gray-600">
-                  Your personalized report is unique to you - no two reports are
-                  exactly the same!
-                </p>
-              </div>
+              <span className="text-2xl mr-2">🎯</span>
+              <span>Your personalized report is unique to you – no two reports are exactly the same!</span>
             </div>
           </div>
         </motion.div>
       </div>
     </div>
   );
+  // --- END NEW VISUAL LAYOUT ---
 };
 
 export default AIReportLoading;
