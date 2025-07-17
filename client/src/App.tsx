@@ -35,8 +35,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Quiz from "./components/Quiz";
 import Results from "./components/Results";
-import EmailCapture from "./components/EmailCapture";
-import LoggedInCongratulations from "./components/LoggedInCongratulations";
+import CongratulationsGuest from "./components/CongratulationsGuest";
 import BusinessModelDetail from "./components/BusinessModelDetail";
 import { AICacheManager } from "./utils/aiCacheManager";
 import { businessModelService } from "./utils/businessModelService";
@@ -52,6 +51,7 @@ import QuizPaymentRequired from "./pages/QuizPaymentRequired";
 import SaveResultsPayment from "./pages/SaveResultsPayment";
 import { NavigationGuardWrapper } from "./components/NavigationGuardWrapper";
 import { initializeEmojiSafeguards } from "./utils/emojiHelper";
+import CongratulationsLoggedIn from "./components/CongratulationsLoggedIn";
 
 // Initialize emoji corruption prevention system
 initializeEmojiSafeguards();
@@ -68,7 +68,6 @@ function MainAppContent() {
   const [showAILoading, setShowAILoading] = React.useState(false);
   const [loadedReportData, setLoadedReportData] = React.useState<any>(null);
   const [showCongratulations, setShowCongratulations] = React.useState(false);
-  const [congratulationsShown, setCongratulationsShown] = React.useState(false);
 
   // Restore data from localStorage on app start, but NOT on /quiz (handled in Quiz.tsx)
   React.useEffect(() => {
@@ -82,9 +81,6 @@ function MainAppContent() {
     const savedQuizData = localStorage.getItem("quizData");
     const savedUserEmail = localStorage.getItem("userEmail");
     const savedLoadedReportData = localStorage.getItem("loadedReportData");
-    const savedCongratulationsShown = localStorage.getItem(
-      "congratulationsShown",
-    );
 
     console.log("Saved quiz data found:", !!savedQuizData);
     console.log("Saved user email found:", !!savedUserEmail);
@@ -112,16 +108,6 @@ function MainAppContent() {
       } catch (error) {
         console.error("Error parsing saved loaded report data:", error);
       }
-    }
-
-    if (savedCongratulationsShown) {
-      setCongratulationsShown(JSON.parse(savedCongratulationsShown));
-    }
-
-    // Clear congratulations tracking if there's no quiz data (fresh start)
-    if (!savedQuizData) {
-      setCongratulationsShown(false);
-      localStorage.setItem("congratulationsShown", "false");
     }
   }, []);
 
@@ -204,14 +190,7 @@ function MainAppContent() {
     setShowAILoading(false);
 
     // Only show congratulations if it hasn't been shown yet
-    if (!congratulationsShown) {
-      console.log("Showing congratulations for the first time");
-      setShowCongratulations(true);
-      setCongratulationsShown(true);
-      localStorage.setItem("congratulationsShown", "true");
-    } else {
-      console.log("Congratulations already shown, skipping");
-    }
+    setShowCongratulations(true);
   };
 
   // TEMPORARY: Mock quiz data for testing with COMPLETE data structure
@@ -408,8 +387,6 @@ function MainAppContent() {
         setLoadedReportData={setLoadedReportData}
         showCongratulations={showCongratulations}
         setShowCongratulations={setShowCongratulations}
-        congratulationsShown={congratulationsShown}
-        setCongratulationsShown={setCongratulationsShown}
         handleAILoadingComplete={handleAILoadingComplete}
       />
     );
@@ -452,71 +429,23 @@ const AIReportLoadingWrapper: React.FC<{
 }> = ({ quizData, setShowCongratulations }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showCongratulations, setLocalShowCongratulations] = React.useState(false);
+  const [loadedData, setLoadedData] = React.useState<any>(null);
 
   const handleAILoadingComplete = async (data: any) => {
-    console.log(
-      "AI loading complete after quiz, checking congratulations tracking",
-    );
-
-    // Store loaded report data in localStorage
-    localStorage.setItem("loadedReportData", JSON.stringify(data));
-
-    // Save AI content to database if we have a quiz attempt ID and user is authenticated
-    const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
-    if (currentQuizAttemptId && data && user) {
-      try {
-        const response = await fetch(
-          `/api/quiz-attempts/${currentQuizAttemptId}/ai-content`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ aiContent: data }),
-          },
-        );
-
-        if (response.ok) {
-          console.log(
-            `AI content saved to database for quiz attempt ${currentQuizAttemptId}`,
-          );
-        } else {
-          console.error(
-            "Failed to save AI content to database:",
-            response.status,
-          );
-        }
-      } catch (error) {
-        console.error("Error saving AI content to database:", error);
-      }
-    } else if (currentQuizAttemptId && data && !user) {
-      console.log(
-        "Skipping AI content save to database - user not authenticated",
-      );
-    }
-
-    // Check if congratulations was already shown
-    const congratulationsShown = localStorage.getItem("congratulationsShown");
-    if (!congratulationsShown || congratulationsShown === "false") {
-      console.log("Showing congratulations for the first time");
-      setShowCongratulations(true);
-      localStorage.setItem("congratulationsShown", "true");
-      // Navigate to results page where congratulations popup will be handled
-      navigate("/results");
-    } else {
-      console.log(
-        "Congratulations already shown, navigating directly to results",
-      );
-      // Navigate directly to results page
-      navigate("/results");
-    }
+    setLoadedData(data);
+    setLocalShowCongratulations(true);
+    setShowCongratulations(true);
   };
 
-  // Handle navigation in useEffect to avoid setState during render
+  const handleCongratulationsComplete = () => {
+    setLocalShowCongratulations(false);
+    setShowCongratulations(false);
+    navigate("/results");
+  };
+
   React.useEffect(() => {
     if (!quizData) {
-      console.log("No quiz data found, redirecting to quiz");
       navigate("/quiz");
     }
   }, [quizData, navigate]);
@@ -532,6 +461,23 @@ const AIReportLoadingWrapper: React.FC<{
         onComplete={handleAILoadingComplete}
         onExit={() => navigate("/quiz")}
       />
+      {showCongratulations && quizData && user && (
+        <CongratulationsLoggedIn
+          onContinue={handleCongratulationsComplete}
+          onSendEmailPreview={() => {}}
+          quizData={quizData}
+          onStartAIGeneration={handleCongratulationsComplete}
+        />
+      )}
+      {showCongratulations && quizData && !user && (
+        <CongratulationsGuest
+          onEmailSubmit={handleCongratulationsComplete}
+          onContinueAsGuest={handleCongratulationsComplete}
+          onReturnToQuiz={() => navigate("/quiz")}
+          quizData={quizData}
+          onStartAIGeneration={handleCongratulationsComplete}
+        />
+      )}
     </div>
   );
 };
@@ -657,7 +603,7 @@ const QuizCompletionLoadingWrapper: React.FC<{
         />
       )}
       {showCongratulations && quizData && user && (
-        <LoggedInCongratulations
+        <CongratulationsLoggedIn
           onContinue={handleCongratulationsComplete}
           onSendEmailPreview={() => {}}
           quizData={quizData}
@@ -665,7 +611,7 @@ const QuizCompletionLoadingWrapper: React.FC<{
         />
       )}
       {showCongratulations && quizData && !user && (
-        <EmailCapture
+        <CongratulationsGuest
           onEmailSubmit={handleCongratulationsComplete}
           onContinueAsGuest={handleCongratulationsComplete}
           onReturnToQuiz={() => navigate("/quiz")}
@@ -692,8 +638,6 @@ const QuizWithNavigation: React.FC<{
   setLoadedReportData: (data: any) => void;
   showCongratulations: boolean;
   setShowCongratulations: (show: boolean) => void;
-  congratulationsShown: boolean;
-  setCongratulationsShown: (shown: boolean) => void;
   handleAILoadingComplete: (data: any) => void;
 }> = ({
   quizData,
@@ -709,8 +653,6 @@ const QuizWithNavigation: React.FC<{
   setLoadedReportData,
   showCongratulations,
   setShowCongratulations,
-  congratulationsShown,
-  setCongratulationsShown,
   handleAILoadingComplete,
 }) => {
   const navigate = useNavigate();
@@ -836,7 +778,7 @@ const QuizWithNavigation: React.FC<{
     }
 
     // Reset congratulations tracking for this new quiz completion
-    setCongratulationsShown(false);
+    setShowCongratulations(false);
     localStorage.setItem("congratulationsShown", "false");
     // Navigate to new loading page instead of showing congratulations immediately
     navigate("/quiz-loading");
@@ -889,7 +831,6 @@ const QuizWithNavigation: React.FC<{
     setUserEmail(null);
     setShowAILoading(false);
     setShowEmailCapture(false);
-    setCongratulationsShown(false);
     setLoadedReportData(null);
 
     // Clear all localStorage cache
@@ -914,7 +855,7 @@ const QuizWithNavigation: React.FC<{
     setShowCongratulations(false);
     setShowEmailCapture(false);
     // Reset congratulations tracking
-    setCongratulationsShown(false);
+    setShowCongratulations(false);
     localStorage.setItem("congratulationsShown", "false");
 
     console.log("Navigating to /results");
@@ -947,7 +888,7 @@ const QuizWithNavigation: React.FC<{
         }
       />
       {showCongratulations && quizData && user && (
-        <LoggedInCongratulations
+        <CongratulationsLoggedIn
           onContinue={handleCongratulationsComplete}
           onSendEmailPreview={() => {}}
           quizData={quizData}
@@ -955,7 +896,7 @@ const QuizWithNavigation: React.FC<{
         />
       )}
       {showCongratulations && quizData && !user && (
-        <EmailCapture
+        <CongratulationsGuest
           onEmailSubmit={handleCongratulationsComplete}
           onContinueAsGuest={handleCongratulationsComplete}
           onReturnToQuiz={handleReturnToQuiz}
@@ -1035,9 +976,10 @@ const ResultsWrapperWithReset: React.FC<{
   }, [loadedReportData]);
 
   // Clear congratulations state when component mounts (user navigated to results)
-  React.useEffect(() => {
-    setShowCongratulations(false);
-  }, [setShowCongratulations]);
+  // This effect is now handled by the QuizCompletionLoadingWrapper
+  // React.useEffect(() => {
+  //   setShowCongratulations(false);
+  // }, [setShowCongratulations]);
 
   if (savedQuizData) {
     console.log("Rendering Results component with savedQuizData");

@@ -70,7 +70,7 @@ const Confetti: React.FC = () => {
   );
 };
 
-const LoggedInCongratulations: React.FC<LoggedInCongratulationsProps> = ({
+const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
   onContinue,
   onSendEmailPreview,
   quizData,
@@ -258,4 +258,4 @@ const LoggedInCongratulations: React.FC<LoggedInCongratulationsProps> = ({
   );
 };
 
-export default LoggedInCongratulations;
+export default CongratulationsLoggedIn;

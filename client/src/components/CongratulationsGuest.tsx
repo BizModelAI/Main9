@@ -79,7 +79,7 @@ const Confetti: React.FC = () => {
   );
 };
 
-const EmailCapture: React.FC<EmailCaptureProps> = ({
+const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
   onEmailSubmit,
   onContinueAsGuest,
   onReturnToQuiz,
@@ -194,7 +194,7 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-center mb-6"
             >
-              <div className="text-5xl mb-4"></div>
+              <div className="text-5xl mb-4">🎉</div>
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -348,7 +348,7 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
                   onClick={handleGuestContinue}
                   className="text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center justify-center group text-sm mx-auto"
                 >
-                  Continue as Guest (1-hour local storage only)
+                  Continue as Guest
                   <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
                 </button>
               </motion.div>
@@ -360,4 +360,4 @@ const EmailCapture: React.FC<EmailCaptureProps> = ({
   );
 };
 
-export default EmailCapture;
+export default CongratulationsGuest;
