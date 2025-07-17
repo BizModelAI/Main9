@@ -69,7 +69,7 @@ export const BUSINESS_MODEL_PROFILES = {
     promoteOthersWillingness: 0.3,
     technicalComfort: 0.6,
   },
-  "online-tutoring": {
+  "online-coaching": {
     incomeAmbition: 0.5,
     speedToIncome: 0.7,
     upfrontInvestmentTolerance: 0.9,
@@ -549,6 +549,66 @@ export const BUSINESS_MODEL_PROFILES = {
     promoteOthersWillingness: 0.3,
     technicalComfort: 0.5,
   },
+  "e-commerce-dropshipping": {
+    incomeAmbition: 0.8,
+    speedToIncome: 0.6,
+    upfrontInvestmentTolerance: 0.8,
+    passiveIncomePreference: 0.5,
+    businessExitStrategy: 0.7,
+    meaningfulContributionImportance: 0.6,
+
+    passionAlignment: 0.9,
+    timeCommitment: 0.8,
+    consistencyAndFollowThrough: 0.9,
+    riskTolerance: 0.7,
+    systemsThinking: 0.8,
+    toolLearning: 0.7,
+    autonomyControl: 0.9,
+    structurePreference: 0.6,
+    repetitionTolerance: 0.7,
+    adaptabilityToFeedback: 0.7,
+    originalityPreference: 0.8,
+
+    salesConfidence: 0.6,
+    creativeInterest: 0.9,
+    socialMediaComfort: 0.7,
+    productVsService: 0.9,
+    teachingVsSolving: 0.2,
+    platformEcosystemComfort: 0.8,
+    collaborationPreference: 0.7,
+    promoteOthersWillingness: 0.4,
+    technicalComfort: 0.7,
+  },
+  "print-on-demand": {
+    incomeAmbition: 0.7,
+    speedToIncome: 0.6,
+    upfrontInvestmentTolerance: 0.7,
+    passiveIncomePreference: 0.4,
+    businessExitStrategy: 0.6,
+    meaningfulContributionImportance: 0.5,
+
+    passionAlignment: 0.8,
+    timeCommitment: 0.7,
+    consistencyAndFollowThrough: 0.8,
+    riskTolerance: 0.6,
+    systemsThinking: 0.7,
+    toolLearning: 0.6,
+    autonomyControl: 0.8,
+    structurePreference: 0.7,
+    repetitionTolerance: 0.7,
+    adaptabilityToFeedback: 0.8,
+    originalityPreference: 0.7,
+
+    salesConfidence: 0.6,
+    creativeInterest: 0.6,
+    socialMediaComfort: 0.6,
+    productVsService: 0.2,
+    teachingVsSolving: 0.2,
+    platformEcosystemComfort: 0.5,
+    collaborationPreference: 0.6,
+    promoteOthersWillingness: 0.4,
+    technicalComfort: 0.7,
+  },
 };
 
 // STEP 2: Normalize User Answers (Convert to 0-1 scale)
@@ -895,8 +955,33 @@ export function calculateBusinessModelMatch(
         ] || 0; // Ensure modelIdeal is accessed correctly
       const weight = TRAIT_WEIGHTS[trait as keyof typeof TRAIT_WEIGHTS]; // Get weight from TRAIT_WEIGHTS
 
-      // Calculate similarity (1 - absolute difference)
-      const similarity = 1 - Math.abs(userScore - modelIdeal);
+      // AGGRESSIVE DIFFERENTIATION: Calculate similarity with much better spread
+      // Use a steeper curve that creates more dramatic differences between matches
+      const difference = Math.abs(userScore - modelIdeal);
+      let similarity: number;
+      
+      if (difference <= 0.05) {
+        // Perfect match (difference ≤ 0.05): 98-100% similarity
+        similarity = 0.98 + (0.02 * (1 - difference / 0.05));
+      } else if (difference <= 0.15) {
+        // Excellent match (difference ≤ 0.15): 90-98% similarity
+        similarity = 0.90 + (0.08 * (1 - (difference - 0.05) / 0.1));
+      } else if (difference <= 0.25) {
+        // Good match (difference ≤ 0.25): 75-90% similarity
+        similarity = 0.75 + (0.15 * (1 - (difference - 0.15) / 0.1));
+      } else if (difference <= 0.35) {
+        // Moderate match (difference ≤ 0.35): 55-75% similarity
+        similarity = 0.55 + (0.20 * (1 - (difference - 0.25) / 0.1));
+      } else if (difference <= 0.45) {
+        // Poor match (difference ≤ 0.45): 30-55% similarity
+        similarity = 0.30 + (0.25 * (1 - (difference - 0.35) / 0.1));
+      } else if (difference <= 0.55) {
+        // Very poor match (difference ≤ 0.55): 10-30% similarity
+        similarity = 0.10 + (0.20 * (1 - (difference - 0.45) / 0.1));
+      } else {
+        // Extremely poor match (difference > 0.55): 0-10% similarity
+        similarity = Math.max(0, 0.10 * (1 - (difference - 0.55) / 0.45));
+      }
 
       totalWeightedScore += similarity * weight;
       totalWeight += weight;
@@ -1019,7 +1104,7 @@ export function calculateAllBusinessModelMatches(data: any): Array<{
   // Business model names mapping
   const businessNames: Record<string, string> = {
     freelancing: "Freelancing",
-    "online-tutoring": "Online Tutoring / Coaching",
+    "online-coaching": "Online Coaching",
     "e-commerce": "E-commerce Brand Building",
     "content-creation": "Content Creation / UGC",
     "youtube-automation": "YouTube Automation Channels",
@@ -1035,6 +1120,8 @@ export function calculateAllBusinessModelMatches(data: any): Array<{
     copywriting: "Copywriting / Ghostwriting",
     "affiliate-marketing": "Affiliate Marketing",
     "virtual-assistant": "Virtual Assistant",
+    "e-commerce-dropshipping": "E-commerce / Dropshipping",
+    "print-on-demand": "Print on Demand",
   };
 
   // Calculate scores for each business model
