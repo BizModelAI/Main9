@@ -55,6 +55,8 @@ import { reportViewManager } from "../utils/reportViewManager";
 import { businessPaths } from "../../../shared/businessPaths";
 import { getSafeEmoji } from '../utils/emojiHelper';
 import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
+import { API_ROUTES, apiPost } from '../utils/apiClient';
+import { useAIInsights } from '../contexts/AIInsightsContext';
 
 // Helper function to generate 2-sentence descriptions for business models
 const getBusinessModelDescription = (
@@ -121,6 +123,25 @@ interface AIInsights {
   motivationalMessage: string;
 }
 
+// Move or define generateFallbackAnalysis above the AI Analysis Section so it is in scope for fallback rendering.
+const generateFallbackAnalysis = (): AIInsights => {
+  return {
+    personalizedSummary:
+      "Complete your quiz to receive a personalized business analysis.",
+    customRecommendations: ["Take the business assessment quiz"],
+    potentialChallenges: ["Assessment required"],
+    successStrategies: ["Complete quiz first"],
+    personalizedActionPlan: {
+      week1: ["Take business assessment"],
+      month1: ["Complete evaluation"],
+      month3: ["Get personalized plan"],
+      month6: ["Receive detailed roadmap"],
+    },
+    motivationalMessage:
+      "Start your entrepreneurial journey by completing our comprehensive business assessment!",
+  };
+};
+
 const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   const navigate = useNavigate();
 
@@ -147,28 +168,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     [],
   );
   // Initialize with null, will be set in useEffect with fallback content
-  const [aiInsights, setAiInsights] = useState<AIInsights | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
-  // Check if we have complete pre-generated AI content to set initial loading state
-  const hasCompleteAIContent = (() => {
-    try {
-      const preGeneratedData = localStorage.getItem(
-        "quiz-completion-ai-insights",
-      );
-      if (preGeneratedData) {
-        const { insights, analysis, complete, error, timestamp } =
-          JSON.parse(preGeneratedData);
-        const isRecent = Date.now() - timestamp < 5 * 60 * 1000;
-        return isRecent && insights && analysis && complete && !error;
-      }
-    } catch {
-      return false;
-    }
-    return false;
-  })();
-
-  // Always start with false to prevent API calls in production
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [showAIInsights, setShowAIInsights] = useState(false);
 
   const [showPreview, setShowPreview] = useState(true);
@@ -197,170 +196,167 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
   // In pure pay-per-report model, check if this specific report is unlocked
   // Basic access is always available, but full reports require payment
-  const canViewFullReport = user ? isReportUnlocked : true;
+  const canViewFullReport = !!user && isReportUnlocked;
+
+  const { aiInsights } = useAIInsights();
+  const analysisData = aiInsights?.analysis;
+  const insightsData = aiInsights?.insights;
+  const shouldShowFallback = !analysisData;
 
   useEffect(() => {
-    console.log("Results component received quizData:", quizData);
-
-    // Force clear ALL AI caches to ensure fresh and accurate results
-    console.log(" Force clearing all AI caches for fresh quiz results...");
-
-    // Clear AI cache manager caches
-    aiCacheManager.clearAllCache();
-
-    // Clear specific localStorage items that might cause inconsistencies
-    const specificKeys = [
-      "quiz-completion-ai-insights",
-      "ai-generation-in-progress",
-      "ai-generation-timestamp",
-      "ai-cache-reset-timestamp",
-    ];
-
-    specificKeys.forEach((key) => localStorage.removeItem(key));
-
-    // Clear any AI-related cache keys
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (
-        key &&
-        (key.startsWith("ai-analysis-") ||
-          key.startsWith("skills-analysis-") ||
-          key.startsWith("ai-cache-"))
-      ) {
-        keysToRemove.push(key);
+    async function initializeResults() {
+      // Force clear ALL AI caches to ensure fresh and accurate results
+      // Clear AI cache manager caches
+      // aiCacheManager.clearAllCache();
+      // Instead, manually clear all ai-content-* keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("ai-content-")) {
+          localStorage.removeItem(key);
+        }
       }
-    }
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-    console.log(
-      `✅ Cleared ${keysToRemove.length + specificKeys.length} AI cache entries for fresh results`,
-    );
 
-    // Trigger confetti blast only on first visit to results page
-    const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
-    const hasShownConfetti = localStorage.getItem(confettiKey);
+      // Clear specific localStorage items that might cause inconsistencies
+      const specificKeys = [
+        "quiz-completion-ai-insights",
+        "ai-generation-in-progress",
+        "ai-generation-timestamp",
+        "ai-cache-reset-timestamp",
+      ];
 
-    if (!hasShownConfetti) {
-      const triggerConfetti = () => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      };
+      specificKeys.forEach((key) => localStorage.removeItem(key));
 
-      // Small delay to ensure page is mounted
-      setTimeout(triggerConfetti, 500);
+      // Clear any AI-related cache keys
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith("ai-analysis-") ||
+            key.startsWith("skills-analysis-") ||
+            key.startsWith("ai-cache-"))
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
 
-      // Mark confetti as shown for this user
-      localStorage.setItem(confettiKey, "true");
-    }
+      // Trigger confetti blast only on first visit to results page
+      const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
+      const hasShownConfetti = localStorage.getItem(confettiKey);
 
-    // Use centralized business model scores from context
-    // If scores don't exist, calculate them once and store
-    if (!businessModelScores) {
-      console.log("No business model scores found, calculating once and storing...");
-      await calculateAndStoreScores(quizData, quizAttemptId || undefined);
-    }
+      if (!hasShownConfetti) {
+        const triggerConfetti = () => {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        };
 
-    // Use the centralized scores
-    const advancedScores = businessModelScores || [];
-    console.log("Advanced algorithm scores:", advancedScores);
-    console.log(
-      "Top 3 business models:",
-      advancedScores
-        .slice(0, 3)
-        .map((s) => `${s.name} (${s.score}%)`)
-        .join(", "),
-    );
+        // Small delay to ensure page is mounted
+        setTimeout(triggerConfetti, 500);
 
-    // Convert to BusinessPath format for compatibility
-    const convertedPaths: BusinessPath[] = advancedScores.map((score) => {
-      // Find the corresponding business path data
-      const businessPathData = businessPaths.find(bp => bp.id === score.id);
-      
-      return {
-        id: score.id,
-        name: score.name,
-        description: getBusinessModelDescription(score.id, score.name),
-        detailedDescription: `${score.name} with ${score.score}% compatibility`,
-        fitScore: score.score,
-        difficulty:
-          score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
-        timeToProfit:
-          score.score >= 80
-            ? "1-3 months"
-            : score.score >= 60
-              ? "3-6 months"
-              : "6+ months",
-        startupCost:
-          score.score >= 70
-            ? "$0-500"
-            : score.score >= 50
-              ? "$500-2000"
-              : "$2000+",
-        potentialIncome:
-          score.score >= 80
-            ? "$3K-10K+/month"
-            : score.score >= 60
-              ? "$1K-5K/month"
-              : "$500-2K/month",
-        pros: businessPathData?.pros || [
-          `${score.score}% compatibility match`,
-          `${score.category} for your profile`,
-          "Personalized recommendations",
-        ],
-        cons: businessPathData?.cons || 
-          score.score < 70
-            ? ["Lower compatibility score", "May require skill development"]
-            : ["Minor adjustments needed"],
-        tools: businessPathData?.tools || [
-          "Standard business tools",
-          "Communication platforms",
-          "Analytics tools",
-        ],
-        skills: businessPathData?.skills || ["Basic business skills", "Communication", "Organization"],
-        icon: businessPathData?.icon || "",
-        emoji: businessPathData?.emoji || "💼",
-        marketSize: businessPathData?.marketSize || "Large",
-        averageIncome: businessPathData?.averageIncome || {
-          beginner: "$1K-3K",
-          intermediate: "$3K-8K",
-          advanced: "$8K-20K+",
-        },
-        userStruggles: businessPathData?.userStruggles || ["Getting started", "Finding clients", "Scaling up"],
-        solutions: businessPathData?.solutions || [
-          "Step-by-step guidance",
-          "Proven frameworks",
-          "Community support",
-        ],
-        bestFitPersonality: businessPathData?.bestFitPersonality || ["Motivated", "Organized", "Goal-oriented"],
-        resources: businessPathData?.resources || {
-          platforms: ["LinkedIn", "Website", "Social Media"],
-          learning: ["Online courses", "Books", "Mentorship"],
-          tools: ["CRM", "Analytics", "Communication"],
-        },
-        actionPlan: businessPathData?.actionPlan || {
-          phase1: [
-            "Setup basic infrastructure",
-            "Define target market",
-            "Create initial offerings",
+        // Mark confetti as shown for this user
+        localStorage.setItem(confettiKey, "true");
+      }
+
+      // Use centralized business model scores from context
+      // If scores don't exist, calculate them once and store
+      if (!businessModelScores) {
+        await calculateAndStoreScores(quizData, quizAttemptId || undefined);
+      }
+
+      // Use the centralized scores
+      const advancedScores = businessModelScores || [];
+
+      // Convert to BusinessPath format for compatibility
+      const convertedPaths: BusinessPath[] = advancedScores.map((score) => {
+        // Find the corresponding business path data
+        const businessPathData = businessPaths.find(bp => bp.id === score.id);
+        
+        return {
+          id: score.id,
+          name: score.name,
+          description: getBusinessModelDescription(score.id, score.name),
+          detailedDescription: `${score.name} with ${score.score}% compatibility`,
+          fitScore: score.score,
+          difficulty:
+            score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
+          timeToProfit:
+            score.score >= 80
+              ? "1-3 months"
+              : score.score >= 60
+                ? "3-6 months"
+                : "6+ months",
+          startupCost:
+            score.score >= 70
+              ? "$0-500"
+              : score.score >= 50
+                ? "$500-2000"
+                : "$2000+",
+          potentialIncome:
+            score.score >= 80
+              ? "$3K-10K+/month"
+              : score.score >= 60
+                ? "$1K-5K/month"
+                : "$500-2K/month",
+          pros: businessPathData?.pros || [
+            `${score.score}% compatibility match`,
+            `${score.category} for your profile`,
+            "Personalized recommendations",
           ],
-          phase2: [
-            "Launch marketing campaigns",
-            "Build client base",
-            "Optimize processes",
+          cons: businessPathData?.cons || 
+            score.score < 70
+              ? ["Lower compatibility score", "May require skill development"]
+              : ["Minor adjustments needed"],
+          tools: businessPathData?.tools || [
+            "Standard business tools",
+            "Communication platforms",
+            "Analytics tools",
           ],
-          phase3: ["Scale operations", "Expand services", "Build team"],
-        },
-      };
-    });
+          skills: businessPathData?.skills || ["Basic business skills", "Communication", "Organization"],
+          icon: businessPathData?.icon || "",
+          emoji: businessPathData?.emoji || "💼",
+          marketSize: businessPathData?.marketSize || "Large",
+          averageIncome: businessPathData?.averageIncome || {
+            beginner: "$1K-3K",
+            intermediate: "$3K-8K",
+            advanced: "$8K-20K+",
+          },
+          userStruggles: businessPathData?.userStruggles || ["Getting started", "Finding clients", "Scaling up"],
+          solutions: businessPathData?.solutions || [
+            "Step-by-step guidance",
+            "Proven frameworks",
+            "Community support",
+          ],
+          bestFitPersonality: businessPathData?.bestFitPersonality || ["Motivated", "Organized", "Goal-oriented"],
+          resources: businessPathData?.resources || {
+            platforms: ["LinkedIn", "Website", "Social Media"],
+            learning: ["Online courses", "Books", "Mentorship"],
+            tools: ["CRM", "Analytics", "Communication"],
+          },
+          actionPlan: businessPathData?.actionPlan || {
+            phase1: [
+              "Setup basic infrastructure",
+              "Define target market",
+              "Create initial offerings",
+            ],
+            phase2: [
+              "Launch marketing campaigns",
+              "Build client base",
+              "Optimize processes",
+            ],
+            phase3: ["Scale operations", "Expand services", "Build team"],
+          },
+        };
+      });
 
-    setPersonalizedPaths(convertedPaths);
+      setPersonalizedPaths(convertedPaths);
 
-    // Mark quiz as completed
-    setHasCompletedQuiz(true);
-    };
+      // Mark quiz as completed
+      setHasCompletedQuiz(true);
+    }
 
     initializeResults();
   }, [quizData, setHasCompletedQuiz, businessModelScores, calculateAndStoreScores, quizAttemptId]);
@@ -372,95 +368,28 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     );
   };
 
-  // Generate full AI content only when user accesses specific pages (on-demand)
-  const generateFullAIContent = async (paths: BusinessPath[]) => {
-    try {
-      const aiService = AIService.getInstance();
-
-      // Generate detailed AI analysis using the centralized method
-      const analysis = await aiService.generateDetailedAnalysis(
-        quizData,
-        paths[0],
-      );
-      setAiAnalysis(analysis);
-    } catch (error) {
-      console.error("Error generating detailed AI analysis:", error);
-      setAiAnalysis(generateFallbackAnalysis());
-    }
-  };
-
-  // Use AI content generated during quiz-loading page
-  useEffect(() => {
-    // Only read AI insights from localStorage, do NOT clear it here
-    if (personalizedPaths.length > 0) {
-      const cachedAIData = localStorage.getItem("quiz-completion-ai-insights");
-      if (cachedAIData) {
-        try {
-          const parsedData = JSON.parse(cachedAIData);
-          const { insights, analysis, complete, error, timestamp } = parsedData;
-          // Only use if recent (within 10 minutes)
-          const isRecent = Date.now() - timestamp < 10 * 60 * 1000;
-          if (complete && !error && insights && isRecent) {
-            setAiInsights(insights);
-            if (analysis) {
-              setAiAnalysis(analysis);
-            } else {
-              setAiAnalysis(generateFallbackAnalysis());
-            }
-            setIsGeneratingAI(false);
-            return;
-          }
-        } catch (error) {
-          console.error("Error parsing AI data from quiz-loading:", error);
-        }
-      }
-      // Fallback only if no valid AI data from quiz-loading
-      const fallbackInsights = generateFallbackInsights(personalizedPaths[0]);
-      const fallbackAnalysis = generateFallbackAnalysis();
-      setAiInsights(fallbackInsights);
-      setAiAnalysis(fallbackAnalysis);
-      setIsGeneratingAI(false);
-    }
-  }, [personalizedPaths]);
-
   // Helper function to execute download action (PDF)
   const executeDownloadAction = async () => {
     try {
-      console.log("Starting PDF download...");
-
-      // Get user email from auth context
-      const userEmail =
-        user?.email || localStorage.getItem("userEmail") || "user@example.com";
-
-      const response = await fetch("/api/generate-pdf", {
+      const userEmail = user?.email || localStorage.getItem("userEmail") || "user@example.com";
+      // Use the type-safe apiPost, but get the raw response for file download
+      const response = await fetch(API_ROUTES.GENERATE_PDF, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quizData: quizData,
           userEmail: userEmail,
+          aiAnalysis: aiInsights?.analysis || undefined,
+          topBusinessPath: personalizedPaths[0] || undefined,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error(`PDF generation failed: ${response.status}`);
-      }
-
-      // Get the file as a blob
       const blob = await response.blob();
-
-      // Get filename from response headers or create default
       const contentDisposition = response.headers.get("Content-Disposition");
       let filename = "business-report.pdf";
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) {
-          filename = match[1];
-        }
+        if (match) filename = match[1];
       }
-
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -469,105 +398,38 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
-      console.log("PDF download completed successfully");
     } catch (error) {
-      console.error("Error downloading PDF:", error);
-      alert("Unable to download PDF. Please try again or contact support.");
+      // No user feedback per instructions
     }
   };
 
   // Helper function to execute share action
   const executeShareAction = async () => {
-    try {
-      const topPath = personalizedPaths[0];
-      if (!topPath) {
-        alert("No business paths available to share. Please retake the quiz.");
-        return;
-      }
-
-      const shareData = {
-        title: `My Business Path Results - ${topPath.name}`,
-        text: `I just discovered my perfect business match! ${topPath.name} is a ${topPath.fitScore}% fit for my goals and personality.`,
-        url: window.location.href,
-      };
-
-      if (navigator.share) {
+    const topPath = personalizedPaths[0];
+    if (!topPath) return;
+    const shareData = {
+      title: `My Business Path Results - ${topPath.name}`,
+      text: `I just discovered my perfect business match! ${topPath.name} is a ${topPath.fitScore}% fit for my goals and personality.`,
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
         await navigator.share(shareData);
-        alert("Results shared successfully!");
-      } else {
-        // Fallback to copying to clipboard
-        const shareText = `${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`;
-        await navigator.clipboard.writeText(shareText);
-        alert("Share link copied to clipboard!");
-      }
-    } catch (error) {
-      console.error("Error sharing results:", error);
-      // Fallback to manual copy
-      const topPath = personalizedPaths[0];
-      if (!topPath) {
-        alert("No business paths available to share. Please retake the quiz.");
-        return;
-      }
-
-      const shareText = `My Business Path Results - ${topPath.name}\n\nI just discovered my perfect business match! ${topPath.name} is a ${topPath.fitScore}% fit for my goals and personality.\n\n${window.location.href}`;
+      } catch (e) {}
+    } else {
+      const shareText = `${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`;
       try {
         await navigator.clipboard.writeText(shareText);
-        alert("Share text copied to clipboard!");
-      } catch {
-        alert("Unable to share. Please copy the URL manually.");
-      }
+      } catch (e) {}
     }
   };
 
-  const generateFallbackAnalysis = (): AIAnalysis => {
-    const topPath = personalizedPaths[0];
-    if (!topPath) {
-      return {
-        fullAnalysis:
-          "Complete your business assessment to get personalized insights and recommendations.",
-        keyInsights: [
-          "Complete your business assessment to get personalized insights",
-        ],
-        personalizedRecommendations: [
-          "Take the quiz to discover your personalized recommendations",
-        ],
-        successPredictors: ["Take the quiz to discover your success factors"],
-        riskFactors: ["Assessment required for risk analysis"],
-      };
-    }
-    return {
-      fullAnalysis: `Based on your comprehensive assessment, ${topPath?.name || "your top business match"} represents an exceptional fit for your unique profile. Your combination of goals, personality traits, and available resources creates a powerful foundation for success in this field. The ${topPath?.fitScore || 85}% compatibility score reflects how well this business model aligns with your natural strengths and preferences. Your approach to risk, communication style, and time availability all point toward this being not just a good fit, but potentially your ideal entrepreneurial path. The key to your success will be leveraging your analytical nature while building on your existing skills and gradually expanding your comfort zone. This business model offers the perfect balance of challenge and achievability, allowing you to grow while staying within your comfort zone initially. Your unique combination of traits positions you for both short-term wins and long-term sustainable growth in this field.`,
-      keyInsights: [
-        "Your risk tolerance perfectly matches the requirements of this business model",
-        "Time commitment aligns with realistic income expectations and growth timeline",
-        "Technical skills provide a solid foundation for the tools and systems needed",
-        "Communication preferences match the customer interaction requirements",
-      ],
-      personalizedRecommendations: [
-        "Start with proven tools and systems to minimize learning curve",
-        "Focus on systematic execution rather than trying to reinvent approaches",
-        "Leverage your natural strengths while gradually building new skills",
-      ],
-      riskFactors: [
-        "Initial learning curve may require patience and persistence",
-        "Income may be inconsistent in the first few months",
-        "Success requires consistent daily action and follow-through",
-      ],
-      successPredictors: [
-        "Strong self-motivation indicates high likelihood of follow-through",
-        "Analytical approach will help optimize strategies and tactics",
-        "Realistic expectations set foundation for sustainable growth",
-      ],
-    };
-  };
-
+  // Update generateFallbackInsights to use topPath (personalizedPaths[0]) for all fallback fields
   const generateFallbackInsights = (topPath?: BusinessPath): AIInsights => {
     const actualTopPath = topPath || personalizedPaths[0];
     if (!actualTopPath) {
       return {
-        personalizedSummary:
-          "Complete your quiz to receive a personalized business analysis.",
+        personalizedSummary: "Complete your quiz to receive a personalized business analysis.",
         customRecommendations: ["Take the business assessment quiz"],
         potentialChallenges: ["Assessment required"],
         successStrategies: ["Complete quiz first"],
@@ -577,61 +439,47 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           month3: ["Get personalized plan"],
           month6: ["Receive detailed roadmap"],
         },
-        motivationalMessage:
-          "Start your entrepreneurial journey by completing our comprehensive business assessment!",
+        motivationalMessage: "Start your entrepreneurial journey by completing our comprehensive business assessment!",
       };
     }
     return {
-      personalizedSummary: `Based on your comprehensive assessment, ${actualTopPath?.name || "your top business match"} achieves a ${actualTopPath?.fitScore || 85}% compatibility score with your unique profile.`,
+      personalizedSummary: `Based on your comprehensive assessment, ${actualTopPath.name} achieves a ${actualTopPath.fitScore || 85}% compatibility score with your unique profile. This business model aligns with your goals, skills, and preferences, making it a strong fit for your entrepreneurial journey.`,
       customRecommendations: [
+        `Leverage your strengths to excel in ${actualTopPath.name}`,
         "Start with free tools to validate your concept",
         "Focus on building one core skill deeply",
         "Set realistic 90-day milestones",
         "Join online communities for support",
-        "Create a dedicated workspace",
-        "Track your time and energy patterns",
       ],
       potentialChallenges: [
-        "Managing time effectively while building momentum",
-        "Overcoming perfectionism that might delay progress",
-        "Building confidence in your expertise",
-        "Staying motivated during slow initial results",
+        `Initial learning curve in ${actualTopPath.name} may require patience and persistence`,
+        "Income may be inconsistent in the first few months",
+        "Success requires consistent daily action and follow-through",
       ],
       successStrategies: [
-        "Leverage your analytical nature for data-driven decisions",
-        "Use communication skills for strong customer relationships",
-        "Focus on solving real problems for people",
-        "Build systems early for scalability",
-        "Invest in continuous learning",
-        "Network strategically for partnerships",
+        `Your compatibility with ${actualTopPath.name} suggests a high likelihood of follow-through`,
+        "Analytical approach will help optimize strategies and tactics",
+        "Realistic expectations set foundation for sustainable growth",
       ],
       personalizedActionPlan: {
         week1: [
-          "Research your chosen business model thoroughly",
-          "Set up your workspace and basic tools",
-          "Define your target market and ideal customer",
+          `Research key success factors for ${actualTopPath.name}`,
+          "Set up basic workspace",
         ],
         month1: [
-          "Launch your minimum viable offering",
-          "Create basic marketing materials",
-          "Reach out to potential customers",
-          "Establish tracking systems",
+          `Launch a minimum viable version of your ${actualTopPath.name} business`,
+          "Gather initial feedback",
         ],
         month3: [
           "Optimize based on feedback",
-          "Scale marketing efforts",
-          "Build strategic partnerships",
-          "Develop delivery systems",
+          "Scale successful elements",
         ],
         month6: [
-          "Analyze performance and growth opportunities",
-          "Consider expanding offerings",
-          "Build team or outsource tasks",
-          "Plan next growth phase",
+          "Expand offerings",
+          "Build team if needed",
         ],
       },
-      motivationalMessage:
-        "Your unique combination of skills and strategic thinking creates the perfect foundation for entrepreneurial success.",
+      motivationalMessage: `You have the foundation to build a successful ${actualTopPath.name} business. Stay consistent and trust the process!`,
     };
   };
 
@@ -712,115 +560,34 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     setShowFullReport(true);
   };
 
-  // Payment handler for all users - PaymentAccountModal will auto-skip to payment for logged-in users
-  const handlePaymentWithAccount = () => {
+  // Payment state and logic centralized for robustness and type safety
+  type PaywallType = "business-model" | "learn-more" | "full-report";
+  type PendingAction = "download" | "share" | null;
+
+  // Centralized payment handler
+  const handlePayment = async (action: PendingAction = null, type: PaywallType = "full-report", path: BusinessPath | null = null) => {
     setShowPaymentModal(true);
     setShowUnlockModal(false);
+    setPaywallType(type);
+    setPendingAction(action);
+    setSelectedPath(path);
   };
 
+  // Centralized payment success handler
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
-
-    // Refresh unlock status to reflect the new payment
     refreshUnlockStatus();
-
-    // Execute pending action if user paid for download/share
     if (pendingAction === "download") {
       executeDownloadAction();
       setPendingAction(null);
     } else if (pendingAction === "share") {
       executeShareAction();
       setPendingAction(null);
-    } else {
-      // Route based on which button was clicked
-      if (paywallType === "learn-more" && selectedPath) {
-        // Navigate to "How business model X works for you" page
-        navigate(`/business/${selectedPath!.id}`);
-        // Scroll to top after navigation
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }, 0);
-      } else if (paywallType === "business-model" && selectedPath) {
-        // Navigate to business model guide page
-        navigate(`/guide/${selectedPath!.id}`);
-        // Scroll to top after navigation
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }, 0);
-      } else if (paywallType === "full-report") {
-        // Show the FULL REPORT loading page to generate comprehensive OpenAI content
-        setShowFullReportLoading(true);
-        // Scroll to top of page immediately
-        window.scrollTo({ top: 0, behavior: "instant" });
-      } else {
-        // Default fallback to AI loading page
-        setShowAILoading(true);
-        // Scroll to top of page immediately
-        window.scrollTo({ top: 0, behavior: "instant" });
-      }
     }
   };
 
-  const handlePayment = async () => {
-    // Redirect to proper payment flow instead of using simulation
-    console.log("handlePayment called - redirecting to PaymentAccountModal");
-    setShowPaymentModal(true);
-    setShowUnlockModal(false);
-    return;
-
-    setIsProcessingPayment(true);
-
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setHasUnlockedAnalysis(true);
-    // Set flag to indicate any payment has been made
-    localStorage.setItem("hasAnyPayment", "true");
-    setShowPreview(false);
-    setShowUnlockModal(false);
-    setIsProcessingPayment(false);
-
-    // Execute pending action if user paid for download/share
-    if (pendingAction === "download") {
-      await executeDownloadAction();
-      setPendingAction(null);
-    } else if (pendingAction === "share") {
-      await executeShareAction();
-      setPendingAction(null);
-    } else {
-      // Route based on which button was clicked
-      if (paywallType === "learn-more" && selectedPath) {
-        // Navigate to "How business model X works for you" page
-        navigate(`/business/${selectedPath!.id}`);
-        // Scroll to top after navigation
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }, 0);
-      } else if (paywallType === "business-model" && selectedPath) {
-        // Navigate to business model guide page
-        navigate(`/guide/${selectedPath!.id}`);
-        // Scroll to top after navigation
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }, 0);
-      } else if (paywallType === "full-report") {
-        // Show the FULL REPORT loading page to generate comprehensive OpenAI content
-        setShowFullReportLoading(true);
-        // Scroll to top of page immediately
-        window.scrollTo({ top: 0, behavior: "instant" });
-      } else {
-        // Default fallback to full report loading page
-        setShowFullReportLoading(true);
-        // Scroll to top of page immediately
-        window.scrollTo({ top: 0, behavior: "instant" });
-      }
-    }
-
-    // In a real implementation, this would:
-    // 1. Process payment through Stripe
-    // 2. Create unique URL for user's results
-    // 3. Save payment record and unlock status
-    // 4. Redirect to dedicated results page
+  const handlePaymentWithAccount = () => {
+    handlePayment();
   };
 
   const handleBusinessCardPayment = async () => {
@@ -1046,388 +813,406 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           </motion.div>
 
           {/* AI Analysis Section */}
-          {isGeneratingAI ? (
-            <motion.div
-              className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 mb-12 text-white relative overflow-hidden"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative text-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6"
-                >
-                  <Brain className="h-8 w-8 text-white" />
-                </motion.div>
-                <h2 className="text-3xl font-bold mb-4">
-                  AI is Analyzing Your Profile...
-                </h2>
-                <p className="text-xl text-blue-100 mb-6">
-                  Creating personalized insights, challenges, and success
-                  strategies just for you
-                </p>
-                <div className="flex justify-center space-x-2">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="w-3 h-3 bg-white/60 rounded-full"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        delay: i * 0.2,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            aiAnalysis && (
-              <motion.div
-                className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 mb-12 text-white relative overflow-hidden"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <div className="absolute inset-0 bg-black/10"></div>
-                <div className="relative">
-                  <div className="flex items-center mb-6">
-                    <Sparkles className="w-10 h-10 text-white bg-white/20 rounded-full p-2 mr-4" />
+          {showAILoading ? (
+  <motion.div
+    className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 mb-12 text-white relative overflow-hidden"
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.6 }}
+  >
+    <div className="absolute inset-0 bg-black/10"></div>
+    <div className="relative text-center">
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6"
+      >
+        <Brain className="h-8 w-8 text-white" />
+      </motion.div>
+      <h2 className="text-3xl font-bold mb-4">
+        AI is Analyzing Your Profile...
+      </h2>
+      <p className="text-xl text-blue-100 mb-6">
+        Creating personalized insights, challenges, and success
+        strategies just for you
+      </p>
+      <div className="flex justify-center space-x-2">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-3 h-3 bg-white/60 rounded-full"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              delay: i * 0.2,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  </motion.div>
+) : (
+  analysisData && (
+    <motion.div
+      className="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-3xl p-8 mb-12 text-white relative overflow-hidden"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+    >
+      <div className="absolute inset-0 bg-black/10"></div>
+      <div className="relative">
+        <div className="flex items-center mb-6">
+          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mr-4">
+            <Sparkles className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">
+              Your AI-Generated Insights
+            </h2>
+            <p className="text-blue-100">
+              Personalized analysis based on your unique profile
+            </p>
+          </div>
+        </div>
+
+        {/* AI Analysis Content with Progressive Blur */}
+        <div className="relative">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+            <div className="text-blue-50 leading-relaxed text-lg">
+              {canViewFullReport ? (
+                // Full content when unlocked
+                <div>
+                  {(() => {
+                    const sentences =
+                      analysisData.fullAnalysis.split(". ");
+                    const thirdLength = Math.ceil(
+                      sentences.length / 3,
+                    );
+
+                    const firstParagraph =
+                      sentences.slice(0, thirdLength).join(". ") +
+                      (sentences.length > thirdLength ? "." : "");
+                    const secondParagraph =
+                      sentences
+                        .slice(thirdLength, thirdLength * 2)
+                        .join(". ") +
+                      (sentences.length > thirdLength * 2 ? "." : "");
+                    const thirdParagraph = sentences
+                      .slice(thirdLength * 2)
+                      .join(". ");
+
+                    return (
+                      <div className="text-blue-50 leading-relaxed text-lg mb-6">
+                        <p className="mb-4">{firstParagraph}</p>
+                        <p className="mb-4">{secondParagraph}</p>
+                        <p className="mb-6">{thirdParagraph}</p>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="grid md:grid-cols-2 gap-6 mt-6">
                     <div>
-                      <h2 className="text-2xl font-bold">
-                        Your AI-Generated Insights
-                      </h2>
-                      <p className="text-blue-100">
-                        Personalized analysis based on your unique profile
-                      </p>
+                      <h4 className="font-bold mb-3 flex items-center">
+                        <Target className="h-4 w-4 mr-2" />
+                        Key Insights
+                      </h4>
+                      <ul className="space-y-2">
+                        {analysisData.keyInsights.map(
+                          (insight: string, index: number) => (
+                            <li
+                              key={index}
+                              className="flex items-start"
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-300 mr-2 mt-0.5 flex-shrink-0" />
+                              <span
+                                className="text-sm"
+                                dangerouslySetInnerHTML={renderMarkdownContent(
+                                  insight,
+                                )}
+                              />
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold mb-3 flex items-center">
+                        <Lightbulb className="h-4 w-4 mr-2" />
+                        Success Predictors
+                      </h4>
+                      <ul className="space-y-2">
+                        {analysisData.successPredictors.map(
+                          (predictor: string, index: number) => (
+                            <li
+                              key={index}
+                              className="flex items-start"
+                            >
+                              <Star className="h-4 w-4 text-yellow-300 mr-2 mt-0.5 flex-shrink-0" />
+                              <span
+                                className="text-sm"
+                                dangerouslySetInnerHTML={renderMarkdownContent(
+                                  predictor,
+                                )}
+                              />
+                            </li>
+                          ),
+                        )}
+                      </ul>
                     </div>
                   </div>
 
-                  {/* AI Analysis Content with Progressive Blur */}
-                  <div className="relative">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                      <div className="text-blue-50 leading-relaxed text-lg">
-                        {canViewFullReport ? (
-                          // Full content when unlocked
-                          <div>
-                            {(() => {
-                              const sentences =
-                                aiAnalysis.fullAnalysis.split(". ");
-                              const thirdLength = Math.ceil(
-                                sentences.length / 3,
-                              );
-
-                              const firstParagraph =
-                                sentences.slice(0, thirdLength).join(". ") +
-                                (sentences.length > thirdLength ? "." : "");
-                              const secondParagraph =
-                                sentences
-                                  .slice(thirdLength, thirdLength * 2)
-                                  .join(". ") +
-                                (sentences.length > thirdLength * 2 ? "." : "");
-                              const thirdParagraph = sentences
-                                .slice(thirdLength * 2)
-                                .join(". ");
-
-                              return (
-                                <div className="text-blue-50 leading-relaxed text-lg mb-6">
-                                  <p className="mb-4">{firstParagraph}</p>
-                                  <p className="mb-4">{secondParagraph}</p>
-                                  <p className="mb-6">{thirdParagraph}</p>
-                                </div>
-                              );
-                            })()}
-
-                            <div className="grid md:grid-cols-2 gap-6 mt-6">
-                              <div>
-                                <h4 className="font-bold mb-3 flex items-center">
-                                  <Target className="h-4 w-4 mr-2" />
-                                  Key Insights
-                                </h4>
-                                <ul className="space-y-2">
-                                  {aiAnalysis.keyInsights.map(
-                                    (insight, index) => (
-                                      <li
-                                        key={index}
-                                        className="flex items-start"
-                                      >
-                                        <CheckCircle className="h-4 w-4 text-green-300 mr-2 mt-0.5 flex-shrink-0" />
-                                        <span
-                                          className="text-sm"
-                                          dangerouslySetInnerHTML={renderMarkdownContent(
-                                            insight,
-                                          )}
-                                        />
-                                      </li>
-                                    ),
-                                  )}
-                                </ul>
-                              </div>
-
-                              <div>
-                                <h4 className="font-bold mb-3 flex items-center">
-                                  <Lightbulb className="h-4 w-4 mr-2" />
-                                  Success Predictors
-                                </h4>
-                                <ul className="space-y-2">
-                                  {aiAnalysis.successPredictors.map(
-                                    (predictor, index) => (
-                                      <li
-                                        key={index}
-                                        className="flex items-start"
-                                      >
-                                        <Star className="h-4 w-4 text-yellow-300 mr-2 mt-0.5 flex-shrink-0" />
-                                        <span
-                                          className="text-sm"
-                                          dangerouslySetInnerHTML={renderMarkdownContent(
-                                            predictor,
-                                          )}
-                                        />
-                                      </li>
-                                    ),
-                                  )}
-                                </ul>
-                              </div>
-                            </div>
-
-                            {/* Business Info Boxes */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-3xl mb-2">⏱️</div>
-                                <div className="text-xs text-blue-200 mb-1">Time to Start</div>
-                                <div className="font-bold text-sm">{personalizedPaths[0]?.timeToProfit || "3-6 months"}</div>
-                              </div>
-                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-3xl mb-2">💰</div>
-                                <div className="text-xs text-blue-200 mb-1">Initial Investment</div>
-                                <div className="font-bold text-sm">{personalizedPaths[0]?.startupCost || "$0-500"}</div>
-                              </div>
-                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-3xl mb-2">📈</div>
-                                <div className="text-xs text-blue-200 mb-1">Potential Income</div>
-                                <div className="font-bold text-sm">{personalizedPaths[0]?.potentialIncome || "$2K-10K/mo"}</div>
-                              </div>
-                              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                                <div className="text-3xl mb-2">🕒</div>
-                                <div className="text-xs text-blue-200 mb-1">Time Commitment</div>
-                                <div className="font-bold text-sm">{quizData.weeklyTimeCommitment || "10-20"} hrs/week</div>
-                              </div>
-                            </div>
-
-                            {/* CTAs - Only show when unlocked */}
-                            <div className="mt-8 space-y-4">
-                              <button
-                                onClick={() => {
-                                  const topPath = personalizedPaths[0];
-                                  if (topPath) {
-                                    handleViewFullReport(topPath);
-                                  }
-                                }}
-                                className="w-full bg-white text-purple-600 border-2 border-purple-600 py-4 rounded-xl font-bold text-lg hover:bg-purple-50 hover:border-purple-700 hover:text-purple-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
-                              >
-                                <FileText className="h-5 w-5 mr-2 inline" />
-                                View Full Report
-                              </button>
-
-                              <div className="text-center">
-                                <button
-                                  onClick={() => {
-                                    const topPath = personalizedPaths[0];
-                                    if (topPath) {
-                                      handleLearnMore(topPath);
-                                    }
-                                  }}
-                                  className="text-white hover:text-gray-300 font-medium text-lg transition-all duration-300 inline-flex items-center group"
-                                >
-                                  <span>
-                                    Get started with{" "}
-                                    {personalizedPaths[0]?.name}
-                                  </span>
-                                  <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          // Preview with seamless gradient fade effect
-                          <div className="relative">
-                            {/* Three paragraphs with seamless gradient fade */}
-                            <div className="relative mb-8">
-                              {(() => {
-                                const sentences =
-                                  aiAnalysis.fullAnalysis.split(". ");
-                                const thirdLength = Math.ceil(
-                                  sentences.length / 3,
-                                );
-
-                                const firstParagraph =
-                                  sentences.slice(0, thirdLength).join(". ") +
-                                  (sentences.length > thirdLength ? "." : "");
-                                const secondParagraph =
-                                  sentences
-                                    .slice(thirdLength, thirdLength * 2)
-                                    .join(". ") +
-                                  (sentences.length > thirdLength * 2
-                                    ? "."
-                                    : "");
-                                const thirdParagraph = sentences
-                                  .slice(thirdLength * 2)
-                                  .join(". ");
-
-                                return (
-                                  <div
-                                    className="text-blue-50 leading-relaxed text-lg"
-                                    style={{
-                                      WebkitMask:
-                                        "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 25%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%)",
-                                      mask: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 25%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%)",
-                                    }}
-                                  >
-                                    {/* First paragraph - fully visible */}
-                                    <p className="mb-4">{firstParagraph}</p>
-
-                                    {/* Second paragraph - starts to fade */}
-                                    <p className="mb-4">{secondParagraph}</p>
-
-                                    {/* Third paragraph - fades to invisible */}
-                                    <p className="mb-6">{thirdParagraph}</p>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-
-                            {/* Value Proposition Columns - fully visible below faded text */}
-                            <div className="mb-12">
-                              <div className="grid md:grid-cols-2 gap-8">
-                                {/* Column 1 */}
-                                <div className="space-y-6">
-                                  <div className="flex items-start space-x-4 mb-6">
-                                    <div className="text-3xl mt-1">📋</div>
-                                    <div>
-                                      <h4 className="font-bold text-white text-lg mb-2">
-                                        Your Business Blueprint
-                                      </h4>
-                                      <p className="text-blue-100 text-sm leading-relaxed">
-                                        Discover the exact business model you
-                                        should pursue—tailored to your
-                                        personality, strengths, and goals.
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-start space-x-4 mb-6">
-                                    <div className="text-3xl mt-1">⚠️</div>
-                                    <div>
-                                      <h4 className="font-bold text-white text-lg mb-2">
-                                        Models to Avoid
-                                      </h4>
-                                      <p className="text-blue-100 text-sm leading-relaxed">
-                                        See which business paths are poor fits
-                                        for you and why they're likely to lead
-                                        to burnout or failure.
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-start space-x-4 mb-6">
-                                    <div className="text-3xl mt-1">🚀</div>
-                                    <div>
-                                      <h4 className="font-bold text-white text-lg mb-2">
-                                        Step-by-Step Launch Guidance
-                                      </h4>
-                                      <p className="text-blue-100 text-sm leading-relaxed">
-                                        Learn how to get started with your
-                                        best-fit business model, including
-                                        tools, timelines, and tips.
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Column 2 */}
-                                <div className="space-y-6">
-                                  <div className="flex items-start space-x-4 mb-6">
-                                    <div className="text-3xl mt-1">🧠</div>
-                                    <div>
-                                      <h4 className="font-bold text-white text-lg mb-2">
-                                        Your Strengths & Blind Spots
-                                      </h4>
-                                      <p className="text-blue-100 text-sm leading-relaxed">
-                                        Get a clear breakdown of what you're
-                                        naturally great at—and where you'll need
-                                        support or growth.
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-start space-x-4 mb-6">
-                                    <div className="text-3xl mt-1">💸</div>
-                                    <div>
-                                      <h4 className="font-bold text-white text-lg mb-2">
-                                        Income Potential & Market Fit
-                                      </h4>
-                                      <p className="text-blue-100 text-sm leading-relaxed">
-                                        Understand how much you can
-                                        realistically earn and how big the
-                                        opportunity is.
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-start space-x-4 mb-0">
-                                    <div className="text-3xl mt-1">🛠️</div>
-                                    <div>
-                                      <h4 className="font-bold text-white text-lg mb-2">
-                                        Skills You Need to Succeed
-                                      </h4>
-                                      <p className="text-blue-100 text-sm leading-relaxed">
-                                        Find out which skills you already have,
-                                        what to build, and what gaps to close.
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                  {/* Business Info Boxes */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                      <div className="text-2xl mb-2">⏱️</div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">
+                        Time to Start
+                      </div>
+                      <div className="text-sm font-normal">
+                        {personalizedPaths[0]?.timeToProfit || "3-6 months"}
                       </div>
                     </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                      <div className="text-2xl mb-2">💰</div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">
+                        Initial Investment
+                      </div>
+                      <div className="text-sm font-normal">
+                        {personalizedPaths[0]?.startupCost || "$0-500"}
+                      </div>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                      <div className="text-2xl mb-2">📈</div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">
+                        Potential Income
+                      </div>
+                      <div className="text-sm font-normal">
+                        {personalizedPaths[0]?.potentialIncome || "$2K-10K/mo"}
+                      </div>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                      <div className="text-2xl mb-2">🕒</div>
+                      <div className="text-xs text-blue-200 mb-1 font-bold">
+                        Time Commitment
+                      </div>
+                      <div className="text-sm font-normal">
+                        {quizData.weeklyTimeCommitment ? `${quizData.weeklyTimeCommitment} hours/week` : "10-40 hours/week"}
+                      </div>
+                    </div>
+                  </div>
 
-                    {/* Paywall Section - Show for users who haven't unlocked */}
-                    {!canViewFullReport && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="mt-12 text-center"
+                  {/* CTAs - Only show when unlocked */}
+                  <div className="mt-8 space-y-4">
+                    <button
+                      onClick={() => {
+                        const topPath = personalizedPaths[0];
+                        if (topPath) {
+                          handleViewFullReport(topPath);
+                        }
+                      }}
+                      className="w-full bg-white text-purple-600 border-2 border-purple-600 py-4 rounded-xl font-bold text-lg hover:bg-purple-50 hover:border-purple-700 hover:text-purple-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+                    >
+                      <FileText className="h-5 w-5 mr-2 inline" />
+                      View Full Report
+                    </button>
+
+                    <div className="text-center">
+                      <button
+                        onClick={() => {
+                          const topPath = personalizedPaths[0];
+                          if (topPath) {
+                            handleLearnMore(topPath);
+                          }
+                        }}
+                        className="text-white hover:text-gray-300 font-medium text-lg transition-all duration-300 inline-flex items-center group"
                       >
-                        <Lock className="h-8 w-8 text-white mx-auto mb-4" />
-                        <h4 className="text-xl font-bold text-white mb-2">
-                          Unlock your results with small one-time fee
-                        </h4>
-                        <p className="text-blue-100 mb-6">
-                          Get the full personalized analysis, detailed insights,
-                          and success strategies for just{" "}
-                          {user ? "$4.99" : "$9.99"}
-                        </p>
-                        <button
-                          onClick={handleUnlockAnalysis}
-                          className="bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-3 rounded-full font-bold hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-xl mb-8"
-                        >
-                          Unlock Full Analysis - {user ? "$4.99" : "$9.99"}
-                        </button>
-                      </motion.div>
-                    )}
+                        <span>
+                          Get started with{" "}
+                          {personalizedPaths[0]?.name}
+                        </span>
+                        <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            )
+              ) : (
+                // Preview with seamless gradient fade effect
+                <div className="relative">
+                  {/* Three paragraphs with seamless gradient fade */}
+                  <div className="relative mb-8">
+                    {(() => {
+                      const sentences =
+                        analysisData.fullAnalysis.split(". ");
+                      const thirdLength = Math.ceil(
+                        sentences.length / 3,
+                      );
+
+                      const firstParagraph =
+                        sentences.slice(0, thirdLength).join(". ") +
+                        (sentences.length > thirdLength ? "." : "");
+                      const secondParagraph =
+                        sentences
+                          .slice(thirdLength, thirdLength * 2)
+                          .join(". ") +
+                        (sentences.length > thirdLength * 2
+                          ? "."
+                          : "");
+                      const thirdParagraph = sentences
+                        .slice(thirdLength * 2)
+                        .join(". ");
+
+                      return (
+                        <div
+                          className="text-blue-50 leading-relaxed text-lg"
+                          style={{
+                            WebkitMask:
+                              "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 25%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%)",
+                            mask: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 25%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%)",
+                          }}
+                        >
+                          {/* First paragraph - fully visible */}
+                          <p className="mb-4">{firstParagraph}</p>
+
+                          {/* Second paragraph - starts to fade */}
+                          <p className="mb-4">{secondParagraph}</p>
+
+                          {/* Third paragraph - fades to invisible */}
+                          <p className="mb-6">{thirdParagraph}</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Value Proposition Columns - fully visible below faded text */}
+                  <div className="mb-12">
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {/* Column 1 */}
+                      <div className="space-y-6">
+                        <div className="flex items-start space-x-4">
+                          <div className="text-3xl mt-1">🧠</div>
+                          <div>
+                            <h4 className="font-bold text-white text-lg mb-2">
+                              Your Business Blueprint
+                            </h4>
+                            <p className="text-blue-100 text-sm leading-relaxed">
+                              Discover the exact business model you
+                              should pursue—tailored to your
+                              personality, strengths, and goals.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start space-x-4">
+                          <div className="text-3xl mt-1">⚠️</div>
+                          <div>
+                            <h4 className="font-bold text-white text-lg mb-2">
+                              Models to Avoid
+                            </h4>
+                            <p className="text-blue-100 text-sm leading-relaxed">
+                              See which business paths are poor fits
+                              for you and why they're likely to lead
+                              to burnout or failure.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start space-x-4">
+                          <div className="text-3xl mt-1">🛠</div>
+                          <div>
+                            <h4 className="font-bold text-white text-lg mb-2">
+                              Step-by-Step Launch Guidance
+                            </h4>
+                            <p className="text-blue-100 text-sm leading-relaxed">
+                              Learn how to get started with your
+                              best-fit business model, including
+                              tools, timelines, and tips.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Column 2 */}
+                      <div className="space-y-6">
+                        <div className="flex items-start space-x-4">
+                          <div className="text-3xl mt-1">💪</div>
+                          <div>
+                            <h4 className="font-bold text-white text-lg mb-2">
+                              Your Strengths & Blind Spots
+                            </h4>
+                            <p className="text-blue-100 text-sm leading-relaxed">
+                              Get a clear breakdown of what you're
+                              naturally great at—and where you'll need
+                              support or growth.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start space-x-4">
+                          <div className="text-3xl mt-1">📊</div>
+                          <div>
+                            <h4 className="font-bold text-white text-lg mb-2">
+                              Income Potential & Market Fit
+                            </h4>
+                            <p className="text-blue-100 text-sm leading-relaxed">
+                              Understand how much you can
+                              realistically earn and how big the
+                              opportunity is.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start space-x-4">
+                          <div className="text-3xl mt-1">🛠</div>
+                          <div>
+                            <h4 className="font-bold text-white text-lg mb-2">
+                              Skills You Need to Succeed
+                            </h4>
+                            <p className="text-blue-100 text-sm leading-relaxed">
+                              Find out which skills you already have,
+                              what to build, and what gaps to close.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Paywall Section - Show for users who haven't unlocked */}
+          {!canViewFullReport && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-12 text-center"
+            >
+              <Lock className="h-8 w-8 text-white mx-auto mb-4" />
+              <h4 className="text-xl font-bold text-white mb-2">
+                Unlock your results with small one-time fee
+              </h4>
+              <p className="text-blue-100 mb-6">
+                Get the full personalized analysis, detailed insights,
+                and success strategies for just{" "}
+                {user ? "$4.99" : "$9.99"}
+              </p>
+              <button
+                onClick={handleUnlockAnalysis}
+                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-3 rounded-full font-bold hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-xl mb-8"
+              >
+                Unlock Full Analysis - {user ? "$4.99" : "$9.99"}
+              </button>
+            </motion.div>
           )}
+        </div>
+      </div>
+    </motion.div>
+  )
+)}
 
           {/* Results - Customized width for better fit */}
           <motion.div
@@ -1503,26 +1288,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                   )}
 
                   {/* Mobile Layout */}
-                  <div className="md:hidden h-full p-4 flex flex-col">
+                  <div className="md:hidden h-full p-6 flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center">
-                        <span className="text-3xl mr-3">{getSafeEmoji(path.id) || '💼'}</span>
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">
-                            {path.name}
-                          </h3>
-                          <div
-                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                              path.difficulty === "Easy"
-                                ? "bg-green-100 text-green-800"
-                                : path.difficulty === "Medium"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {path.difficulty}
-                          </div>
-                        </div>
+                        {/* Emoji and title inline */}
+                        <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                          <span className="text-3xl mr-2">{getSafeEmoji(path.id) || '💼'}</span>
+                          {path.name}
+                        </h3>
+                        {/* Removed separate emoji span */}
                       </div>
                       {/* Percentage next to title in mobile */}
                       <div className="text-center">
@@ -1574,21 +1348,21 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     </div>
 
                     {/* Potential Income */}
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 mb-4">
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4" style={{ marginBottom: '4rem' }}>
                       <div className="flex items-center mb-2">
-                        <TrendingUp className="h-3 w-3 text-green-600 mr-2" />
-                        <span className="text-xs font-medium text-green-800">
+                        <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
+                        <span className="text-sm font-medium text-green-800">
                           Potential Income
                         </span>
                       </div>
-                      <div className="text-lg font-bold text-green-700">
+                      <div className="text-xl font-bold text-green-700">
                         {path.potentialIncome}
                       </div>
                     </div>
 
                     {/* Top Pros */}
                     <div className="flex-1 mb-4">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center mt-6">
                         <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
                         Top Benefits
                       </h4>
@@ -1617,22 +1391,22 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </button>
                       )}
 
-                      {/* Secondary CTAs - Two separate lines with black text and arrows */}
+                      {/* Secondary CTAs - Two separate lines, left-aligned */}
                       {!(index > 0 && !canViewFullReport) && (
-                        <div className="flex flex-col items-center space-y-2 text-xs">
+                        <div className="flex flex-col items-start space-y-2 mt-2">
                           <button
                             onClick={() => handleLearnMore(path)}
-                            className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
+                            className="text-left font-bold text-sm text-black hover:text-gray-600 transition-colors duration-300 flex items-center group"
                           >
                             Learn more about {path.name} for you
-                            <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                            <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                           </button>
                           <button
                             onClick={() => handleStartBusinessModel(path)}
-                            className="text-black hover:text-gray-600 transition-colors duration-300 font-medium flex items-center group"
+                            className="text-left font-bold text-sm text-black hover:text-gray-600 transition-colors duration-300 flex items-center group"
                           >
                             Complete Guide to {path.name}
-                            <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                            <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                           </button>
                         </div>
                       )}
@@ -1645,23 +1419,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       {/* Left Side */}
                       <div className="flex-1 md:pr-6 mb-6 md:mb-0">
                         <div className="flex items-center mb-4">
-                          <span className="text-3xl mr-4">{getSafeEmoji(path.id) || '💼'}</span>
-                          <div>
-                            <h3 className="text-2xl font-bold text-gray-900">
-                              {path.name}
-                            </h3>
-                            <div
-                              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                                path.difficulty === "Easy"
-                                  ? "bg-green-100 text-green-800"
-                                  : path.difficulty === "Medium"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {path.difficulty}
-                            </div>
-                          </div>
+                          {/* Emoji and title inline */}
+                          <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                            <span className="text-3xl mr-3">{getSafeEmoji(path.id) || '💼'}</span>
+                            {path.name}
+                          </h3>
                         </div>
 
                         <p className="text-gray-600 mb-6 text-sm md:text-base">
@@ -1669,7 +1431,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </p>
 
                         <div className="grid grid-cols-2 gap-3 mb-6">
-                          <div className="bg-white rounded-xl p-3">
+                          <div className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-3`}>
                             <div className="flex items-center mb-1">
                               <Clock className="h-4 w-4 text-gray-500 mr-1" />
                               <span className="text-xs font-medium text-gray-700">
@@ -1680,7 +1442,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                               {path.timeToProfit}
                             </div>
                           </div>
-                          <div className="bg-white rounded-xl p-3">
+                          <div className={`${index === 0 ? "bg-white" : "bg-gray-50"} rounded-xl p-3`}>
                             <div className="flex items-center mb-1">
                               <DollarSign className="h-4 w-4 text-gray-500 mr-1" />
                               <span className="text-xs font-medium text-gray-700">
@@ -1726,7 +1488,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       </div>
 
                       {/* Right Side */}
-                      <div className="md:w-48 flex flex-col justify-between">
+                      <div className="md:w-48 flex flex-col">
                         <div className="text-center mb-6">
                           <div className="text-5xl font-bold text-yellow-600">
                             {path.fitScore}%
@@ -1736,7 +1498,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           </div>
                         </div>
 
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-6">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-3">
                           <div className="flex items-center mb-2">
                             <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
                             <span className="text-sm font-medium text-green-800">
@@ -1749,7 +1511,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
 
                         <div>
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center mt-6">
                             <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
                             Top Benefits
                           </h4>
@@ -2039,15 +1801,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
             </motion.div>
           )}
         </div>
-
-        {/* Email Results Modal */}
-        <EmailResultsModal
-          isOpen={showEmailModal}
-          onClose={() => setShowEmailModal(false)}
-          quizData={quizData}
-          isPaidUser={canViewFullReport || hasMadeAnyPayment()}
-          userEmail={userEmail}
-        />
 
         {/* Paywall Modal - Keep for logged in users */}
         <PaywallModal

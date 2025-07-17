@@ -92,70 +92,8 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
 
   const [steps, setSteps] = useState<ProcessingStep[]>(processingSteps);
 
-  // Prepare for AI insights generation (delegate to AIReportLoading)
-  const generateAIInsights = async () => {
-    try {
-      setIsGeneratingInsights(true);
-
-      console.log(
-        " QuizCompletionLoading: Making OpenAI API call for Results preview",
-      );
-
-      // First generate business paths
-      const { generateAIPersonalizedPaths } = await import(
-        "../utils/quizLogic"
-      );
-      const topPaths = await generateAIPersonalizedPaths(quizData);
-
-      // Import AIService and make OpenAI call
-      const { AIService } = await import("../utils/aiService");
-      const aiService = AIService.getInstance();
-
-      // Generate fresh AI insights for the Results page
-      const insights = await aiService.generatePersonalizedInsights(
-        quizData,
-        topPaths.slice(0, 3),
-      );
-
-      // Store complete AI data for Results page
-      const completeData = {
-        topPaths: topPaths.slice(0, 3),
-        insights,
-        timestamp: Date.now(),
-        complete: true,
-        error: false,
-        fromQuizCompletion: true,
-      };
-
-      localStorage.setItem(
-        "quiz-completion-ai-insights",
-        JSON.stringify(completeData),
-      );
-
-      console.log("✅ OpenAI content generated and stored for Results page");
-      setIsGeneratingInsights(false);
-      return { topPaths };
-    } catch (error) {
-      console.error(
-        "❌ OpenAI API failed during quiz completion loading:",
-        error,
-      );
-      setIsGeneratingInsights(false);
-
-      // Store error indicator - Results page will use fallback
-      localStorage.setItem(
-        "quiz-completion-ai-insights",
-        JSON.stringify({
-          topPaths: [], // Empty array as fallback
-          timestamp: Date.now(),
-          error: true,
-          complete: false,
-        }),
-      );
-
-      return null;
-    }
-  };
+  // Remove generateAIInsights and all related calls to aiService.generatePersonalizedInsights and localStorage.setItem for quiz-completion-ai-insights.
+  // Remove the useEffect that triggers generateAIInsights and any state related to isGeneratingInsights for AI insights.
 
   useEffect(() => {
     let cleanup: (() => void) | null = null;
@@ -167,17 +105,17 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       let aiCompleted = false;
 
       // Start AI insights generation immediately
-      aiInsightsPromise = generateAIInsights()
-        .then((result) => {
-          aiCompleted = true;
-          console.log("AI insights generated:", result ? "Success" : "Failed");
-          return result;
-        })
-        .catch((error) => {
-          aiCompleted = true;
-          console.error("Error in AI generation:", error);
-          return null;
-        });
+      // aiInsightsPromise = generateAIInsights()
+      //   .then((result) => {
+      //     aiCompleted = true;
+      //     console.log("AI insights generated:", result ? "Success" : "Failed");
+      //     return result;
+      //   })
+      //   .catch((error) => {
+      //     aiCompleted = true;
+      //     console.error("Error in AI generation:", error);
+      //     return null;
+      //   });
 
       // Process each step with smooth progress
       for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
@@ -248,7 +186,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       // Ensure AI generation is complete
       if (!aiCompleted) {
         console.log("Waiting for AI insights to complete...");
-        await aiInsightsPromise;
+        // await aiInsightsPromise; // This line is removed as generateAIInsights is removed
       }
 
       // Ensure minimum total time

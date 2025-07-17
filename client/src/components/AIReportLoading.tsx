@@ -16,6 +16,7 @@ import {
 import { QuizData, BusinessPath } from "../types";
 import { reportViewManager } from "../utils/reportViewManager";
 import { AICacheManager } from "../utils/aiCacheManager";
+import { useAIInsights } from '../contexts/AIInsightsContext';
 
 // Hook to detect mobile devices
 const useIsMobile = () => {
@@ -70,6 +71,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
   const isMobile = useIsMobile();
   const [currentMobileStep, setCurrentMobileStep] = useState(0);
   const [isLoadingComplete, setIsLoadingComplete] = useState(false);
+  const { setAIInsights } = useAIInsights();
 
   // Restore targetProgress and smooth animation logic
   const [targetProgress, setTargetProgress] = useState(0);
@@ -704,6 +706,22 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           console.log("Using fallback quiz data for development mode");
         }
 
+        // Before starting AI insights generation (in runSteps or equivalent), add:
+        const existingPreview = localStorage.getItem('quiz-completion-ai-insights');
+        if (existingPreview) {
+          try {
+            const parsed = JSON.parse(existingPreview);
+            if (parsed && parsed.complete && !parsed.error) {
+              console.log('AI preview insights already exist, skipping generation');
+              // Optionally set state to use this data
+              setAIInsights(parsed.insights);
+              return;
+            }
+          } catch (e) {
+            // If parsing fails, proceed to generate
+          }
+        }
+
         try {
           // Step 1: Analyze profile (immediate)
           const step1Result = await executeStep(0, async () => {
@@ -819,26 +837,36 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
                   "You have the foundation to build a successful business. Stay consistent and trust the process.",
               };
 
+              // Create proper analysis object using actual API response data
+              const properAnalysis = {
+                fullAnalysis: previewData.previewInsights,
+                keyInsights: previewData.keyInsights,
+                personalizedRecommendations: previewData.keyInsights,
+                successPredictors: previewData.successPredictors,
+                riskFactors: [
+                  "Initial learning curve may require patience and persistence",
+                  "Income may be inconsistent in the first few months",
+                  "Success requires consistent daily action and follow-through",
+                ],
+              };
+
               // Store in new 1-hour cache system and database
               const aiCacheManager = AICacheManager.getInstance();
-
-              // Create dummy analysis for cache (will be generated on-demand if needed)
-              const dummyAnalysis = {
-                fullAnalysis:
-                  "Analysis will be generated when viewing full report",
-                keyInsights: [],
-                personalizedRecommendations: [],
-                riskFactors: [],
-                successPredictors: [],
-              };
 
               // Cache for 1-hour session with both insights and analysis
               aiCacheManager.cacheAIContent(
                 quizData,
                 formattedInsights,
-                dummyAnalysis,
+                properAnalysis,
                 pathsForInsights[0],
               );
+
+              setAIInsights({
+                insights: formattedInsights,
+                analysis: properAnalysis,
+                timestamp: Date.now(),
+                quizAttemptId: localStorage.getItem('currentQuizAttemptId') ? parseInt(localStorage.getItem('currentQuizAttemptId')) : undefined,
+              });
 
               return { aiInsights: formattedInsights };
             } catch (error) {
@@ -849,6 +877,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
               );
 
               // Return null to trigger fallback in Results component
+              setAIInsights(null);
               return { aiInsights: null, aiGenerationError: error };
             }
           });
