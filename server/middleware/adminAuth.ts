@@ -1,9 +1,5 @@
 // Proper Admin Authentication Middleware
-import express from "express";
-
-type Request = express.Request;
-type Response = express.Response;
-type NextFunction = express.NextFunction;
+import { Request, Response, NextFunction } from "express-serve-static-core";
 import { createErrorResponse } from "../utils/errorHandler.js";
 
 interface AdminAuthRequest extends Request {
@@ -161,18 +157,18 @@ export function logAdminAction(action: string) {
 /**
  * Rate limiting for admin endpoints
  */
-const adminRateLimit = new Map<string, number[]>();
+const adminRateLimitMap = new Map<string, number[]>();
 
 export function adminRateLimit(
   maxRequests: number = 100,
   windowMs: number = 60000,
 ) {
   return (req: AdminAuthRequest, res: Response, next: NextFunction) => {
-    const adminId = req.admin?.id || req.ip;
+    const adminId: string = req.admin?.id || req.ip || "";
     const now = Date.now();
 
-    const requests = adminRateLimit.get(adminId) || [];
-    const recentRequests = requests.filter((time) => now - time < windowMs);
+    const requests = adminRateLimitMap.get(adminId) || [];
+    const recentRequests = requests.filter((time: number) => now - time < windowMs);
 
     if (recentRequests.length >= maxRequests) {
       console.warn(` Admin rate limit exceeded for ${adminId}`);
@@ -188,7 +184,7 @@ export function adminRateLimit(
     }
 
     recentRequests.push(now);
-    adminRateLimit.set(adminId, recentRequests);
+    adminRateLimitMap.set(adminId, recentRequests);
 
     next();
   };

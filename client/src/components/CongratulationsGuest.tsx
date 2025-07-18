@@ -367,7 +367,7 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
               >
                 <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                 <span className="text-green-800 font-medium">
-                  <span className="emoji">✅</span> Email sent successfully! Redirecting to your results...
+                  Email sent successfully! Redirecting to your results...
                 </span>
               </motion.div>
             )}
@@ -381,7 +381,7 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
                 className="text-center space-y-3"
               >
                 <p className="text-xs text-gray-500">
-                  <span className="emoji">🔒</span> We respect your privacy. By inputting your email, your results will be stored for 3 months.
+                  <span className="emoji">🔒</span> We respect your privacy. By entering your email, your results will be securely saved for 3 months.
                 </p>
 
                 <button

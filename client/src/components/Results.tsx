@@ -912,11 +912,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                 // Full content when unlocked
                 <div>
                   {(() => {
-                    const sentences =
-                      analysisData.fullAnalysis.split(". ");
-                    const thirdLength = Math.ceil(
-                      sentences.length / 3,
-                    );
+                    if (!analysisData || !analysisData.fullAnalysis) {
+                      return (
+                        <div className="text-blue-50 leading-relaxed text-lg mb-6">
+                          <p className="mb-4">Personalized analysis is not available at this time. Please try again later or contact support if this persists.</p>
+                        </div>
+                      );
+                    }
+                    const sentences = analysisData.fullAnalysis.split(". ");
+                    const thirdLength = Math.ceil(sentences.length / 3);
 
                     const firstParagraph =
                       sentences.slice(0, thirdLength).join(". ") +

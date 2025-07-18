@@ -183,7 +183,7 @@ export function setupAuthRoutes(app: Express) {
       console.log("Auth check: Success for user:", {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: (user.firstName || "") + (user.lastName ? " " + user.lastName : ""),
       });
 
       // Don't send password

@@ -97,7 +97,8 @@ const DownloadReportPage: React.FC = () => {
 
           // Check cache first, then generate AI analysis
           const aiCacheManager = AICacheManager.getInstance();
-          const cachedContent = aiCacheManager.getCachedAIContent(mockQuizData);
+          const quizAttemptId = localStorage.getItem('currentQuizAttemptId') || 'mock';
+          const cachedContent = aiCacheManager.getCachedAIContent(quizAttemptId);
 
           let combinedAnalysis;
           if (cachedContent.insights && cachedContent.analysis) {
@@ -130,12 +131,17 @@ const DownloadReportPage: React.FC = () => {
 
             combinedAnalysis = {
               fullAnalysis: "", // generatePersonalizedInsights doesn't return fullAnalysis
-              keyInsights: mockPersonalizedInsights.keyInsights || [],
+              keyInsights: (mockPersonalizedInsights as any).keyInsights,
               personalizedRecommendations:
                 mockPersonalizedInsights.personalizedRecommendations || [],
               riskFactors: mockPersonalizedInsights.potentialChallenges || [],
               successPredictors: [], // generatePersonalizedInsights doesn't return successPredictors
             };
+
+            // Patch: ensure keyInsights exists for type safety
+            if (!('keyInsights' in mockPersonalizedInsights)) {
+              (mockPersonalizedInsights as any).keyInsights = [];
+            }
 
             // Skip caching for mock data (type mismatch between API response and cache structure)
           }

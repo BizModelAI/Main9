@@ -444,21 +444,28 @@ const FullReport: React.FC<FullReportProps> = ({
     // Generate all 6 characteristics with OpenAI
     const generateAllCharacteristics = async () => {
       try {
+        // Helper function to convert numerical ratings to descriptive text
+        const getRatingDescription = (rating: number): string => {
+          if (rating >= 4) return "high";
+          if (rating >= 3) return "moderate";
+          return "low";
+        };
+
         const prompt = `Based on this quiz data, generate exactly 6 short positive characteristics that reflect the user's entrepreneurial strengths. Each should be 3-5 words maximum and highlight unique aspects of their entrepreneurial potential.
 
 Quiz Data:
-- Self-motivation level: ${quizData.selfMotivationLevel}/5
-- Risk comfort level: ${quizData.riskComfortLevel}/5
-- Tech skills rating: ${quizData.techSkillsRating}/5
-- Direct communication enjoyment: ${quizData.directCommunicationEnjoyment}/5
+- Self-motivation level: ${getRatingDescription(quizData.selfMotivationLevel)}
+- Risk comfort level: ${getRatingDescription(quizData.riskComfortLevel)}
+- Tech skills rating: ${getRatingDescription(quizData.techSkillsRating)}
+- Direct communication enjoyment: ${getRatingDescription(quizData.directCommunicationEnjoyment)}
 - Learning preference: ${quizData.learningPreference}
-- Organization level: ${quizData.organizationLevel}/5
-- Creative work enjoyment: ${quizData.creativeWorkEnjoyment}/5
+- Organization level: ${getRatingDescription(quizData.organizationLevel)}
+- Creative work enjoyment: ${getRatingDescription(quizData.creativeWorkEnjoyment)}
 - Work collaboration preference: ${quizData.workCollaborationPreference}
 - Decision making style: ${quizData.decisionMakingStyle}
 - Work structure preference: ${quizData.workStructurePreference}
-- Long-term consistency: ${quizData.longTermConsistency}/5
-- Uncertainty handling: ${quizData.uncertaintyHandling}/5
+- Long-term consistency: ${getRatingDescription(quizData.longTermConsistency)}
+- Uncertainty handling: ${getRatingDescription(quizData.uncertaintyHandling)}
 - Tools familiar with: ${quizData.familiarTools?.join(", ")}
 - Main motivation: ${quizData.mainMotivation}
 - Weekly time commitment: ${quizData.weeklyTimeCommitment}
@@ -608,7 +615,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
         // Set fallback insights that use actual quiz data
         const fallbackInsights = `Based on your quiz responses, you show strong alignment with ${paths[0]?.name || "online business"} with a ${paths[0]?.fitScore || 75}% compatibility score. Your income goal of ${getIncomeRangeLabel(quizData.successIncomeGoal)} and ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} per week commitment indicate ${quizData.successIncomeGoal >= 5000 ? "ambitious" : "realistic"} expectations.
 
-Your ${quizData.techSkillsRating}/5 tech skills rating combined with your ${quizData.learningPreference} learning preference suggests you're well-suited for ${quizData.techSkillsRating >= 4 ? "advanced" : "foundational"} business approaches. With ${quizData.riskComfortLevel}/5 risk tolerance, you're positioned to ${quizData.riskComfortLevel >= 4 ? "explore innovative strategies" : "build systematically"}.
+Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} tech skills combined with your ${quizData.learningPreference} learning preference suggests you're well-suited for ${quizData.techSkillsRating >= 4 ? "advanced" : "foundational"} business approaches. With ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance, you're positioned to ${quizData.riskComfortLevel >= 4 ? "explore innovative strategies" : "build systematically"}.
 
 This business path aligns with your ${quizData.workCollaborationPreference} work style and ${quizData.decisionMakingStyle} decision-making approach, creating strong potential for sustainable growth.`;
 
@@ -625,7 +632,7 @@ This business path aligns with your ${quizData.workCollaborationPreference} work
         setAiInsights({
           // AI-generated content (fallback)
           personalizedRecommendations: [
-            `Given your ${quizData.techSkillsRating}/5 tech skills rating, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
+            `Given your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} tech skills, ${quizData.techSkillsRating >= 4 ? "leverage your technical abilities" : "focus on user-friendly tools initially"}`,
             `Your ${quizData.learningPreference} learning preference suggests ${quizData.learningPreference === "hands_on" ? "jumping into projects quickly" : "studying comprehensive guides first"}`,
           ],
           potentialChallenges: [
@@ -1259,7 +1266,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
 
                             // Use the fullAnalysis from the cached data, or fall back to the summary
                             const analysisText =
-                              cachedData?.analysis?.fullAnalysis ||
+                              (cachedData as any)?.analysis?.fullAnalysis ||
                               aiInsights?.personalizedSummary ||
                               "";
 

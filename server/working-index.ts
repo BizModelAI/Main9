@@ -248,7 +248,7 @@ app.get("/api/test/database", async (req: Request, res: Response) => {
 
     // Test getUserByUsername
     try {
-      const testUser = await storage.getUserByUsername("nonexistent@test.com");
+      const testUser = await storage.getUserByEmail("nonexistent@test.com");
       results.tests.getUserByUsername = {
         status: "success",
         message: "getUserByUsername working",

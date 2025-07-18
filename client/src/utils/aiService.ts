@@ -30,6 +30,13 @@ export class AIService {
     quizData: QuizData,
     topMatch?: BusinessPath,
   ): string {
+    // Helper function to convert numerical ratings to descriptive text
+    const getRatingDescription = (rating: number): string => {
+      if (rating >= 4) return "high";
+      if (rating >= 3) return "moderate";
+      return "low";
+    };
+
     return `
 User Profile Summary:
 ${topMatch ? `- Top Business Match: ${topMatch.name} (${topMatch.fitScore}% match)` : ""}
@@ -37,7 +44,7 @@ ${topMatch ? `- Top Business Match: ${topMatch.name} (${topMatch.fitScore}% matc
 - First Income Goal: ${quizData.firstIncomeTimeline}
 - Monthly Income Goal: $${quizData.successIncomeGoal}
 - Upfront Investment: $${quizData.upfrontInvestment}
-- Passion Alignment: ${quizData.passionIdentityAlignment}/5
+- Passion Alignment: ${getRatingDescription(quizData.passionIdentityAlignment)}
 
 Work Preferences:
 - Time Availability: ${quizData.weeklyTimeCommitment}
@@ -46,19 +53,19 @@ Work Preferences:
 - Collaboration Style: ${quizData.workCollaborationPreference || "independent"}
 - Decision-Making Style: ${quizData.decisionMakingStyle}
 
-Personality Traits (0–5 scale):
-- Social Comfort: ${quizData.salesComfort || 3}
-- Self-Motivation: ${quizData.selfMotivationLevel || quizData.selfMotivation || 3}
-- Risk Tolerance: ${quizData.riskComfortLevel || 3}
-- Tech Comfort: ${quizData.techSkillsRating || 3}
-- Structure Preference: ${quizData.workStructurePreference || 3}
-- Feedback Response: ${quizData.feedbackRejectionResponse || 3}
-- Creativity: ${quizData.creativeWorkEnjoyment || 3}
-- Brand Comfort: ${quizData.brandFaceComfort || 3}
-- Competitiveness: ${quizData.competitivenessLevel || 3}
-- Communication: ${quizData.directCommunicationEnjoyment || 3}
-- Organization: ${quizData.organizationLevel || 3}
-- Uncertainty Handling: ${quizData.uncertaintyHandling || 3}
+Personality Traits:
+- Social Comfort: ${getRatingDescription(quizData.salesComfort || 3)}
+- Self-Motivation: ${getRatingDescription(quizData.selfMotivationLevel || quizData.selfMotivation || 3)}
+- Risk Tolerance: ${getRatingDescription(quizData.riskComfortLevel || 3)}
+- Tech Comfort: ${getRatingDescription(quizData.techSkillsRating || 3)}
+- Structure Preference: ${quizData.workStructurePreference || "flexible"}
+- Feedback Response: ${getRatingDescription(quizData.feedbackRejectionResponse || 3)}
+- Creativity: ${getRatingDescription(quizData.creativeWorkEnjoyment || 3)}
+- Brand Comfort: ${getRatingDescription(quizData.brandFaceComfort || 3)}
+- Competitiveness: ${getRatingDescription(quizData.competitivenessLevel || 3)}
+- Communication: ${getRatingDescription(quizData.directCommunicationEnjoyment || 3)}
+- Organization: ${getRatingDescription(quizData.organizationLevel || 3)}
+- Uncertainty Handling: ${getRatingDescription(quizData.uncertaintyHandling || 3)}
 `.trim();
   }
 

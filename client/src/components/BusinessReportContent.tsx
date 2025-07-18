@@ -285,7 +285,7 @@ const BusinessReportContent: React.FC<BusinessReportContentProps> = ({
             keyInsights || [
               `Your ${quizData.riskComfortLevel >= 4 ? "high" : "moderate"} risk tolerance aligns perfectly with ${topBusinessPath.name}`,
               `With ${quizData.weeklyTimeCommitment} hours/week, you can realistically achieve ${topBusinessPath.timeToProfit}`,
-              `Your tech comfort level (${quizData.techSkillsRating}/5) is ${quizData.techSkillsRating >= 4 ? "excellent" : "adequate"} for this path`,
+              `Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} tech comfort level is ${quizData.techSkillsRating >= 4 ? "excellent" : "adequate"} for this path`,
               `Communication style matches the ${quizData.directCommunicationEnjoyment >= 4 ? "high" : "moderate"} interaction requirements`
             ],
             Lightbulb,

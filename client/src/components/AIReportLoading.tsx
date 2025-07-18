@@ -331,21 +331,28 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     quizData: QuizData,
   ): Promise<string[]> => {
     try {
+      // Helper function to convert numerical ratings to descriptive text
+      const getRatingDescription = (rating: number): string => {
+        if (rating >= 4) return "high";
+        if (rating >= 3) return "moderate";
+        return "low";
+      };
+
       const prompt = `Based on this quiz data, generate exactly 6 short positive characteristics that reflect the user's entrepreneurial strengths. Each should be 3-5 words maximum and highlight unique aspects of their entrepreneurial potential.
 
 Quiz Data:
-- Self-motivation level: ${quizData.selfMotivationLevel}/5
-- Risk comfort level: ${quizData.riskComfortLevel}/5
-- Tech skills rating: ${quizData.techSkillsRating}/5
-- Direct communication enjoyment: ${quizData.directCommunicationEnjoyment}/5
+- Self-motivation level: ${getRatingDescription(quizData.selfMotivationLevel)}
+- Risk comfort level: ${getRatingDescription(quizData.riskComfortLevel)}
+- Tech skills rating: ${getRatingDescription(quizData.techSkillsRating)}
+- Direct communication enjoyment: ${getRatingDescription(quizData.directCommunicationEnjoyment)}
 - Learning preference: ${quizData.learningPreference}
-- Organization level: ${quizData.organizationLevel}/5
-- Creative work enjoyment: ${quizData.creativeWorkEnjoyment}/5
+- Organization level: ${getRatingDescription(quizData.organizationLevel)}
+- Creative work enjoyment: ${getRatingDescription(quizData.creativeWorkEnjoyment)}
 - Work collaboration preference: ${quizData.workCollaborationPreference}
 - Decision making style: ${quizData.decisionMakingStyle}
 - Work structure preference: ${quizData.workStructurePreference}
-- Long-term consistency: ${quizData.longTermConsistency}/5
-- Uncertainty handling: ${quizData.uncertaintyHandling}/5
+- Long-term consistency: ${getRatingDescription(quizData.longTermConsistency)}
+- Uncertainty handling: ${getRatingDescription(quizData.uncertaintyHandling)}
 - Tools familiar with: ${quizData.familiarTools?.join(", ")}
 - Main motivation: ${quizData.mainMotivation}
 - Weekly time commitment: ${quizData.weeklyTimeCommitment}
@@ -948,17 +955,18 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
               // Cache for 1-hour session with both insights and analysis
               aiCacheManager.cacheAIContent(
-                quizData,
-                formattedInsights,
-                properAnalysis,
-                pathsForInsights[0],
+                localStorage.getItem('currentQuizAttemptId') || 'unknown',
+                {
+                  resultsInsights: formattedInsights,
+                  fullReport: properAnalysis,
+                }
               );
 
               setAIInsights({
                 insights: formattedInsights,
                 analysis: properAnalysis,
                 timestamp: Date.now(),
-                quizAttemptId: localStorage.getItem('currentQuizAttemptId') ? parseInt(localStorage.getItem('currentQuizAttemptId')) : undefined,
+                quizAttemptId: (() => { const id = localStorage.getItem('currentQuizAttemptId'); return id ? parseInt(id) : undefined; })(),
               });
 
               return { aiInsights: formattedInsights };
@@ -970,7 +978,12 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
               );
 
               // Return null to trigger fallback in Results component
-              setAIInsights(null);
+              setAIInsights({
+                insights: {} as any,
+                analysis: {} as any,
+                timestamp: Date.now(),
+                quizAttemptId: undefined,
+              });
               return { aiInsights: null, aiGenerationError: error };
             }
           });

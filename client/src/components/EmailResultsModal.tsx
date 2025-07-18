@@ -24,19 +24,21 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
   const [emailUsed, setEmailUsed] = useState<string>(userEmail || "");
   const [emailError, setEmailError] = useState<string>("");
   const [existingAccount, setExistingAccount] = useState<any>(null);
-  const { isUnlocked } = useReportUnlock(quizAttemptId);
+  const { isUnlocked } = useReportUnlock(typeof quizAttemptId === 'number' && !isNaN(quizAttemptId) ? quizAttemptId : null);
 
   if (!isOpen) return null;
 
-  const hasEmail = !!(userEmail || emailUsed);
+  const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
+  const hasEmail = !!(userEmail || emailUsed || storedEmail);
 
   const validateEmail = (email: string) => {
-    // RFC 5322 Official Standard (simplified for practical use)
-    // Must have at least one dot after @, and TLD must be at least 2 chars
-    return (
-      email.length > 5 &&
-      /^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/.test(email.trim())
-    );
+    // More robust email validation
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || trimmedEmail.length < 5) return false;
+    
+    // RFC 5322 compliant email regex (simplified but robust)
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    return emailRegex.test(trimmedEmail);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,25 +51,47 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
 
   const checkExistingAccount = async (email: string) => {
     try {
-      const response = await fetch(`/api/check-existing-attempts/${encodeURIComponent(email)}`);
+      // Validate email before making the request
+      if (!validateEmail(email)) {
+        console.error("Invalid email format:", email);
+        return null;
+      }
+      
+      // Properly encode the email for URL
+      const encodedEmail = encodeURIComponent(email.trim());
+      const response = await fetch(`/api/check-existing-attempts/${encodedEmail}`);
+      
       if (response.ok) {
         const data = await response.json();
         return data;
+      } else {
+        console.error("Failed to check existing account:", response.status, response.statusText);
+        return null;
       }
     } catch (error) {
       console.error("Error checking existing account:", error);
+      return null;
     }
-    return null;
   };
 
   const handleSendEmail = async () => {
     setStatus("loading");
     setMessage("");
-    let emailToUse = emailUsed || inputEmail;
     
+    // Determine which email to use
+    let emailToUse = userEmail || emailUsed || storedEmail || inputEmail;
+    
+    // Validate email if user needs to input one
     if (!hasEmail && !validateEmail(inputEmail)) {
       setStatus("idle");
       setEmailError("Please enter a valid email address.");
+      return;
+    }
+    
+    // Ensure we have a valid email
+    if (!emailToUse || !validateEmail(emailToUse)) {
+      setStatus("error");
+      setMessage("Please provide a valid email address.");
       return;
     }
 
@@ -126,7 +150,7 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          email: emailToUse, 
+          email: emailToUse.trim(), 
           quizData,
           attemptId: quizAttemptId 
         }),
@@ -139,43 +163,78 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
         setStatus("success");
         setMessage(isUnlocked ? "Full report sent to your email!" : "Preview sent to your email!");
       } else {
+        const errorData = await res.json().catch(() => ({}));
         setStatus("error");
-        setMessage("Failed to send email. Please try again later.");
+        setMessage(errorData.error || "Failed to send email. Please try again later.");
       }
     } catch (error) {
       setStatus("error");
       if (error instanceof Error && error.name === 'AbortError') {
         setMessage("Email sending timed out. Please try again.");
       } else {
+        console.error("Email sending error:", error);
         setMessage("Failed to send email. Please try again later.");
       }
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl max-w-md w-full relative overflow-hidden max-h-[90vh] overflow-y-auto my-8"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50"></div>
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10">
           <X className="w-5 h-5" />
         </button>
-        <div className="flex flex-col items-center">
-          <Mail className="w-10 h-10 text-blue-600 mb-4" />
-          <h2 className="text-xl font-bold mb-2">Email My Results</h2>
+        <div className="relative flex flex-col items-center p-8">
+          <Mail className="w-12 h-12 text-blue-600 mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-gray-900">Email My Results</h2>
           <p className="text-gray-600 mb-4 text-center">
             {isUnlocked
               ? "You have unlocked this report. You will receive the full report by email."
               : "You will receive a preview of your results by email. Unlock the full report for the complete email."}
           </p>
-          
-          {existingAccount && existingAccount.userType === "temporary" && (
-            <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+
+          {status === "success" && (
+            <div className="w-full bg-green-50 border border-green-200 rounded-3xl p-4 mb-4 flex items-center justify-center">
+              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+              <span className="text-green-800 font-medium">
+                {message}
+              </span>
+            </div>
+          )}
+
+          {existingAccount && existingAccount.userType === "temporary" && existingAccount.attemptsCount > 1 && (
+            <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-3 mb-4 text-center">
               <p className="text-blue-800 text-sm">
-                📧 You have {existingAccount.attemptsCount} previous quiz attempt{existingAccount.attemptsCount !== 1 ? 's' : ''} with this email. 
+                You have {existingAccount.attemptsCount} previous quiz attempt{existingAccount.attemptsCount !== 1 ? 's' : ''} with this email. 
                 Your new attempt will be added to your history.
               </p>
             </div>
           )}
 
+          {/* If user is logged in or has already provided email, show only their email and send button */}
+          {hasEmail && status === "idle" && (
+            <div className="w-full flex flex-col items-center mb-4">
+              <div className="text-gray-700 text-base mt-0 mb-6">Your email: <span className="font-semibold">{userEmail || emailUsed || storedEmail}</span></div>
+              <button
+                onClick={handleSendEmail}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
+              >
+                <Mail className="w-5 h-5 mr-1" />
+                Send Results
+              </button>
+            </div>
+          )}
+
+          {/* If user has not provided email, show input and send button only */}
           {!hasEmail && status === "idle" && (
             <>
               <input
@@ -187,59 +246,31 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
                 required
               />
               {emailError && <div className="text-red-600 text-sm mb-2">{emailError}</div>}
+              <div className="w-full flex mt-2">
+                <button
+                  onClick={handleSendEmail}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-5 h-5 mr-1" />
+                  Send Results
+                </button>
+              </div>
             </>
           )}
-          {hasEmail && status === "idle" && (
-            <div className="w-full flex flex-col items-center mb-2">
-              <div className="text-gray-700 text-base mb-2">Your email: <span className="font-semibold">{userEmail || emailUsed}</span></div>
-            </div>
-          )}
-          
+
           {status === "loading" && (
             <div className="w-full flex flex-col items-center mb-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
               <p className="text-gray-600 text-sm">Sending email...</p>
             </div>
           )}
-          
-          {status === "success" && (
-            <div className="w-full flex flex-col items-center mb-4">
-              <div className="text-green-600 text-2xl mb-2">✓</div>
-              <p className="text-green-700 text-sm text-center">{message}</p>
-            </div>
-          )}
-          
+
           {status === "error" && (
             <div className="w-full flex flex-col items-center mb-4">
               <div className="text-red-600 text-2xl mb-2">✗</div>
               <p className="text-red-700 text-sm text-center">{message}</p>
             </div>
           )}
-
-          <div className="w-full flex gap-3 mt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            {status === "idle" && (
-              <button
-                onClick={handleSendEmail}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Send Email
-              </button>
-            )}
-            {status === "success" && (
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Done
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>

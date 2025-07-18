@@ -494,7 +494,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
       // If user isn't logged in, create a dev account
       if (!user) {
         const devEmail = `dev_${Date.now()}@test.com`;
-        await signup(devEmail, "devpass123", "Dev User");
+        await signup(devEmail, "devpass123", "Dev", "User");
       }
 
       // Mark as unlocked

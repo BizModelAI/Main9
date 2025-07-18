@@ -62,7 +62,7 @@ export function withEmojiSafeguard<P extends object>(
       }
     });
 
-    return <Component {...safeguardedProps} ref={ref} />;
+    return <Component {...(safeguardedProps as P)} ref={ref} />;
   }) as unknown as React.ComponentType<P>;
 }
 

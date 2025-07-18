@@ -20,6 +20,7 @@ import {
   Environment,
   OrdersController,
 } from "@paypal/paypal-server-sdk";
+import { DatabaseStorage } from "./storage.js";
 
 // Secure session/user-based rate limiter for OpenAI requests
 class OpenAIRateLimiter {
@@ -419,7 +420,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       try {
         const userId = await getUserIdFromRequest(req);
         if (userId) {
-          const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+          const attempts = await storage.getQuizAttempts(userId);
+          const quizAttemptId = attempts.length > 0 ? attempts[0].id : undefined;
           if (quizAttemptId) {
             await storage.saveAIContentToQuizAttempt(
               quizAttemptId,
@@ -436,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         const { ErrorHandler } = await import("./utils/errorHandler.js");
         await ErrorHandler.handleStorageError(dbError as Error, {
           operation: "store_skills_analysis",
-          context: { quizAttemptId, businessModel, userId },
+          context: {},
           isCritical: false, // Non-critical as the main result is still returned
           shouldThrow: false,
         });
@@ -480,7 +482,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       try {
         const userId = await getUserIdFromRequest(req);
         if (userId) {
-          const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+          const attempts = await storage.getQuizAttempts(userId);
+          const quizAttemptId = attempts.length > 0 ? attempts[0].id : undefined;
           if (quizAttemptId) {
             const { businessModel } = req.body;
             await storage.saveAIContentToQuizAttempt(
@@ -497,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         const { ErrorHandler } = await import("./utils/errorHandler.js");
         await ErrorHandler.handleStorageError(dbError as Error, {
           operation: "store_fallback_skills_analysis",
-          context: { quizAttemptId, businessModel, userId },
+          context: {},
           isCritical: false,
           shouldThrow: false,
         });
@@ -738,7 +741,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         // Create user if doesn't exist (for testing)
         if (!user) {
           user = await storage.createUser({
-            username: `user${userId}`,
+            email: `user${userId}@example.com`,
             password: "test123",
           });
         }
@@ -779,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       let user = await storage.getUser(userId);
       if (!user) {
         user = await storage.createUser({
-          username: `user${userId}`,
+          email: `user${userId}@example.com`,
           password: "test123",
         });
       }
@@ -840,7 +843,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       if (!user) {
         user = await storage.createUser({
-          username: `user${userId}`,
+          email: `user${userId}@example.com`,
           password: "test123",
         });
       }
@@ -1177,13 +1180,13 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // TIER 2: Users with email (unpaid) - 3-month database storage with expiration
       if (email) {
+        let tempUser;
         console.log(
           `Save quiz data: Processing email user: ${email}`,
         );
 
         // Check if ANY user (paid or temporary) already exists for this email
         const existingUser = await storage.getUserByEmail(email);
-        
         if (existingUser) {
           if (!existingUser.isTemporary) {
             // Found a paid user with this email
@@ -1759,7 +1762,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               const signupData = tempData.tempQuizData as any;
               const email = signupData?.email || tempData.email;
               const password = signupData?.password || tempData.password;
-              const name = signupData?.name || tempData.name;
+              const name = (signupData?.firstName || "") + (signupData?.lastName ? " " + signupData.lastName : "");
 
               if (!password) {
                 console.error(
@@ -1782,12 +1785,12 @@ export async function registerRoutes(app: Express): Promise<void> {
               }
 
               // Check if user already exists (safety check)
-              let user = await storage.getUserByUsername(email);
+              let user = await storage.getUserByEmail(email);
               if (!user) {
                 try {
                   // Create permanent user account
                   user = await storage.createUser({
-                    username: email,
+                    email: email,
                     password: password, // Already hashed
                     firstName: '',
                     lastName: '',
@@ -1795,7 +1798,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 } catch (createUserError) {
                   // If user creation fails due to duplicate email, try to get the user again
                   // This can happen in rare race conditions
-                  user = await storage.getUserByUsername(email);
+                  user = await storage.getUserByEmail(email);
                   if (!user) {
                     throw createUserError; // Re-throw if it's not a duplicate error
                   }
@@ -2356,7 +2359,8 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         try {
           const userId = await getUserIdFromRequest(req);
           if (userId) {
-            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            const attempts = await storage.getQuizAttempts(userId);
+            const quizAttemptId = attempts.length > 0 ? attempts[0].id : undefined;
             if (quizAttemptId) {
               const descriptionsMap: { [key: string]: string } = {};
               descriptions.forEach((desc: any) => {
@@ -2374,11 +2378,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           const { ErrorHandler } = await import("./utils/errorHandler.js");
           await ErrorHandler.handleStorageError(dbError as Error, {
             operation: "store_business_fit_descriptions",
-            context: {
-              quizAttemptId,
-              userId,
-              descriptionsCount: descriptions.length,
-            },
+            context: {},
             isCritical: false,
             shouldThrow: false,
           });
@@ -2402,7 +2402,8 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
         try {
           const userId = await getUserIdFromRequest(req);
           if (userId) {
-            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            const attempts = await storage.getQuizAttempts(userId);
+            const quizAttemptId = attempts.length > 0 ? attempts[0].id : undefined;
             if (quizAttemptId) {
               const descriptionsMap: { [key: string]: string } = {};
               fallbackDescriptions.forEach((desc: any) => {
@@ -2422,11 +2423,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           const { ErrorHandler } = await import("./utils/errorHandler.js");
           await ErrorHandler.handleStorageError(dbError as Error, {
             operation: "store_fallback_business_fit_descriptions",
-            context: {
-              quizAttemptId,
-              userId,
-              fallbackDescriptionsCount: fallbackDescriptions.length,
-            },
+            context: {},
             isCritical: false,
             shouldThrow: false,
           });
@@ -2538,7 +2535,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
             businessId: match.id,
             description:
               content ||
-              `This business model doesn't align well with your current profile. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable. Your ${quizData.techSkillsRating}/5 technical skills and ${quizData.selfMotivationLevel}/5 self-motivation level indicate potential challenges with this path. Consider focusing on business models that better match your strengths and current situation.`,
+              `This business model doesn't align well with your current profile. Your ${quizData.riskComfortLevel <= 2 ? "lower risk tolerance" : "risk preferences"} and ${quizData.weeklyTimeCommitment} hours/week availability suggest other business models would be more suitable. Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} technical skills and ${quizData.selfMotivationLevel >= 4 ? "high" : "moderate"} self-motivation level indicate potential challenges with this path. Consider focusing on business models that better match your strengths and current situation.`,
           });
         }
 
@@ -2546,7 +2543,8 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         try {
           const userId = await getUserIdFromRequest(req);
           if (userId) {
-            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            const attempts = await storage.getQuizAttempts(userId);
+            const quizAttemptId = attempts.length > 0 ? attempts[0].id : undefined;
             if (quizAttemptId) {
               const descriptionsMap: { [key: string]: string } = {};
               descriptions.forEach((desc: any) => {
@@ -2564,11 +2562,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           const { ErrorHandler } = await import("./utils/errorHandler.js");
           await ErrorHandler.handleStorageError(dbError as Error, {
             operation: "store_business_avoid_descriptions",
-            context: {
-              quizAttemptId,
-              userId,
-              descriptionsCount: descriptions.length,
-            },
+            context: {},
             isCritical: false,
             shouldThrow: false,
           });
@@ -2590,7 +2584,8 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         try {
           const userId = await getUserIdFromRequest(req);
           if (userId) {
-            const quizAttemptId = await storage.getCurrentQuizAttemptId(userId);
+            const attempts = await storage.getQuizAttempts(userId);
+            const quizAttemptId = attempts.length > 0 ? attempts[0].id : undefined;
             if (quizAttemptId) {
               const descriptionsMap: { [key: string]: string } = {};
               fallbackDescriptions.forEach((desc: any) => {
@@ -2610,11 +2605,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
           const { ErrorHandler } = await import("./utils/errorHandler.js");
           await ErrorHandler.handleStorageError(dbError as Error, {
             operation: "store_fallback_business_avoid_descriptions",
-            context: {
-              quizAttemptId,
-              userId,
-              fallbackDescriptionsCount: fallbackDescriptions.length,
-            },
+            context: {},
             isCritical: false,
             shouldThrow: false,
           });
@@ -2632,7 +2623,10 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
       try {
         console.log(" Starting AI content migration...");
 
-        const result = await storage.migrateAIContentToNewTable();
+        let result = null;
+        if (storage instanceof DatabaseStorage) {
+          result = await storage.migrateAIContentToNewTable();
+        }
 
         console.log("AI content migration completed successfully");
         res.json({
@@ -2716,7 +2710,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         dataToStore = {
           email: existingQuizData.email || email,
           password: existingQuizData.password || existingData.password,
-          name: existingQuizData.name || existingData.name,
+          name: (existingQuizData.firstName || "") + (existingQuizData.lastName ? " " + existingQuizData.lastName : "") || (existingData.firstName || "") + (existingData.lastName ? " " + existingData.lastName : ""),
           quizData,
         };
       } else {
@@ -3032,7 +3026,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
 
       // Create a test user with access pass
       const testUser = await storage.createUser({
-        username: "test-retake-user@example.com",
+        email: "test-retake-user@example.com",
         password: "test123",
       });
       console.log("Created test user:", testUser.id);
@@ -3106,41 +3100,9 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         console.log(" Emergency database schema fix requested...");
 
         // Add missing columns to users table
-        await storage.ensureDb().execute(sql`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS session_id TEXT,
-        ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE NOT NULL,
-        ADD COLUMN IF NOT EXISTS is_temporary BOOLEAN DEFAULT FALSE NOT NULL,
-        ADD COLUMN IF NOT EXISTS temp_quiz_data JSONB,
-        ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP
-      `);
-
-        // Add missing PayPal column to payments table
-        await storage.ensureDb().execute(sql`
-        ALTER TABLE payments
-        ADD COLUMN IF NOT EXISTS paypal_order_id VARCHAR UNIQUE
-      `);
-
-        // Create ai_content table if it doesn't exist
-        await storage.ensureDb().execute(sql`
-        CREATE TABLE IF NOT EXISTS ai_content (
-          id SERIAL PRIMARY KEY,
-          quiz_attempt_id INTEGER NOT NULL REFERENCES quiz_attempts(id) ON DELETE CASCADE,
-          content_type VARCHAR(100) NOT NULL,
-          content JSONB NOT NULL,
-          content_hash VARCHAR(64),
-          generated_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          UNIQUE(quiz_attempt_id, content_type)
-        )
-      `);
-
-        // Mark all existing users as paid
-        await storage.ensureDb().execute(sql`
-        UPDATE users
-        SET is_paid = TRUE, is_temporary = FALSE
-        WHERE is_paid IS NULL OR is_temporary IS NULL
-      `);
+        if (storage instanceof DatabaseStorage) {
+          await storage.fixSchema();
+        }
 
         console.log("Database schema fixed!");
         res.json({ success: true, message: "Database schema fixed" });
@@ -3148,7 +3110,7 @@ CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbe
         console.error("❌ Database schema fix failed:", error);
         res
           .status(500)
-          .json({ error: "Schema fix failed", details: error.message });
+          .json({ error: "Schema fix failed", details: error instanceof Error ? error.message : String(error) });
       }
     },
   );

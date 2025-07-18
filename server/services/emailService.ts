@@ -117,6 +117,17 @@ export class EmailService {
 
     if (!process.env.RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not configured");
+      
+      // In development mode, log the email instead of failing
+      if (process.env.NODE_ENV === "development") {
+        console.log("=== EMAIL WOULD BE SENT (Development Mode) ===");
+        console.log("To:", options.to);
+        console.log("Subject:", options.subject);
+        console.log("HTML Preview:", options.html.substring(0, 200) + "...");
+        console.log("=== END EMAIL LOG ===");
+        return true; // Return success in development mode
+      }
+      
       return false;
     }
 
@@ -317,7 +328,7 @@ export class EmailService {
                   </div>
                   
                   <div class="cta-button-container" style="text-align: center; margin-top: 24px;">
-                    <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results?email=${encodeURIComponent(quizData.email || '')}&attempt=${quizData.attemptId || ''}" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3); transition: all 0.3s ease;">
+                    <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3); transition: all 0.3s ease;">
                       Unlock Full Results →
                     </a>
                   </div>
@@ -359,7 +370,7 @@ export class EmailService {
               </div>
 
               <div style="text-align: center; margin-top: 40px;">
-                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results?email=${encodeURIComponent(quizData.email || '')}&attempt=${quizData.attemptId || ''}" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 20px 40px; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 18px; text-align: center; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); transition: all 0.3s ease;">
+                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 20px 40px; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 18px; text-align: center; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); transition: all 0.3s ease;">
                   Unlock Full Results →
                 </a>
               </div>
@@ -852,7 +863,7 @@ export class EmailService {
                       With your <strong>${this.formatMotivation(quizData.mainMotivation)}</strong> motivation and <strong>${getIncomeRangeLabel(quizData.successIncomeGoal)}</strong> income goal, you're positioned for success in the ${quizData.successIncomeGoal >= 5000 ? "high-growth" : "sustainable income"} category. Your ${getTimeCommitmentRangeLabel(quizData.weeklyTimeCommitment)} weekly commitment shows ${quizData.weeklyTimeCommitment >= 20 ? "strong dedication" : "balanced approach"} to building your business.
                     </p>
                     <p style="font-size: 16px; line-height: 1.6; color: white !important;">
-                      Your ${quizData.techSkillsRating}/5 tech skills rating and ${quizData.learningPreference} learning preference indicate you're ${quizData.techSkillsRating >= 4 ? "technically capable and ready for advanced strategies" : "perfectly positioned for user-friendly business models"}. This combination creates an ideal foundation for ${top3Paths[0].name} success.
+                      Your ${quizData.techSkillsRating >= 4 ? "strong" : "adequate"} tech skills and ${quizData.learningPreference} learning preference indicate you're ${quizData.techSkillsRating >= 4 ? "technically capable and ready for advanced strategies" : "perfectly positioned for user-friendly business models"}. This combination creates an ideal foundation for ${top3Paths[0].name} success.
                     </p>
                   </div>
                 </div>
@@ -976,7 +987,7 @@ export class EmailService {
                     </div>
                     <div class="profile-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
                       <span class="profile-label" style="font-weight: 500; color: #6B7280 !important; font-size: 15px;">Tech Skills</span>
-                      <span class="profile-value" style="font-weight: 600; color: #000000 !important; font-size: 15px;">${quizData.techSkillsRating}/5</span>
+                      <span class="profile-value" style="font-weight: 600; color: #000000 !important; font-size: 15px;">${quizData.techSkillsRating >= 4 ? "Strong" : quizData.techSkillsRating >= 3 ? "Moderate" : "Basic"}</span>
                     </div>
                   </div>
                 </div>
@@ -984,7 +995,7 @@ export class EmailService {
 
               <!-- Call to Action -->
               <div style="text-align: center; margin-top: 20px;">
-                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results?email=${encodeURIComponent(quizData.email || '')}&attempt=${quizData.attemptId || ''}" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3); margin-bottom: 16px;">
+                <a href="${process.env.FRONTEND_URL || "https://bizmodelai.com"}/results" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); color: white !important; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3); transition: all 0.3s ease;">
                   View Your Results →
                 </a>
                 <br>

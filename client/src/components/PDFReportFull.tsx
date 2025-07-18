@@ -58,8 +58,8 @@ export const PDFReportFull: React.FC<PDFReportFullProps> = ({
     const aiCacheManager = AICacheManager.getInstance();
     // const cachedData = aiCacheManager.getCachedAIContent(quizData);
     const cachedData = null; // Temporarily disabled
-    aiInsights = cachedData?.insights || null;
-    aiAnalysis = cachedData?.analysis || null;
+    aiInsights = (cachedData as any)?.insights || null;
+    aiAnalysis = (cachedData as any)?.analysis || null;
   }
 
   // Extract AI analysis components for comprehensive reporting

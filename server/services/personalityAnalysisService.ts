@@ -78,25 +78,32 @@ export class PersonalityAnalysisService {
   }
 
   private buildPersonalityPrompt(quizData: QuizData): string {
+    // Helper function to convert numerical ratings to descriptive text
+    const getRatingDescription = (rating: number): string => {
+      if (rating >= 4) return "high";
+      if (rating >= 3) return "moderate";
+      return "low";
+    };
+
     return `
     Analyze your personality traits based on your quiz responses. Be extremely precise and avoid generic scores.
 
     YOUR QUIZ RESPONSES:
     - Main Motivation: ${quizData.mainMotivation}
     - Weekly Time Commitment: ${quizData.weeklyTimeCommitment} hours
-    - Self Motivation Level: ${quizData.selfMotivationLevel}/5
-    - Long Term Consistency: ${quizData.longTermConsistency}/5
-    - Risk Comfort Level: ${quizData.riskComfortLevel}/5
-    - Tech Skills Rating: ${quizData.techSkillsRating}/5
-    - Direct Communication Enjoyment: ${quizData.directCommunicationEnjoyment}/5
-    - Brand Face Comfort: ${quizData.brandFaceComfort}/5
-    - Creative Work Enjoyment: ${quizData.creativeWorkEnjoyment}/5
-    - Feedback Rejection Response: ${quizData.feedbackRejectionResponse}/5
-    - Organization Level: ${quizData.organizationLevel}/5
-    - Systems Routines Enjoyment: ${quizData.systemsRoutinesEnjoyment}/5
-    - Trial Error Comfort: ${quizData.trialErrorComfort}/5
-    - Uncertainty Handling: ${quizData.uncertaintyHandling}/5
-    - Discouragement Resilience: ${quizData.discouragementResilience}/5
+    - Self Motivation Level: ${getRatingDescription(quizData.selfMotivationLevel)}
+    - Long Term Consistency: ${getRatingDescription(quizData.longTermConsistency)}
+    - Risk Comfort Level: ${getRatingDescription(quizData.riskComfortLevel)}
+    - Tech Skills Rating: ${getRatingDescription(quizData.techSkillsRating)}
+    - Direct Communication Enjoyment: ${getRatingDescription(quizData.directCommunicationEnjoyment)}
+    - Brand Face Comfort: ${getRatingDescription(quizData.brandFaceComfort)}
+    - Creative Work Enjoyment: ${getRatingDescription(quizData.creativeWorkEnjoyment)}
+    - Feedback Rejection Response: ${getRatingDescription(quizData.feedbackRejectionResponse)}
+    - Organization Level: ${getRatingDescription(quizData.organizationLevel)}
+    - Systems Routines Enjoyment: ${getRatingDescription(quizData.systemsRoutinesEnjoyment)}
+    - Trial Error Comfort: ${getRatingDescription(quizData.trialErrorComfort)}
+    - Uncertainty Handling: ${getRatingDescription(quizData.uncertaintyHandling)}
+    - Discouragement Resilience: ${getRatingDescription(quizData.discouragementResilience)}
     - Work Collaboration Preference: ${quizData.workCollaborationPreference}
     - Work Structure Preference: ${quizData.workStructurePreference}
     - Decision Making Style: ${quizData.decisionMakingStyle}
@@ -104,10 +111,10 @@ export class PersonalityAnalysisService {
     - Tool Learning Willingness: ${quizData.toolLearningWillingness}
     - Repetitive Tasks Feeling: ${quizData.repetitiveTasksFeeling}
     - Familiar Tools: ${quizData.familiarTools?.join(", ")}
-    - Competitiveness Level: ${quizData.competitivenessLevel}/5
-    - Control Importance: ${quizData.controlImportance}/5
+    - Competitiveness Level: ${getRatingDescription(quizData.competitivenessLevel)}
+    - Control Importance: ${getRatingDescription(quizData.controlImportance)}
     - Support System Strength: ${quizData.supportSystemStrength}
-    - Passion Identity Alignment: ${quizData.passionIdentityAlignment}/5
+    - Passion Identity Alignment: ${getRatingDescription(quizData.passionIdentityAlignment)}
 
     Calculate precise personality trait scores (0-100) based on these specific responses:
 

@@ -8,6 +8,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   isTemporary?: boolean;
+  name?: string; // Add name property for display
 }
 
 interface AuthContextType {
@@ -127,7 +128,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData);
+          setUser({
+            ...userData,
+            name: userData.firstName || userData.lastName
+              ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+              : userData.username || userData.email,
+          });
         } else if (response.status === 401) {
           // Not authenticated - this is expected, not an error
           setUser(null);
@@ -181,7 +187,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const data = await response.json();
-      setUser(data);
+      setUser({
+        ...data,
+        name: data.firstName || data.lastName
+          ? `${data.firstName || ''} ${data.lastName || ''}`.trim()
+          : data.username || data.email,
+      });
     } catch (error) {
       throw error;
     } finally {
@@ -234,7 +245,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const data = await response.json();
-      setUser(data);
+      setUser({
+        ...data,
+        name: data.firstName || data.lastName
+          ? `${data.firstName || ''} ${data.lastName || ''}`.trim()
+          : data.username || data.email,
+      });
     } catch (error) {
       throw error;
     } finally {
@@ -382,7 +398,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const data = await response.json();
-      setUser(data);
+      setUser({
+        ...data,
+        name: data.firstName || data.lastName
+          ? `${data.firstName || ''} ${data.lastName || ''}`.trim()
+          : data.username || data.email,
+      });
     } catch (error) {
       // Handle network errors and other fetch failures
       if (error instanceof TypeError && error.message.includes("fetch")) {
