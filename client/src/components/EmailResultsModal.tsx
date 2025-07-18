@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { X, Mail, CheckCircle, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Mail, CheckCircle, Loader2, Clock } from "lucide-react";
 import { QuizData } from "../types";
 import { useReportUnlock } from "../hooks/useReportUnlock";
 
@@ -18,13 +18,43 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
   quizAttemptId,
   userEmail,
 }) => {
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error" | "rate-limited">("idle");
   const [message, setMessage] = useState<string>("");
   const [inputEmail, setInputEmail] = useState<string>("");
   const [emailUsed, setEmailUsed] = useState<string>(userEmail || "");
   const [emailError, setEmailError] = useState<string>("");
   const [existingAccount, setExistingAccount] = useState<any>(null);
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ remainingTime: number; type: 'cooldown' | 'extended' } | null>(null);
+  const [countdown, setCountdown] = useState<number>(0);
   const { isUnlocked } = useReportUnlock(typeof quizAttemptId === 'number' && !isNaN(quizAttemptId) ? quizAttemptId : null);
+
+  // Handle countdown timer for rate limits
+  useEffect(() => {
+    if (rateLimitInfo && countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            setStatus("idle");
+            setRateLimitInfo(null);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [rateLimitInfo, countdown]);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStatus("idle");
+      setMessage("");
+      setRateLimitInfo(null);
+      setCountdown(0);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -77,6 +107,8 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
   const handleSendEmail = async () => {
     setStatus("loading");
     setMessage("");
+    setRateLimitInfo(null);
+    setCountdown(0);
     
     // Determine which email to use
     let emailToUse = userEmail || emailUsed || storedEmail || inputEmail;
@@ -164,8 +196,17 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
         setMessage(isUnlocked ? "Full report sent to your email!" : "Preview sent to your email!");
       } else {
         const errorData = await res.json().catch(() => ({}));
-        setStatus("error");
-        setMessage(errorData.error || "Failed to send email. Please try again later.");
+        
+        if (res.status === 429 && errorData.rateLimitInfo) {
+          // Handle rate limit error
+          setStatus("rate-limited");
+          setRateLimitInfo(errorData.rateLimitInfo);
+          setCountdown(errorData.rateLimitInfo.remainingTime);
+          setMessage(`You can resend email in ${errorData.rateLimitInfo.remainingTime} seconds`);
+        } else {
+          setStatus("error");
+          setMessage(errorData.error || "Failed to send email. Please try again later.");
+        }
       }
     } catch (error) {
       setStatus("error");
@@ -271,6 +312,34 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
               <p className="text-red-700 text-sm text-center">{message}</p>
             </div>
           )}
+
+          {status === "rate-limited" && (
+            <div className="w-full flex flex-col items-center mb-4">
+              <div className="flex items-center justify-center mb-2">
+                <Clock className="w-5 h-5 text-gray-600 mr-2" />
+                <span className="text-gray-700 font-medium">Rate Limited</span>
+              </div>
+              <p className="text-gray-600 text-sm text-center mb-3">
+                {rateLimitInfo?.type === 'cooldown' 
+                  ? "Please wait before sending another email" 
+                  : "Extended cooldown period - please wait longer"}
+              </p>
+              <button
+                onClick={handleSendEmail}
+                disabled={countdown > 0}
+                className={`w-full py-3 rounded-xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+                  countdown > 0
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transform hover:scale-[1.02] shadow-lg"
+                }`}
+              >
+                <Mail className="w-5 h-5 mr-1" />
+                {countdown > 0 ? `Resend in ${countdown}s` : "Resend Email"}
+              </button>
+            </div>
+          )}
+
+
         </div>
       </div>
     </div>
