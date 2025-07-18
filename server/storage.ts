@@ -329,7 +329,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date(),
       };
     }
-    throw new Error('AI content not found');
+    return null;
   }
 
   async getAllAIContentForQuizAttempt(quizAttemptId: number): Promise<AiContent[]> {
@@ -986,7 +986,6 @@ export class DatabaseStorage implements IStorage {
     console.log(
       `AI content saved: ${contentType} for quiz attempt ${quizAttemptId}`,
     );
-    throw new Error("AI content not found");
   }
 
   async getAIContent(
