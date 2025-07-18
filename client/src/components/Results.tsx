@@ -58,6 +58,8 @@ import { getSafeEmoji } from '../utils/contentUtils';
 import { useBusinessModelScores } from "../contexts/BusinessModelScoresContext";
 import { API_ROUTES, apiPost } from '../utils/apiClient';
 import { useAIInsights } from '../contexts/AIInsightsContext';
+import { useEmojiSafeguard } from "../hooks/useEmojiSafeguard";
+import '../styles/BusinessCard.css';
 
 // Helper function to generate 2-sentence descriptions for business models
 const getBusinessModelDescription = (
@@ -181,7 +183,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   >(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
 
-  const { user } = useAuth();
+  const { user, isRealUser } = useAuth();
 
   const {
     hasUnlockedAnalysis,
@@ -203,6 +205,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   const analysisData = aiInsights?.analysis;
   const insightsData = aiInsights?.insights;
   const shouldShowFallback = !analysisData;
+
+  const { validateAndFixEmoji } = useEmojiSafeguard();
 
   useEffect(() => {
     async function initializeResults() {
@@ -273,13 +277,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
       // Convert to BusinessPath format for compatibility
       const convertedPaths: BusinessPath[] = advancedScores.map((score) => {
+        // Normalize the ID
+        const normalizedId = score.id.trim().toLowerCase();
         // Find the corresponding business path data
-        const businessPathData = businessPaths.find(bp => bp.id === score.id);
+        const businessPathData = businessPaths.find(bp => bp.id === normalizedId);
         
         return {
-          id: score.id,
+          id: normalizedId,
           name: score.name,
-          description: getBusinessModelDescription(score.id, score.name),
+          description: getBusinessModelDescription(normalizedId, score.name),
           detailedDescription: `${score.name} with ${score.score}% compatibility`,
           fitScore: score.score,
           difficulty:
@@ -318,7 +324,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           ],
           skills: businessPathData?.skills || ["Basic business skills", "Communication", "Organization"],
           icon: businessPathData?.icon || "",
-          emoji: businessPathData?.emoji || "��",
+          emoji: getSafeEmoji(normalizedId),
           marketSize: businessPathData?.marketSize || "Large",
           averageIncome: businessPathData?.averageIncome || {
             beginner: "$1K-3K",
@@ -353,7 +359,11 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         };
       });
 
-      setPersonalizedPaths(convertedPaths);
+      // After mapping advancedScores to convertedPaths, filter out duplicates by id:
+      const uniquePaths = convertedPaths.filter((path, index, self) =>
+        index === self.findIndex(p => p.id === path.id)
+      );
+      setPersonalizedPaths(uniquePaths);
 
       // Mark quiz as completed
       setHasCompletedQuiz(true);
@@ -775,6 +785,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     );
   }
 
+  // --- BEGIN NEW UI DESIGN ---
   return (
     <>
       <div className="min-h-screen p-4 md:p-4 bg-gradient-to-br from-slate-50 to-blue-50">
@@ -1122,7 +1133,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                     <div className="grid md:grid-cols-2 gap-8">
                       {/* Column 1 */}
                       <div className="space-y-6">
-                        <div className="flex items-start space-x-4">
+                        <div className="flex items-start space-x-4 mb-6">
                           <div className="text-3xl mt-1 emoji">🧠</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
@@ -1136,8 +1147,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           </div>
                         </div>
 
-                        <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1">⚠️</div>
+                        <div className="flex items-start space-x-4 mb-6">
+                          <div className="text-3xl mt-1 emoji">🚫</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Models to Avoid
@@ -1150,8 +1161,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           </div>
                         </div>
 
-                        <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1">🗺️</div>
+                        <div className="flex items-start space-x-4 mb-6">
+                          <div className="text-3xl mt-1 emoji">🗺️</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Step-by-Step Launch Guidance
@@ -1167,8 +1178,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
                       {/* Column 2 */}
                       <div className="space-y-6">
-                        <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1">💪</div>
+                        <div className="flex items-start space-x-4 mb-6">
+                          <div className="text-3xl mt-1 emoji">💪</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Your Strengths & Blind Spots
@@ -1181,22 +1192,20 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           </div>
                         </div>
 
-                        <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1 emoji">📊</div>
+                        <div className="flex items-start space-x-4 mb-6">
+                          <div className="text-3xl mt-1 emoji">💰</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Income Potential & Market Fit
                             </h4>
                             <p className="text-blue-100 text-sm leading-relaxed">
-                              Understand how much you can
-                              realistically earn and how big the
-                              opportunity is.
+                              Understand how much you can realistically earn and how big the opportunity is.
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1">🛠</div>
+                        <div className="flex items-start space-x-4 mb-6">
+                          <div className="text-3xl mt-1 emoji">🛠️</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Skills You Need to Succeed
@@ -1254,8 +1263,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
             animate="animate"
           >
             {personalizedPaths.slice(0, 3).map((path, index) => {
-              const IconComponent =
-                iconMap[path.icon as keyof typeof iconMap] || TrendingUp;
+              const safeEmoji = getSafeEmoji(path.id);
 
               return (
                 <motion.div
@@ -1276,6 +1284,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       }}
                     />
                   )}
+
 
                   {/* Ranking bubbles */}
                   {index === 0 && (
@@ -1324,7 +1333,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       <div className="flex items-center">
                         {/* Emoji and title inline */}
                         <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                          <span className="text-3xl mr-2 emoji">{getSafeEmoji(path.id) || '💼'}</span>
+                          <span className="text-3xl mr-2 emoji">{safeEmoji}</span>
                           {path.name}
                         </h3>
                         {/* Removed separate emoji span */}
@@ -1342,6 +1351,37 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           AI Match
                         </div>
                       </div>
+                    </div>
+
+                    {/* Potential Income */}
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4" style={{ marginBottom: '0.25rem' }}>
+                      <div className="flex items-center mb-2">
+                        <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
+                        <span className="text-sm font-medium text-green-800">
+                          Potential Income
+                        </span>
+                      </div>
+                      <div className="text-xl font-bold text-green-700">
+                        {path.potentialIncome}
+                      </div>
+                    </div>
+
+                    {/* Top Pros - Move directly after Potential Income */}
+                    <div className="flex-1 mb-4 mt-2">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                        Top Benefits
+                      </h4>
+                      <ul className="text-sm text-gray-600 space-y-2">
+                        {path.pros.slice(0, 3).map((pro, i) => (
+                          <li key={i} className="flex items-start">
+                            <span className="text-green-500 mr-2 text-xs">
+                              •
+                            </span>
+                            <span className="leading-tight">{pro}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
 
                     <p className="text-gray-600 mb-4 leading-relaxed text-sm">
@@ -1378,37 +1418,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       </div>
                     </div>
 
-                    {/* Potential Income */}
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4" style={{ marginBottom: '0.25rem' }}>
-                      <div className="flex items-center mb-2">
-                        <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
-                        <span className="text-sm font-medium text-green-800">
-                          Potential Income
-                        </span>
-                      </div>
-                      <div className="text-xl font-bold text-green-700">
-                        {path.potentialIncome}
-                      </div>
-                    </div>
-
-                    {/* Top Pros */}
-                    <div className="flex-1 mb-4">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center mt-6">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
-                        Top Benefits
-                      </h4>
-                      <ul className="text-sm text-gray-600 space-y-2">
-                        {path.pros.slice(0, 3).map((pro, i) => (
-                          <li key={i} className="flex items-start">
-                            <span className="text-green-500 mr-2 text-xs">
-                              •
-                            </span>
-                            <span className="leading-tight">{pro}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
                     {/* CTAs at bottom for mobile */}
                     <div className="space-y-2 mt-auto">
                       {/* Primary CTA - Only show if card is not locked */}
@@ -1439,7 +1448,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                               }
                               handleLearnMore(path);
                             }}
-                            className="text-left font-bold text-sm text-black hover:text-gray-600 transition-colors duration-300 flex items-center group"
+                            className="text-left font-bold text-sm text-gray-700 hover:text-gray-600 transition-colors duration-300 flex items-center group"
                           >
                             Learn more about {path.name} for you
                             <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
@@ -1452,7 +1461,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                               }
                               handleStartBusinessModel(path);
                             }}
-                            className="text-left font-bold text-sm text-black hover:text-gray-600 transition-colors duration-300 flex items-center group"
+                            className="text-left font-bold text-sm text-gray-700 hover:text-gray-600 transition-colors duration-300 flex items-center group"
                           >
                             Complete Guide to {path.name}
                             <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
@@ -1470,7 +1479,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         <div className="flex items-center mb-4">
                           {/* Emoji and title inline */}
                           <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-                            <span className="text-3xl mr-3 emoji">{getSafeEmoji(path.id) || '💼'}</span>
+                            <span className="text-3xl mr-3 emoji">{safeEmoji}</span>
                             {path.name}
                           </h3>
                         </div>
@@ -1577,8 +1586,9 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           </div>
                         </div>
 
+                        {/* Top Benefits - Move directly after Potential Income */}
                         <div>
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center mt-6">
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                             <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
                             Top Benefits
                           </h4>
@@ -1740,19 +1750,19 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                 >
                   {[
                     {
-                      icon: Brain,
+                      emoji: "💪",
                       title: "Advanced AI Analysis",
                       description:
                         "Deep personality profiling and custom success predictions based on your unique profile",
                     },
                     {
-                      icon: Target,
+                      emoji: "📊",
                       title: "Detailed Action Plans",
                       description:
                         "Week-by-week roadmaps with specific milestones and success metrics",
                     },
                     {
-                      icon: BookOpen,
+                      emoji: "🗺️",
                       title: "Curated Resources",
                       description:
                         "Hand-picked tools, courses, and platforms with ratings and reviews",
@@ -1763,9 +1773,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       className="flex items-start text-left bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6"
                       variants={fadeInUp}
                     >
-                      <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-xl flex items-center justify-center mr-3 md:mr-4 flex-shrink-0">
-                        <feature.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                      </div>
+                      <span className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-xl flex items-center justify-center mr-3 md:mr-4 flex-shrink-0 text-2xl md:text-3xl" style={{ fontFamily: "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif", fontStyle: 'normal', fontWeight: 'normal', lineHeight: 1, fontSize: '2rem' }}>{feature.emoji}</span>
                       <div>
                         <h3 className="font-bold text-white mb-1 md:mb-2 text-sm md:text-base">
                           {feature.title}
@@ -1897,6 +1905,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       />
     </>
   );
-};
+  // --- END NEW UI DESIGN ---
+}
 
 export default Results;
