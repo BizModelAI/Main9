@@ -60,31 +60,32 @@ const PaymentMethodSelector: React.FC<{
             <span className="font-medium text-gray-900">Credit card</span>
           </div>
           <div className="flex items-center space-x-2">
-            {/* Stripe recommended card brand icons */}
+            {/* Credit card brand icons */}
             <img
-              src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/visa.svg"
+              src="https://cdn.jsdelivr.net/gh/lipis/flag-icon-css@master/flags/4x3/us.svg"
               alt="Visa"
-              className="w-8 h-5"
-              style={{ background: 'white', borderRadius: '4px', padding: '2px' }}
+              className="w-8 h-5 rounded"
+              style={{
+                background: "#1a1f71",
+                color: "white",
+                fontSize: "6px",
+                textAlign: "center",
+                lineHeight: "20px",
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
-            <img
-              src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/mastercard.svg"
-              alt="Mastercard"
-              className="w-8 h-5"
-              style={{ background: 'white', borderRadius: '4px', padding: '2px' }}
-            />
-            <img
-              src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/amex.svg"
-              alt="American Express"
-              className="w-8 h-5"
-              style={{ background: 'white', borderRadius: '4px', padding: '2px' }}
-            />
-            <img
-              src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/discover.svg"
-              alt="Discover"
-              className="w-8 h-5"
-              style={{ background: 'white', borderRadius: '4px', padding: '2px' }}
-            />
+            <div className="w-8 h-5 bg-gradient-to-r from-red-500 to-orange-500 rounded flex items-center justify-center text-white text-xs font-bold">
+              MC
+            </div>
+            <div className="w-8 h-5 bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
+              AE
+            </div>
+            <div className="w-8 h-5 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold">
+              DI
+            </div>
+            <span className="text-xs text-gray-500">+4</span>
           </div>
         </div>
       </div>

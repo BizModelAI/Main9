@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 console.log("Starting development server with Vite...");
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3005;
 
 // Basic middleware
 app.use(express.json());

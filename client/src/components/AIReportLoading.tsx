@@ -876,6 +876,8 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           currentAiResults = { ...currentAiResults, ...step2Result };
 
           // Step 3: Generate AI insights (SINGLE API CALL)
+          // Remove any duplicate or redundant call to generateResultsPreview here. Only one call should be made per quiz attempt.
+          // The following block is the only call that should remain:
           const step3Result = await executeStep(2, async () => {
             console.log(" Starting AI insights generation (single call)");
             console.log("Quiz data being used:", {
@@ -970,21 +972,9 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
               });
 
               return { aiInsights: formattedInsights };
-            } catch (error) {
-              console.error("❌ AI insights generation failed:", error);
-              console.error(
-                "Error details:",
-                error instanceof Error ? error.message : "Unknown error",
-              );
-
-              // Return null to trigger fallback in Results component
-              setAIInsights({
-                insights: {} as any,
-                analysis: {} as any,
-                timestamp: Date.now(),
-                quizAttemptId: undefined,
-              });
-              return { aiInsights: null, aiGenerationError: error };
+            } catch (err) {
+              console.error('Error generating preview insights:', err);
+              return {};
             }
           });
           currentAiResults = { ...currentAiResults, ...step3Result };

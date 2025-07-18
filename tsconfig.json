@@ -4,7 +4,8 @@
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": true,
+    "noEmit": false,
+    "outDir": "./server/dist",
     "target": "ES2017",
     "module": "ESNext",
     "strict": true,
@@ -14,7 +15,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": false,
-    "allowImportingTsExtensions": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
