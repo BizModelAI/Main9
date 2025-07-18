@@ -39,14 +39,14 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
 
-  // Set all step durations to 5 seconds
+  // Set all step durations to fit a total of 7 seconds
   const processingSteps: ProcessingStep[] = [
     {
       id: "analyzing",
       title: "Analyzing Your Responses",
       subtitle: "Processing your unique answers and preferences",
       icon: Brain,
-      duration: 5.0,
+      duration: 1.2, // seconds
       completed: false,
     },
     {
@@ -54,7 +54,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Finding Perfect Matches",
       subtitle: "AI is comparing you with business models",
       icon: Target,
-      duration: 5.0,
+      duration: 1.2,
       completed: false,
     },
     {
@@ -62,7 +62,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Generating Complete AI Analysis",
       subtitle: "Creating all insights and recommendations for your results",
       icon: Sparkles,
-      duration: 5.0,
+      duration: 1.2,
       completed: false,
     },
     {
@@ -70,7 +70,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Building Your Profile",
       subtitle: "Identifying your entrepreneurial strengths",
       icon: Users,
-      duration: 5.0,
+      duration: 1.2,
       completed: false,
     },
     {
@@ -78,7 +78,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Preparing Results",
       subtitle: "Putting the finishing touches on your report",
       icon: Award,
-      duration: 5.0,
+      duration: 1.1,
       completed: false,
     },
     {
@@ -86,7 +86,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
       title: "Optimizing Recommendations",
       subtitle: "Fine-tuning your personalized business strategy",
       icon: BarChart3,
-      duration: 5.0,
+      duration: 1.1,
       completed: false,
     },
   ];
@@ -192,7 +192,7 @@ const QuizCompletionLoading: React.FC<QuizCompletionLoadingProps> = ({
 
       // Ensure minimum total time
       const elapsed = Date.now() - startTime;
-      const minimumDuration = 10000;
+      const minimumDuration = 7000;
       if (elapsed < minimumDuration) {
         await new Promise((resolve) =>
           setTimeout(resolve, minimumDuration - elapsed),

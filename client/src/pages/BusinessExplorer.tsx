@@ -790,15 +790,15 @@ const BusinessModelDetailsModal = ({
                     <p className="text-gray-600 leading-relaxed text-base mb-4">{model.detailedDescription}</p>
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-gray-600">
-                        <span className="text-green-500 mr-2">✅</span>
+                        <span className="text-green-500 mr-2 emoji">✅</span>
                         Project-based work with flexible scheduling
                 </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <span className="text-green-500 mr-2">✅</span>
+                        <span className="text-green-500 mr-2 emoji">✅</span>
                         Choose your own rates and clients
               </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <span className="text-green-500 mr-2">✅</span>
+                        <span className="text-green-500 mr-2 emoji">✅</span>
                         Build a portfolio and reputation
                       </div>
                     </div>

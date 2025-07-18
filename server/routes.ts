@@ -346,16 +346,16 @@ export async function registerRoutes(app: Express): Promise<void> {
       const { quizData, requiredSkills, businessModel, userProfile } = req.body;
 
       const prompt = `
-        Based on this user's quiz responses, analyze their current skill level for each required skill for ${businessModel}:
+        Based on your quiz responses, analyze your current skill level for each required skill for ${businessModel}:
 
-        USER PROFILE:
+        YOUR PROFILE:
         ${userProfile}
 
         REQUIRED SKILLS:
         ${requiredSkills.map((skill: string) => `- ${skill}`).join("\n")}
 
         For each skill, determine:
-        1. Status: "have" (user already has this skill), "working-on" (user has some experience but needs development), or "need" (user doesn't have this skill)
+        1. Status: "have" (you already have this skill), "working-on" (you have some experience but need development), or "need" (you don't have this skill)
         2. Confidence: 1-10 score of how confident you are in this assessment
         3. Reasoning: Brief explanation of why you categorized it this way
 
@@ -372,12 +372,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
 
         Base your assessment on:
-        - Their experience level and existing skills
-        - Their learning preferences and willingness to learn
-        - Their time commitment and motivation
-        - Their tech comfort level
-        - Their communication and work preferences
-        - Their past tools and experience indicators
+        - Your experience level and existing skills
+        - Your learning preferences and willingness to learn
+        - Your time commitment and motivation
+        - Your tech comfort level
+        - Your communication and work preferences
+        - Your past tools and experience indicators
       `;
 
       const openaiResponse = await fetch(
@@ -394,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               {
                 role: "system",
                 content:
-                  "You are an expert career coach and skills assessor. Analyze user profiles and provide accurate skill assessments for business models.",
+                  "You are an expert career coach and skills assessor. Analyze profiles and provide accurate skill assessments for business models. Always address the user directly using 'you' and 'your'.",
               },
               {
                 role: "user",
@@ -1178,41 +1178,56 @@ export async function registerRoutes(app: Express): Promise<void> {
       // TIER 2: Users with email (unpaid) - 3-month database storage with expiration
       if (email) {
         console.log(
-          `Save quiz data: Creating temporary user for email: ${email}`,
+          `Save quiz data: Processing email user: ${email}`,
         );
 
-        // Check if temporary user already exists for this email
-        let tempUser = await storage.getTemporaryUserByEmail(email);
-
-        if (!tempUser) {
-          // Create new temporary user with 3-month expiration
+        // Check if ANY user (paid or temporary) already exists for this email
+        const existingUser = await storage.getUserByEmail(email);
+        
+        if (existingUser) {
+          if (!existingUser.isTemporary) {
+            // Found a paid user with this email
+            console.log(`Save quiz data: Found existing paid user for email: ${email}`);
+            return res.json({
+              success: true,
+              message: "You already have a paid account. Please log in to save your results permanently.",
+              userType: "existing-paid",
+              existingUserId: existingUser.id,
+              suggestion: "login",
+            });
+          } else {
+            // Found a temporary user with this email - use it
+            tempUser = existingUser;
+            // Update session to current one (don't replace quiz data)
+            await storage.updateUser(tempUser.id, {
+              sessionId: sessionKey, // Update session to current one
+              updatedAt: new Date(),
+            });
+            console.log(`Save quiz data: Updated session for existing temporary user for email: ${email}`);
+          }
+        } else {
+          // No user exists with this email - create new temporary user
           tempUser = await storage.storeTemporaryUser(sessionKey, email, {
             quizData,
             password: "", // No password for email-only users
           });
-        } else {
-          // Update existing temporary user's quiz data
-          await storage.updateUser(tempUser.id, {
-            tempQuizData: quizData,
-            sessionId: sessionKey, // Update session to current one
-            updatedAt: new Date(),
-          });
+          console.log(`Save quiz data: Created new temporary user for email: ${email}`);
         }
 
-        // Save quiz attempt to database (will auto-delete when user expires)
+        // Always create a new quiz attempt (don't replace existing ones)
         const attempt = await storage.recordQuizAttempt({
           userId: tempUser.id,
           quizData,
         });
 
         console.log(
-          `Save quiz data: Quiz attempt recorded with ID ${attempt.id} for temporary user ${tempUser.id} (${email})`,
+          `Save quiz data: New quiz attempt recorded with ID ${attempt.id} for temporary user ${tempUser.id} (${email})`,
         );
 
         return res.json({
           success: true,
           attemptId: attempt.id,
-          message: "Quiz data saved for 3 months",
+          message: "New quiz attempt saved for 3 months",
           quizAttemptId: attempt.id,
           storageType: "temporary",
           userType: "email-provided",
@@ -1226,21 +1241,75 @@ export async function registerRoutes(app: Express): Promise<void> {
       console.log(
         "Save quiz data: Anonymous user - returning localStorage instruction",
       );
-
       return res.json({
         success: true,
-        message: "Quiz data should be stored in localStorage",
-        storageType: "localStorage",
+        message: "Quiz data saved locally",
+        storageType: "local",
         userType: "anonymous",
-        expiresInHours: 1,
-        warning:
-          "Your data is only stored locally and will be lost if you clear your browser data. Provide an email to save your results for 3 months.",
+        warning: "Your data is only saved in this browser. Clear your browser data to lose it.",
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving quiz data:", error);
-      return res.status(500).json({
+      res.status(500).json({
         error: "Failed to save quiz data",
-        details: error.message,
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Check for existing quiz attempts by email
+  app.get("/api/check-existing-attempts/:email", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.params;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      console.log(`Checking existing attempts for email: ${email}`);
+
+      // Check for ANY user (paid or temporary) with this email
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        // Get their quiz attempts
+        const attempts = await storage.getQuizAttemptsByUserId(existingUser.id);
+        
+        if (!existingUser.isTemporary) {
+          // Paid user
+          return res.json({
+            hasAccount: true,
+            userType: "paid",
+            userId: existingUser.id,
+            attemptsCount: attempts.length,
+            latestAttempt: attempts.length > 0 ? attempts[0] : null,
+            message: "You have a paid account. Please log in to access your results.",
+          });
+        } else {
+          // Temporary user
+          return res.json({
+            hasAccount: true,
+            userType: "temporary",
+            userId: existingUser.id,
+            attemptsCount: attempts.length,
+            latestAttempt: attempts.length > 0 ? attempts[0] : null,
+            expiresAt: existingUser.expiresAt,
+            message: `You have ${attempts.length} previous quiz attempt${attempts.length !== 1 ? 's' : ''}. Your new attempt will be added to your history.`,
+          });
+        }
+      }
+
+      // No existing account
+      return res.json({
+        hasAccount: false,
+        userType: "new",
+        message: "No existing account found for this email.",
+      });
+
+    } catch (error) {
+      console.error("Error checking existing attempts:", error);
+      res.status(500).json({
+        error: "Failed to check existing attempts",
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
@@ -2092,12 +2161,18 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Email endpoints
   app.post("/api/send-quiz-results", async (req: Request, res: Response) => {
+    console.log("API: POST /api/send-quiz-results - Starting email send process");
+    const startTime = Date.now();
+    
     try {
       const { email, quizData, attemptId } = req.body;
 
       if (!email || !quizData) {
+        console.log("API: POST /api/send-quiz-results - Missing email or quiz data");
         return res.status(400).json({ error: "Missing email or quiz data" });
       }
+
+      console.log(`API: POST /api/send-quiz-results - Sending email to: ${email}`);
 
       // Add email and attempt ID to quiz data for the email link
       const quizDataWithEmail = {
@@ -2107,14 +2182,18 @@ export async function registerRoutes(app: Express): Promise<void> {
       };
 
       const success = await emailService.sendQuizResults(email, quizDataWithEmail);
+      const duration = Date.now() - startTime;
 
       if (success) {
+        console.log(`API: POST /api/send-quiz-results - Email sent successfully in ${duration}ms`);
         res.json({ success: true, message: "Quiz results sent successfully" });
       } else {
+        console.log(`API: POST /api/send-quiz-results - Email failed to send after ${duration}ms`);
         res.status(500).json({ error: "Failed to send email" });
       }
     } catch (error) {
-      console.error("Error sending quiz results email:", error);
+      const duration = Date.now() - startTime;
+      console.error(`API: POST /api/send-quiz-results - Error after ${duration}ms:`, error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -2187,9 +2266,9 @@ export async function registerRoutes(app: Express): Promise<void> {
           const match = businessMatches[i];
           const rank = i + 1;
 
-          const prompt = `Based on this user's quiz responses, generate a detailed "Why This Fits You" description for their ${rank === 1 ? "top" : rank === 2 ? "second" : "third"} business match.
+          const prompt = `Based on your quiz responses, generate a detailed "Why This Fits You" description for your ${rank === 1 ? "top" : rank === 2 ? "second" : "third"} business match.
 
-User Quiz Data:
+Your Quiz Data:
 - Main Motivation: ${quizData.mainMotivation}
 - Weekly Time Commitment: ${getTimeCommitmentRange(quizData.weeklyTimeCommitment)}
 - Income Goal: ${getIncomeGoalRange(quizData.successIncomeGoal)}
@@ -2219,17 +2298,17 @@ Business Match:
 - Startup Cost: ${match.startupCost}
 - Potential Income: ${match.potentialIncome}
 
-Generate a detailed personalized analysis of at least 6 sentences explaining why this business model specifically fits this user. Write it as a cohesive paragraph, not bullet points. Be extremely specific about:
-1. How their exact personality traits, goals, and preferences align with this business model
-2. What specific aspects of their quiz responses make them well-suited for this path
-3. How their skills, time availability, and risk tolerance perfectly match the requirements
-4. What unique advantages they bring to this business model based on their specific answers
-5. How their learning style and work preferences complement this business approach
-6. Why this particular combination of traits makes them likely to succeed in this field
+Generate a detailed personalized analysis of at least 6 sentences explaining why this business model specifically fits you. Write it as a cohesive paragraph, not bullet points. Be extremely specific about:
+1. How your exact personality traits, goals, and preferences align with this business model
+2. What specific aspects of your quiz responses make you well-suited for this path
+3. How your skills, time availability, and risk tolerance perfectly match the requirements
+4. What unique advantages you bring to this business model based on your specific answers
+5. How your learning style and work preferences complement this business approach
+6. Why this particular combination of traits makes you likely to succeed in this field
 
-Reference specific quiz data points and explain the connections. Make it personal and specific to their responses, not generic advice. Write in a supportive, consultative tone that demonstrates deep understanding of their profile.
+Reference specific quiz data points and explain the connections. Make it personal and specific to your responses, not generic advice. Write in a supportive, consultative tone that demonstrates deep understanding of your profile.
 
-CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in the user profile. If the user selected a range, always refer to the full range, never specific numbers within it.`;
+CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in your profile. If you selected a range, always refer to the full range, never specific numbers within it. Always address the user directly using 'you' and 'your'.`;
 
           const openaiResponse = await fetch(
             "https://api.openai.com/v1/chat/completions",
@@ -2377,9 +2456,9 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
           const match = businessMatches[i];
           const rank = i + 1;
 
-          const prompt = `Based on this user's quiz responses, generate a detailed "Why This Doesn't Fit Your Current Profile" description for their ${rank === 1 ? "lowest scoring" : rank === 2 ? "second lowest scoring" : "third lowest scoring"} business match.
+          const prompt = `Based on your quiz responses, generate a detailed "Why This Doesn't Fit Your Current Profile" description for your ${rank === 1 ? "lowest scoring" : rank === 2 ? "second lowest scoring" : "third lowest scoring"} business match.
 
-User Quiz Data:
+Your Quiz Data:
 - Main Motivation: ${quizData.mainMotivation}
 - Weekly Time Commitment: ${getTimeCommitmentRange(quizData.weeklyTimeCommitment)}
 - Income Goal: ${getIncomeGoalRange(quizData.successIncomeGoal)}
@@ -2409,17 +2488,17 @@ Business Match:
 - Startup Cost: ${match.startupCost}
 - Potential Income: ${match.potentialIncome}
 
-Generate a detailed personalized analysis of at least 6 sentences explaining why this business model doesn't fit this user's current profile. Write it as a cohesive paragraph, not bullet points. Be specific about:
+Generate a detailed personalized analysis of at least 6 sentences explaining why this business model doesn't fit your current profile. Write it as a cohesive paragraph, not bullet points. Be specific about:
 1. What specific personality traits, goals, or preferences conflict with this business model
 2. Which exact quiz responses indicate poor alignment with this path
-3. How their skills, time availability, or risk tolerance don't match the requirements
-4. What challenges they would likely face based on their specific profile
-5. Why their learning style and work preferences would struggle with this business approach
-6. What would need to change in their profile before this could become viable
+3. How your skills, time availability, or risk tolerance don't match the requirements
+4. What challenges you would likely face based on your specific profile
+5. Why your learning style and work preferences would struggle with this business approach
+6. What would need to change in your profile before this could become viable
 
-Reference specific quiz data points and explain the misalignments. Be honest but constructive. Write in a supportive tone that helps them understand why focusing on better-matched opportunities would be wiser.
+Reference specific quiz data points and explain the misalignments. Be honest but constructive. Write in a supportive tone that helps you understand why focusing on better-matched opportunities would be wiser.
 
-CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in the user profile. If the user selected a range, always refer to the full range, never specific numbers within it.`;
+CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes. Reference the exact ranges and values shown in your profile. If you selected a range, always refer to the full range, never specific numbers within it. Always address the user directly using 'you' and 'your'.`;
 
           const openaiResponse = await fetch(
             "https://api.openai.com/v1/chat/completions",

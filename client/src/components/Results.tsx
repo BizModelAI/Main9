@@ -567,8 +567,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
   // Centralized payment handler
   const handlePayment = async (action: PendingAction = null, type: PaywallType = "full-report", path: BusinessPath | null = null) => {
-    setShowPaymentModal(true);
-    setShowUnlockModal(false);
+    setShowUnlockModal(true);
+    setShowPaymentModal(false);
     setPaywallType(type);
     setPendingAction(action);
     setSelectedPath(path);
@@ -578,6 +578,32 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
     refreshUnlockStatus();
+    
+    // Handle immediate navigation based on paywall type and selected path
+    if (selectedPath) {
+      if (paywallType === "full-report") {
+        // Navigate to full report page
+        handleViewFullReport(selectedPath);
+      } else if (paywallType === "learn-more") {
+        // Navigate to business model detail page
+        navigate(`/business/${selectedPath.id}`);
+        // Scroll to top immediately and after a short delay to ensure it works
+        window.scrollTo({ top: 0, behavior: "instant" });
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: "instant" });
+        }, 100);
+      } else if (paywallType === "business-model") {
+        // Navigate to guide page
+        navigate(`/guide/${selectedPath.id}`);
+        // Scroll to top immediately and after a short delay to ensure it works
+        window.scrollTo({ top: 0, behavior: "instant" });
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: "instant" });
+        }, 100);
+      }
+    }
+    
+    // Handle other pending actions
     if (pendingAction === "download") {
       executeDownloadAction();
       setPendingAction(null);
@@ -588,7 +614,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   };
 
   const handlePaymentWithAccount = () => {
-    handlePayment();
+    setShowUnlockModal(false);
+    setShowPaymentModal(true);
   };
 
   const handleBusinessCardPayment = async () => {
@@ -967,14 +994,14 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                   {/* Business Info Boxes */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                      <div className="text-2xl mb-2">⏱️</div>
+                      <div className="text-2xl mb-2 emoji">⏱️</div>
                       <div className="text-xs text-blue-200 mb-1 font-bold">Time to Start</div>
                       <div className="text-sm font-normal">
                         {personalizedPaths[0]?.timeToProfit || "3-6 months"}
                       </div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                      <div className="text-2xl mb-2">💰</div>
+                      <div className="text-2xl mb-2 emoji">💰</div>
                       <div className="text-xs text-blue-200 mb-1 font-bold">Initial Investment</div>
                       <div className="text-sm font-normal">
                         {personalizedPaths[0]?.startupCost || "$0-500"}
@@ -1002,6 +1029,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       onClick={() => {
                         const topPath = personalizedPaths[0];
                         if (topPath) {
+                          if (!canViewFullReport) {
+                            handlePayment(null, "full-report", topPath);
+                            return;
+                          }
                           handleViewFullReport(topPath);
                         }
                       }}
@@ -1016,6 +1047,10 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         onClick={() => {
                           const topPath = personalizedPaths[0];
                           if (topPath) {
+                            if (!canViewFullReport) {
+                              handlePayment(null, "learn-more", topPath);
+                              return;
+                            }
                             handleLearnMore(topPath);
                           }
                         }}
@@ -1084,7 +1119,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       {/* Column 1 */}
                       <div className="space-y-6">
                         <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1">🧠</div>
+                          <div className="text-3xl mt-1 emoji">🧠</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Your Business Blueprint
@@ -1112,7 +1147,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
 
                         <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1">🛠</div>
+                          <div className="text-3xl mt-1">🗺️</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Step-by-Step Launch Guidance
@@ -1143,7 +1178,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
 
                         <div className="flex items-start space-x-4">
-                          <div className="text-3xl mt-1">📊</div>
+                          <div className="text-3xl mt-1 emoji">📊</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Income Potential & Market Fit
@@ -1233,8 +1268,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                   {index > 0 && !canViewFullReport && (
                     <LockedCardOverlay
                       onUnlock={() => {
-                        setPaywallType("business-model");
-                        setShowUnlockModal(true);
+                        handlePayment(null, "business-model", path);
                       }}
                     />
                   )}
@@ -1286,7 +1320,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                       <div className="flex items-center">
                         {/* Emoji and title inline */}
                         <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                          <span className="text-3xl mr-2">{getSafeEmoji(path.id) || '💼'}</span>
+                          <span className="text-3xl mr-2 emoji">{getSafeEmoji(path.id) || '💼'}</span>
                           {path.name}
                         </h3>
                         {/* Removed separate emoji span */}
@@ -1378,9 +1412,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         <button
                           onClick={() => {
                             if (!canViewFullReport) {
-                              setSelectedPath(path);
-                              setPaywallType("full-report");
-                              setShowUnlockModal(true);
+                              handlePayment(null, "full-report", path);
                               return;
                             }
                             handleViewFullReport(path);
@@ -1398,9 +1430,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           <button
                             onClick={() => {
                               if (!canViewFullReport) {
-                                setSelectedPath(path);
-                                setPaywallType("learn-more");
-                                setShowUnlockModal(true);
+                                handlePayment(null, "learn-more", path);
                                 return;
                               }
                               handleLearnMore(path);
@@ -1413,9 +1443,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           <button
                             onClick={() => {
                               if (!canViewFullReport) {
-                                setSelectedPath(path);
-                                setPaywallType("business-model");
-                                setShowUnlockModal(true);
+                                handlePayment(null, "business-model", path);
                                 return;
                               }
                               handleStartBusinessModel(path);
@@ -1438,7 +1466,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         <div className="flex items-center mb-4">
                           {/* Emoji and title inline */}
                           <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-                            <span className="text-3xl mr-3">{getSafeEmoji(path.id) || '💼'}</span>
+                            <span className="text-3xl mr-3 emoji">{getSafeEmoji(path.id) || '💼'}</span>
                             {path.name}
                           </h3>
                         </div>
@@ -1476,7 +1504,13 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         <div className="space-y-3">
                           {!(index > 0 && !canViewFullReport) && (
                             <button
-                              onClick={() => handleViewFullReport(path)}
+                              onClick={() => {
+                                if (!canViewFullReport) {
+                                  handlePayment(null, "full-report", path);
+                                  return;
+                                }
+                                handleViewFullReport(path);
+                              }}
                               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold text-base flex items-center justify-center hover:scale-[1.02] transition-all duration-300"
                             >
                               <FileText className="h-4 w-4 mr-2" />
@@ -1486,14 +1520,26 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                           {!(index > 0 && !canViewFullReport) && (
                             <div className="text-center space-y-2">
                               <button
-                                onClick={() => handleLearnMore(path)}
+                                onClick={() => {
+                                  if (!canViewFullReport) {
+                                    handlePayment(null, "learn-more", path);
+                                    return;
+                                  }
+                                  handleLearnMore(path);
+                                }}
                                 className="text-gray-700 hover:text-blue-600 text-sm font-bold flex items-center justify-center group"
                               >
                                 Learn more about {path.name} for you
                                 <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                               </button>
                               <button
-                                onClick={() => handleStartBusinessModel(path)}
+                                onClick={() => {
+                                  if (!canViewFullReport) {
+                                    handlePayment(null, "business-model", path);
+                                    return;
+                                  }
+                                  handleStartBusinessModel(path);
+                                }}
                                 className="text-gray-700 hover:text-blue-600 text-sm font-bold flex items-center justify-center group"
                               >
                                 Complete Guide to {path.name}
@@ -1825,6 +1871,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
           onClose={() => setShowUnlockModal(false)}
           onUnlock={handlePaymentWithAccount}
           type={paywallType}
+          title={selectedPath?.name}
         />
 
         {/* Payment Account Modal - For new users */}

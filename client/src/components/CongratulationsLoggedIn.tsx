@@ -110,7 +110,7 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-center mb-6"
             >
-              <div className="text-5xl mb-4"></div>
+              <div className="text-5xl mb-4 emoji">🎉</div>
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -214,7 +214,7 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
               >
                 <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                 <span className="text-green-800 font-medium">
-                  ✅ Email preview sent successfully! Generating your full
+                  <span className="emoji">✅</span> Email preview sent successfully! Generating your full
                   report...
                 </span>
               </motion.div>

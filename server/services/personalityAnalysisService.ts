@@ -51,11 +51,11 @@ export class PersonalityAnalysisService {
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini", // Using gpt-4o-mini for cost efficiency
         messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert psychologist and personality analyst specializing in entrepreneurial traits. Analyze the user's quiz responses to determine their personality traits with precise accuracy. Focus on specific behavioral indicators rather than generalizations.",
-          },
+                      {
+              role: "system",
+              content:
+                "You are an expert psychologist and personality analyst specializing in entrepreneurial traits. Analyze the quiz responses to determine personality traits with precise accuracy. Focus on specific behavioral indicators rather than generalizations. Always address the user directly using 'you' and 'your'.",
+            },
           {
             role: "user",
             content: prompt,
@@ -79,9 +79,9 @@ export class PersonalityAnalysisService {
 
   private buildPersonalityPrompt(quizData: QuizData): string {
     return `
-    Analyze this user's personality traits based on their quiz responses. Be extremely precise and avoid generic scores.
+    Analyze your personality traits based on your quiz responses. Be extremely precise and avoid generic scores.
 
-    USER QUIZ RESPONSES:
+    YOUR QUIZ RESPONSES:
     - Main Motivation: ${quizData.mainMotivation}
     - Weekly Time Commitment: ${quizData.weeklyTimeCommitment} hours
     - Self Motivation Level: ${quizData.selfMotivationLevel}/5

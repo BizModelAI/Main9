@@ -42,6 +42,7 @@ export interface IStorage {
   ): Promise<QuizAttempt>;
   getQuizAttemptsCount(userId: number): Promise<number>;
   getQuizAttempts(userId: number): Promise<QuizAttempt[]>;
+  getQuizAttemptsByUserId(userId: number): Promise<QuizAttempt[]>; // Alias for getQuizAttempts
   getQuizAttempt(attemptId: number): Promise<QuizAttempt | undefined>;
   canUserRetakeQuiz(userId: number): Promise<boolean>;
 
@@ -266,6 +267,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.quizAttempts.values())
       .filter((attempt) => attempt.userId === userId)
       .sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()); // Most recent first
+  }
+
+  async getQuizAttemptsByUserId(userId: number): Promise<QuizAttempt[]> {
+    return this.getQuizAttempts(userId);
   }
 
   async getQuizAttempt(attemptId: number): Promise<QuizAttempt | undefined> {
@@ -846,6 +851,10 @@ export class DatabaseStorage implements IStorage {
       .from(quizAttempts)
       .where(eq(quizAttempts.userId, userId))
       .orderBy(desc(quizAttempts.completedAt));
+  }
+
+  async getQuizAttemptsByUserId(userId: number): Promise<QuizAttempt[]> {
+    return this.getQuizAttempts(userId);
   }
 
   async getQuizAttempt(attemptId: number): Promise<QuizAttempt | undefined> {

@@ -1479,16 +1479,16 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center mb-2">
-            <span className="text-yellow-500 text-xl mr-2">💡</span>
+                            <span className="text-yellow-500 text-xl mr-2 emoji">💡</span>
             <span className="font-semibold text-lg">Did you know?</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <div className="flex items-start">
-              <span className="text-2xl mr-2">🧠</span>
+                              <span className="text-2xl mr-2 emoji">🧠</span>
               <span>Our AI analyzes over 50 different personality traits and business factors to find your perfect match.</span>
             </div>
             <div className="flex items-start">
-              <span className="text-2xl mr-2">🎯</span>
+                              <span className="text-2xl mr-2 emoji">🎯</span>
               <span>Your personalized report is unique to you – no two reports are exactly the same!</span>
             </div>
           </div>

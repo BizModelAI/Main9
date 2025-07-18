@@ -1524,7 +1524,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
                           onClick={() => handleGetStarted(path.id)}
                           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
                         >
-                          Learn More About {(getSafeEmoji(path.id) || '💼') + ' ' + path.name}
+                          Learn More About <span className="emoji">{getSafeEmoji(path.id) || '💼'}</span> + ' ' + path.name
                         </button>
                       )}
                     </div>

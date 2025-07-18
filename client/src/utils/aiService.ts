@@ -97,18 +97,18 @@ Personality Traits (0–5 scale):
           },
           {
             role: "user",
-            content: `Based on this user's quiz data and their top business model, generate the following in JSON format:
+            content: `Based on your quiz data and your top business model, generate the following in JSON format:
 
-1. "previewInsights": Write 3 paragraphs analyzing why this user is a strong fit for ${topPaths[0].name}, based on their quiz results.
-   - Paragraph 1: Explain why this business model aligns with the user's goals, constraints, and personality traits.
-   - Paragraph 2: Describe the user's natural advantages in executing this model (skills, traits, or behaviors).
-   - Paragraph 3: Identify one potential challenge the user may face based on their profile, and how to overcome it.
+1. "previewInsights": Write 3 paragraphs analyzing why you are a strong fit for ${topPaths[0].name}, based on your quiz results.
+   - Paragraph 1: Explain why this business model aligns with your goals, constraints, and personality traits. Be specific about how your exact quiz responses connect to this business model's requirements.
+   - Paragraph 2: Describe your natural advantages in executing this model (skills, traits, or behaviors). Reference specific traits from your quiz that give you an edge in this field.
+   - Paragraph 3: Identify one potential challenge you may face based on your profile, and how to overcome it. Be honest but constructive about areas where you might need to grow.
    Each paragraph must be a minimum of 3 sentences. Longer, more detailed paragraphs are encouraged. Do not write any paragraph shorter than 3 sentences.
-   Use specific references to user traits. Avoid generic phrases. Keep the tone analytical and professional.
+   Use specific references to your traits and quiz responses. Avoid generic phrases. Keep the tone personal, professional, and directly addressing you.
 
-2. "keyInsights": 4 bullet points summarizing the most important findings about the user's business style, risk tolerance, or strategic fit.
+2. "keyInsights": 4 bullet points summarizing the most important findings about your business style, risk tolerance, or strategic fit.
 
-3. "successPredictors": 4 bullet points explaining which traits or behaviors from the quiz predict a high chance of success. These should be personal, specific, and based on actual quiz data.
+3. "successPredictors": 4 bullet points explaining which traits or behaviors from your quiz predict a high chance of success. These should be personal, specific, and based on your actual quiz data.
 
 Format your entire output as:
 {
@@ -118,15 +118,16 @@ Format your entire output as:
 }
 
 CRITICAL RULES:
-- Use only the data from this user profile.
+- Use only the data from your profile.
 - Do NOT invent data or use generic filler.
-- Use clear, concise language.
+- Use clear, concise language that directly addresses you.
 - Do NOT include any headers or formatting outside the JSON.
 - Ban phrases like "powerful foundation", "natural strengths", "unique combination of traits".
-- Every paragraph must reference specific traits.
+- Every paragraph must reference specific traits from your quiz.
 - Max 550 characters per paragraph.
+- Always use "you" and "your" instead of "the user" or "the user's".
 
-USER PROFILE:
+YOUR PROFILE:
 ${userProfile}`,
           },
         ],
@@ -236,7 +237,7 @@ ${userProfile}`,
           },
           {
             role: "user",
-            content: `Based only on the quiz data and the provided top 3 and bottom 3 business matches, generate the following JSON output. This is for a full business analysis report. Do NOT include formatting or markdown. Be specific and use only known data.
+            content: `Based only on your quiz data and the provided top 3 and bottom 3 business matches, generate the following JSON output. This is for a full business analysis report. Do NOT include formatting or markdown. Be specific and use only known data.
 
 Return exactly this structure:
 
@@ -246,32 +247,32 @@ Return exactly this structure:
   "top3Fits": [
     {
       "model": "${topPaths[0]?.name || "Business Model"}",
-      "reason": "One short paragraph explaining why this is a strong match"
+      "reason": "One short paragraph explaining why this is a strong match for you"
     },
     {
       "model": "${topPaths[1]?.name || "Business Model"}",
-      "reason": "One short paragraph explaining why this is a strong match"
+      "reason": "One short paragraph explaining why this is a strong match for you"
     },
     {
       "model": "${topPaths[2]?.name || "Business Model"}",
-      "reason": "One short paragraph explaining why this is a strong match"
+      "reason": "One short paragraph explaining why this is a strong match for you"
     }
   ],
   "bottom3Avoid": [
     {
       "model": "${bottomPaths[0]?.name || "Business Model"}",
-      "reason": "Why this model doesn't align with current profile",
-      "futureConsideration": "How it could become viable in the future (optional)"
+      "reason": "Why this model doesn't align with your current profile",
+      "futureConsideration": "How it could become viable for you in the future (optional)"
     },
     {
       "model": "${bottomPaths[1]?.name || "Business Model"}",
-      "reason": "Why this model doesn't align with current profile",
-      "futureConsideration": "How it could become viable in the future (optional)"
+      "reason": "Why this model doesn't align with your current profile",
+      "futureConsideration": "How it could become viable for you in the future (optional)"
     },
     {
       "model": "${bottomPaths[2]?.name || "Business Model"}",
-      "reason": "Why this model doesn't align with current profile",
-      "futureConsideration": "How it could become viable in the future (optional)"
+      "reason": "Why this model doesn't align with your current profile",
+      "futureConsideration": "How it could become viable for you in the future (optional)"
     }
   ]
 }
@@ -394,19 +395,19 @@ CRITICAL RULES:
       switch (fitType) {
         case "best":
           fitPrompt =
-            "Explain why this is the user's ideal match. Use clear, confident tone.";
+            "Explain why this is your ideal match. Use clear, confident tone.";
           break;
         case "strong":
           fitPrompt =
-            "Explain why it's a great fit, but briefly note why it's not their #1.";
+            "Explain why it's a great fit for you, but briefly note why it's not your #1.";
           break;
         case "possible":
           fitPrompt =
-            "Explain why it might work, but emphasize 2–3 quiz-based reasons why it likely won't right now.";
+            "Explain why it might work for you, but emphasize 2–3 quiz-based reasons why it likely won't right now.";
           break;
         case "poor":
           fitPrompt =
-            "Clearly explain why this model is misaligned with their profile. End with future-oriented line (what would need to change).";
+            "Clearly explain why this model is misaligned with your profile. End with future-oriented line (what would need to change for you).";
           break;
       }
 
@@ -419,7 +420,7 @@ CRITICAL RULES:
           },
           {
             role: "user",
-            content: `Generate personalized AI content for the business model "${modelName}" based on the user's quiz data and fit type "${fitType}".
+            content: `Generate personalized AI content for the business model "${modelName}" based on your quiz data and fit type "${fitType}".
 
 ${fitPrompt}
 
@@ -429,13 +430,14 @@ Return exactly this JSON structure:
 }
 
 CRITICAL RULES:
-- Use existing user profile data only
+- Use existing profile data only
 - Do not generate markdown or formatted code blocks
 - Keep modelFitReason a single paragraph
 - Return clean, JSON-parsed output
 - Max 400 tokens total
+- Always use "you" and "your" instead of "the user" or "the user's"
 
-USER PROFILE:
+YOUR PROFILE:
 ${userProfile}`,
           },
         ],
@@ -888,15 +890,15 @@ ${userProfile}`,
           },
           {
             role: "user",
-            content: `Generate comprehensive business analysis for this user based on their quiz data and top 3 business models.
+            content: `Generate comprehensive business analysis for you based on your quiz data and top 3 business models.
 
 Generate the following content:
 
-1. Business Fit Descriptions: For each of the top 3 business models, write a single paragraph explaining why this model fits (or doesn't fit) the user's profile.
+1. Business Fit Descriptions: For each of the top 3 business models, write a single paragraph explaining why this model fits (or doesn't fit) your profile.
 
-2. General Business Recommendations: 4-6 actionable recommendations for this user's entrepreneurial journey (not model-specific).
+2. General Business Recommendations: 4-6 actionable recommendations for your entrepreneurial journey (not model-specific).
 
-3. Potential Challenges: 4-5 challenges this user might face based on their quiz responses and profile.
+3. Potential Challenges: 4-5 challenges you might face based on your quiz responses and profile.
 
 Top 3 Business Models:
 ${topBusinessModels.map((model, index) => `${index + 1}. ${model.name} (${model.score}% match)`).join("\n")}
@@ -913,14 +915,15 @@ Return exactly this JSON structure:
 }
 
 CRITICAL RULES:
-- Use only the data from this user profile
+- Use only the data from your profile
 - Do NOT invent data or use generic filler
 - Each business fit description should be 1 focused paragraph
-- Recommendations should be specific and actionable
-- Challenges should be realistic based on user's profile
+- Recommendations should be specific and actionable for you
+- Challenges should be realistic based on your profile
 - Max 1200 tokens total
+- Always use "you" and "your" instead of "the user" or "the user's"
 
-USER PROFILE:
+YOUR PROFILE:
 ${userProfile}`,
           },
         ],

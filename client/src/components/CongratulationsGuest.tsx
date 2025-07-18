@@ -121,10 +121,22 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
 
     setIsSubmitting(true);
     setEmailSent(false);
+    setEmailError("");
     let quizAttemptId = null;
     let saveSuccess = false;
 
     try {
+      // Check for existing account first
+      const existingAccountRes = await fetch(`/api/check-existing-attempts/${encodeURIComponent(email.trim())}`);
+      if (existingAccountRes.ok) {
+        const existingAccount = await existingAccountRes.json();
+        if (existingAccount?.hasAccount && existingAccount.userType === "paid") {
+          setEmailError("You already have a paid account with this email. Please log in to access your results.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Save quiz data and create temporary account
       if (quizData) {
         const response = await fetch("/api/save-quiz-data", {
@@ -132,21 +144,32 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ quizData, email: email.trim() }),
         });
-        if (response.ok) {
-          const result = await response.json();
-          saveSuccess = true;
-          if (result.attemptId) {
-            quizAttemptId = result.attemptId;
-            localStorage.setItem("quizAttemptId", quizAttemptId.toString());
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          if (errorData.userType === "existing-paid") {
+            setEmailError("You already have a paid account with this email. Please log in to access your results.");
+            setIsSubmitting(false);
+            return;
           }
-          localStorage.setItem("userEmail", email.trim());
+          setEmailError("Failed to save your quiz data. Please try again.");
+          setIsSubmitting(false);
+          return;
         }
+        
+        const result = await response.json();
+        saveSuccess = true;
+        if (result.attemptId) {
+          quizAttemptId = result.attemptId;
+          localStorage.setItem("quizAttemptId", quizAttemptId.toString());
+        }
+        localStorage.setItem("userEmail", email.trim());
       }
+      
       // Send the preview email (unpaid user)
       if (saveSuccess) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for email sending
         const emailRes = await fetch("/api/send-quiz-results", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -157,21 +180,19 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
           }),
           signal: controller.signal,
         });
-        
         clearTimeout(timeoutId);
-        
         if (emailRes.ok) {
           setEmailSent(true);
           setTimeout(() => {
             onStartAIGeneration(email);
-          }, 1500);
+          }, 1000); // Show success for 1s before navigating
         } else {
           setEmailSent(false);
-          // Optionally show error message
+          setEmailError("Failed to send email. Please try again.");
         }
       } else {
         setEmailSent(false);
-        // Optionally show error message
+        setEmailError("Failed to save your quiz data. Please try again.");
       }
     } catch (error) {
       setEmailSent(false);
@@ -180,8 +201,6 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
       } else {
         setEmailError("Failed to send email. Please try again.");
       }
-      // Optionally show error message
-      onStartAIGeneration(email);
     } finally {
       setIsSubmitting(false);
     }
@@ -191,14 +210,7 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
     onStartAIGeneration();
   };
 
-  useEffect(() => {
-    if (emailSent) {
-      const timeout = setTimeout(() => {
-        navigate("/results");
-      }, 1500);
-      return () => clearTimeout(timeout);
-    }
-  }, [emailSent, navigate]);
+  // Remove the useEffect that navigates away after emailSent
 
   return (
     <>
@@ -223,7 +235,7 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-center mb-6"
             >
-              <div className="text-5xl mb-4">🎉</div>
+              <div className="text-5xl mb-4 emoji">🎉</div>
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -355,7 +367,7 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
               >
                 <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                 <span className="text-green-800 font-medium">
-                  ✅ Email sent successfully! Redirecting to your results...
+                  <span className="emoji">✅</span> Email sent successfully! Redirecting to your results...
                 </span>
               </motion.div>
             )}
@@ -369,7 +381,7 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
                 className="text-center space-y-3"
               >
                 <p className="text-xs text-gray-500">
-                  🔒 We respect your privacy. By inputting your email, your results will be stored for 3 months.
+                  <span className="emoji">🔒</span> We respect your privacy. By inputting your email, your results will be stored for 3 months.
                 </p>
 
                 <button

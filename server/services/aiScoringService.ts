@@ -144,7 +144,7 @@ export class AIScoringService {
             {
               role: "system",
               content:
-                "You are an expert business consultant and psychologist specializing in entrepreneurial fit assessment. Analyze the user's quiz responses and provide detailed, accurate business model compatibility scores with reasoning.",
+                "You are an expert business consultant and psychologist specializing in entrepreneurial fit assessment. Analyze the quiz responses and provide detailed, accurate business model compatibility scores with reasoning. Always address the user directly using 'you' and 'your'.",
             },
             {
               role: "user",
@@ -230,7 +230,7 @@ export class AIScoringService {
     return `
     Analyze your quiz responses and provide business model compatibility scores:
 
-        USER PROFILE:
+        YOUR PROFILE:
     - Main Motivation: ${quizData.mainMotivation}
     - Income Goal: ${this.getIncomeGoalRange(quizData.successIncomeGoal)}
     - Timeline: ${quizData.firstIncomeTimeline}
@@ -281,7 +281,8 @@ export class AIScoringService {
     - Distribute scores realistically - not everyone can be a perfect fit for everything
 
     CRITICAL: Use ONLY the actual data provided above. Do NOT make up specific numbers, amounts, or timeframes.
-    Reference the exact ranges and values shown in the user profile. If the user selected a range, always refer to the full range, never specific numbers within it.
+    Reference the exact ranges and values shown in your profile. If you selected a range, always refer to the full range, never specific numbers within it.
+    Always address the user directly using 'you' and 'your' instead of 'the user' or 'the user's'.
     `;
   }
 

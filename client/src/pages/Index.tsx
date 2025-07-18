@@ -150,7 +150,7 @@ function Index() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="text-center p-6 rounded-xl bg-gray-50"
               >
-                <div className="text-4xl mb-4">{problem.icon}</div>
+                <div className="text-4xl mb-4 emoji">{problem.icon}</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{problem.title}</h3>
                 <p className="text-gray-600">{problem.description}</p>
               </motion.div>
