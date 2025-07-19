@@ -51,12 +51,18 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
     confirmPassword: "",
   });
 
+  // Track if email was pre-filled from localStorage
+  const [emailWasPrefilled, setEmailWasPrefilled] = useState(false);
+
   // Pre-fill email from localStorage if available and not logged in
   useEffect(() => {
     if (isOpen && !user && !formData.email) {
       const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
       if (storedEmail && storedEmail.length > 4) {
         setFormData((prev) => ({ ...prev, email: storedEmail }));
+        setEmailWasPrefilled(true);
+      } else {
+        setEmailWasPrefilled(false);
       }
     }
   }, [isOpen, user, formData.email]);
@@ -730,7 +736,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="Enter your email"
                       required
-                      readOnly={!user && !!formData.email}
+                      readOnly={!user && emailWasPrefilled}
                     />
                   </div>
                 </div>
