@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -44,13 +44,7 @@ export const IncomeProjectionChart: React.FC<IncomeProjectionChartProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"monthly" | "cumulative">("monthly");
 
-  useEffect(() => {
-    if (businessId && quizData) {
-      generateIncomeProjections();
-    }
-  }, [businessId, quizData]);
-
-  const generateIncomeProjections = async () => {
+  const generateIncomeProjections = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch("/api/generate-income-projections", {
@@ -79,7 +73,13 @@ export const IncomeProjectionChart: React.FC<IncomeProjectionChartProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [businessId, businessModel, quizData]);
+
+  useEffect(() => {
+    if (businessId && quizData) {
+      generateIncomeProjections();
+    }
+  }, [businessId, quizData, generateIncomeProjections]);
 
   const createUserProfile = (quizData: QuizData): string => {
     const profile = {

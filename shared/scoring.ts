@@ -991,26 +991,26 @@ export function calculateBusinessModelMatch(
   // Raw score is 0-100
   const rawScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
 
-  // Rescale to 40-96 range for more dynamic and realistic spread
-  // scaled = 40 + (raw / 100) * (96 - 40)
-  const scaledScore = 40 + (rawScore / 100) * 56;
+  // Rescale to 20-99 range for better distribution
+  // scaled = 20 + (raw / 100) * (99 - 20)
+  const scaledScore = 20 + (rawScore / 100) * 79;
   return Math.round(scaledScore);
 }
 
 // Helper for static thresholds (after top 3 are Best Fit)
 // Category thresholds:
-// - Top 3: 'Best Fit'
-// - Strong Fit: 75–94
-// - Possible Fit: 55–74
-// - Poor Fit: 30–54
+// - Top 3: 'Best Fit' (80-99)
+// - Strong Fit: 65-90 (whatever is not best fit)
+// - Possible Fit: 45-65
+// - Poor Fit: 10-45
 const staticCategoryThresholds = {
   // After top 3, these are the cutoffs:
-  // Strong Fit: 75% and above
-  // Possible Fit: 55% to 74%
-  // Poor Fit: below 55%
-  "Strong Fit": 75,
-  "Possible Fit": 55,
-  "Poor Fit": 0,
+  // Strong Fit: 65% and above
+  // Possible Fit: 45% to 64%
+  // Poor Fit: 10% to 44%
+  "Strong Fit": 65,
+  "Possible Fit": 45,
+  "Poor Fit": 10,
 };
 
 // STEP 3: Categorize scores - Top 3 are always Best Fit, then static thresholds
@@ -1065,25 +1065,35 @@ export function assignCategories(
  */
 export function enforceGlobalMinimumScoreGap(
   results: Array<{ id: string; name: string; score: number; category: string }>,
-  minGap: number = 3,
-  maxGap: number = 7
+  minGap: number = 2,
+  maxGap: number = 8
 ): Array<{ id: string; name: string; score: number; category: string }> {
   if (results.length < 2) return results;
   const adjusted = [...results];
   let lastGap = null;
+  
+  // Ensure top 3 scores are in 80-99 range
+  for (let i = 0; i < Math.min(3, adjusted.length); i++) {
+    if (adjusted[i].score < 80) {
+      adjusted[i].score = 99 - (i * 6); // 99, 93, 87 for top 3
+    }
+  }
+  
   for (let i = 1; i < adjusted.length; i++) {
     let prev = adjusted[i - 1].score;
     let curr = adjusted[i].score;
     let gap = prev - curr;
+    
     // Pick a random gap between minGap and maxGap, not equal to lastGap
     let possibleGaps = [];
     for (let g = minGap; g <= maxGap; g++) {
       if (g !== lastGap) possibleGaps.push(g);
     }
     let newGap = possibleGaps[Math.floor(Math.random() * possibleGaps.length)];
+    
     // If the current gap is less than newGap or same as lastGap, adjust
     if (gap < newGap || (lastGap !== null && gap === lastGap)) {
-      adjusted[i].score = Math.max(0, prev - newGap);
+      adjusted[i].score = Math.max(20, prev - newGap); // Minimum score of 20
       gap = prev - adjusted[i].score;
     }
     lastGap = gap;

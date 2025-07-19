@@ -34,9 +34,11 @@ const SaveResultsPayment: React.FC = () => {
 
   const handlePaymentSuccess = async () => {
     try {
-      // Payment successful, save quiz data and unlock features
+      // Check if quiz data already exists before saving
       const quizData = localStorage.getItem("quizData");
-      if (quizData && user) {
+      const existingQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      
+      if (quizData && user && !existingQuizAttemptId) {
         // Save quiz data to user account
         const response = await fetch("/api/auth/save-quiz-data", {
           method: "POST",
@@ -70,6 +72,16 @@ const SaveResultsPayment: React.FC = () => {
         } else {
           throw new Error("Failed to save quiz data");
         }
+      } else if (existingQuizAttemptId) {
+        // Quiz data already exists, just set flags and navigate
+        localStorage.setItem("hasUnlockedAnalysis", "true");
+        localStorage.setItem("hasCompletedQuiz", "true");
+        localStorage.setItem("hasAnyPayment", "true");
+        
+        navigate("/results");
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       }
     } catch (error) {
       console.error("Error saving quiz results:", error);

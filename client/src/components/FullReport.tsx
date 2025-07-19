@@ -995,22 +995,22 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
   // Map scoring algorithm IDs to actual businessPath IDs
   const mapScoringIdToBusinessPathId = (scoringId: string): string => {
     const idMapping: Record<string, string> = {
-      "content-creation": "content-creation-ugc",
+      "content-creation": "content-creation",
       freelancing: "freelancing",
       "affiliate-marketing": "affiliate-marketing",
       // Add more mappings as needed when more business paths are added
-      "e-commerce": "content-creation-ugc", // Fallback to available path
+      "e-commerce": "content-creation", // Fallback to available path
       "online-coaching": "freelancing", // Fallback to available path
-      "youtube-automation": "content-creation-ugc", // Fallback to available path
+      "youtube-automation": "content-creation", // Fallback to available path
       "local-service": "freelancing", // Fallback to available path
       "high-ticket-sales": "freelancing", // Fallback to available path
       "saas-development": "freelancing", // Fallback to available path
-      "social-media-agency": "content-creation-ugc", // Fallback to available path
+      "social-media-agency": "content-creation", // Fallback to available path
       "ai-marketing-agency": "freelancing", // Fallback to available path
       "digital-services": "freelancing", // Fallback to available path
       "investing-trading": "affiliate-marketing", // Fallback to available path
       "online-reselling": "affiliate-marketing", // Fallback to available path
-      "handmade-goods": "content-creation-ugc", // Fallback to available path
+      "handmade-goods": "content-creation", // Fallback to available path
       copywriting: "freelancing", // Fallback to available path
       "virtual-assistant": "freelancing", // Fallback to available path
     };
@@ -1020,7 +1020,7 @@ ${index === 0 ? "As your top match, this path offers the best alignment with you
 
   const handleGetStarted = (businessId: string) => {
     const mappedId = mapScoringIdToBusinessPathId(businessId);
-    navigate(`/business/${mappedId}`);
+    navigate(`/business-model/${mappedId}`);
     // Scroll to top after navigation
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: "instant" });

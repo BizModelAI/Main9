@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { API_ROUTES, apiGet, apiPost, apiPut, apiDelete, ApiError } from '../utils/apiClient';
 import { QuizData } from "../types";
 
 interface User {
@@ -8,23 +9,25 @@ interface User {
   firstName?: string;
   lastName?: string;
   isTemporary?: boolean;
+  isPaid?: boolean;
   name?: string; // Add name property for display
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (
     email: string,
     password: string,
     firstName: string,
     lastName: string,
     quizData?: any,
-  ) => Promise<void>;
-  logout: () => void;
-  deleteAccount: () => Promise<void>;
-  updateProfile: (updates: Partial<User>) => Promise<void>;
+  ) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   getLatestQuizData: () => Promise<QuizData | null>;
   hasValidSession: () => boolean;
   verifyAndRefreshAuth: () => Promise<boolean>;
@@ -47,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -163,114 +167,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
-    setIsLoading(true);
+  const checkSession = async (): Promise<boolean> => {
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+      // Try XMLHttpRequest first for better error handling
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', API_ROUTES.AUTH_ME, false); // Synchronous for session check
+      xhr.withCredentials = true;
+      xhr.send();
 
-      if (!response.ok) {
-        let errorMessage = "Incorrect username or password";
+      if (xhr.status === 200) {
         try {
-          const data = await response.json();
-          errorMessage = data.error || errorMessage;
+          const userData = JSON.parse(xhr.responseText);
+          setUser(userData);
+          setIsAuthenticated(true);
+          return true;
         } catch (parseError) {
-          // If JSON parsing fails, use the response status text or default message
-          errorMessage = response.statusText || errorMessage;
+          console.error("Error parsing user data:", parseError);
+          return false;
         }
-        const error = new Error(errorMessage) as any;
-        error.status = response.status;
-        throw error;
+      } else {
+        // If XHR fails, try fetch as fallback
+        try {
+          const response = await apiGet(API_ROUTES.AUTH_ME);
+          setUser(response);
+          setIsAuthenticated(true);
+          return true;
+        } catch (fetchError) {
+          console.error("Error checking session:", fetchError);
+          return false;
+        }
       }
-
-      const data = await response.json();
-      setUser({
-        ...data,
-        name: data.firstName || data.lastName
-          ? `${data.firstName || ''} ${data.lastName || ''}`.trim()
-          : data.username || data.email,
-      });
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
+    } catch (xhrError) {
+      // Fallback to fetch if XHR fails
+      try {
+        const response = await apiGet(API_ROUTES.AUTH_ME);
+        setUser(response);
+        setIsAuthenticated(true);
+        return true;
+      } catch (fetchError) {
+        console.error("Error checking session:", fetchError);
+        return false;
+      }
     }
   };
 
-  const signup = async (
-    email: string,
-    password: string,
-    firstName: string,
-    lastName: string,
-    quizData?: any,
-  ): Promise<void> => {
-    setIsLoading(true);
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password, firstName, lastName, quizData }),
-      });
-
-      if (!response.ok) {
-        let errorMessage = "Signup failed";
-        try {
-          const data = await response.json();
-          errorMessage = data.error || errorMessage;
-          console.log("AuthContext signup error response:", {
-            status: response.status,
-            data,
-            errorMessage,
-          }); // Debug log
-        } catch (parseError) {
-          // If JSON parsing fails, use the response status text or default message
-          errorMessage = response.statusText || errorMessage;
-          console.log("AuthContext signup error (JSON parse failed):", {
-            status: response.status,
-            errorMessage,
-            parseError,
-          }); // Debug log
-        }
-
-        // Ensure the exact error message is preserved for frontend handling
-        const error = new Error(errorMessage) as any;
-        error.status = response.status;
-        throw error;
-      }
-
-      const data = await response.json();
-      setUser({
-        ...data,
-        name: data.firstName || data.lastName
-          ? `${data.firstName || ''} ${data.lastName || ''}`.trim()
-          : data.username || data.email,
-      });
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
+      const response = await apiPost(API_ROUTES.AUTH_LOGIN, { email, password });
+      // The backend returns user data directly, not wrapped in a user object
+      setUser(response);
+      setIsAuthenticated(true);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Login error:", error);
+      return { success: false, error: error.message || "Login failed" };
     }
   };
 
-  const logout = async () => {
+  const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
+      const response = await apiPost(API_ROUTES.AUTH_SIGNUP, {
+        email,
+        password,
+        firstName,
+        lastName,
       });
+      // The backend returns user data directly, not wrapped in a user object
+      setUser(response);
+      setIsAuthenticated(true);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      return { success: false, error: error.message || "Signup failed" };
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    try {
+      await apiPost(API_ROUTES.AUTH_LOGOUT, {});
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
       setUser(null);
+      setIsAuthenticated(false);
     }
   };
 
@@ -279,324 +258,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
   };
 
-  const deleteAccount = async (): Promise<void> => {
-    if (!user) {
-      throw new Error("No user logged in");
-    }
-
+  const deleteAccount = async (): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch("/api/auth/account", {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        let errorMessage = "Account deletion failed";
-        try {
-          const data = await response.json();
-          errorMessage = data.error || errorMessage;
-        } catch (parseError) {
-          errorMessage = response.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Clear user state after successful deletion
+      await apiDelete(API_ROUTES.AUTH_ACCOUNT);
       setUser(null);
-    } catch (error) {
-      // Handle network errors gracefully (common during page unload)
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        console.debug("Account deletion skipped due to network unavailability");
-        // Still clear local state since temporary accounts expire automatically
-        setUser(null);
-        return;
-      }
-      throw error;
+      setIsAuthenticated(false);
+      return { success: true };
+    } catch (parseError) {
+      console.error("Error parsing delete account response:", parseError);
+      return { success: false, error: "Invalid response format" };
     }
   };
 
-  const updateProfile = async (updates: Partial<User>): Promise<void> => {
-    if (!user) {
-      console.log("updateProfile: No user found, aborting");
-      throw new Error("No user logged in");
-    }
-
-    console.log("updateProfile: Starting with data:", updates);
-    console.log("updateProfile: Current user:", {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    });
-
-    setIsLoading(true);
+  const updateProfile = async (updates: { firstName?: string; lastName?: string; email?: string }): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch("/api/auth/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        let errorMessage = "Profile update failed";
-        let responseText = "";
-
-        try {
-          responseText = await response.text();
-          console.log("updateProfile: Raw response text:", responseText);
-
-          if (responseText) {
-            try {
-              const data = JSON.parse(responseText);
-              errorMessage = data.error || errorMessage;
-              console.error("updateProfile: Server error response:", {
-                status: response.status,
-                statusText: response.statusText,
-                data: data,
-                updates: updates,
-              });
-            } catch (jsonError) {
-              console.error("updateProfile: Response is not valid JSON:", {
-                status: response.status,
-                statusText: response.statusText,
-                responseText: responseText,
-                jsonError: jsonError,
-                updates: updates,
-              });
-              errorMessage =
-                responseText || response.statusText || errorMessage;
-            }
-          } else {
-            console.error("updateProfile: Empty response:", {
-              status: response.status,
-              statusText: response.statusText,
-              updates: updates,
-            });
-            errorMessage = response.statusText || errorMessage;
-          }
-        } catch (readError) {
-          console.error("updateProfile: Failed to read response:", {
-            status: response.status,
-            statusText: response.statusText,
-            readError: readError,
-            updates: updates,
-          });
-          // Provide more specific error message for common cases
-          if (response.status === 401) {
-            console.log("updateProfile: 401 error, session expired");
-            errorMessage =
-              "Your session has expired. Please log in and try again.";
-          } else if (response.status === 403) {
-            errorMessage = "Permission denied.";
-          } else if (response.status >= 500) {
-            errorMessage = "Server error. Please try again later.";
-          } else {
-            errorMessage = response.statusText || errorMessage;
-          }
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      setUser({
-        ...data,
-        name: data.firstName || data.lastName
-          ? `${data.firstName || ''} ${data.lastName || ''}`.trim()
-          : data.username || data.email,
-      });
-    } catch (error) {
-      // Handle network errors and other fetch failures
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        console.error("updateProfile: Network error:", error);
-        throw new Error(
-          "Network error. Please check your connection and try again.",
-        );
-      }
-      throw error;
-    } finally {
-      setIsLoading(false);
+      const response = await apiPut(API_ROUTES.AUTH_PROFILE, updates);
+      // The backend returns user data directly, not wrapped in a user object
+      setUser(response);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Profile update error:", error);
+      return { success: false, error: error.message || "Profile update failed" };
     }
   };
 
-  const getLatestQuizData = async (): Promise<QuizData | null> => {
-    if (!user) {
-      console.log("getLatestQuizData: No user available");
-      return null;
-    }
-
-    // Don't try to fetch quiz data for temporary users via API
-    if (String(user.id).startsWith("temp_")) {
-      console.log(
-        "getLatestQuizData: Temporary user detected, skipping API call",
-      );
-      return null;
-    }
-
-    // First verify the session is valid by checking auth status using XMLHttpRequest
+  const getLatestQuizData = async (): Promise<any> => {
     try {
-      const xhr = new XMLHttpRequest();
-      xhr.open("GET", "/api/auth/me?t=" + Date.now(), true);
-      xhr.withCredentials = true;
-      xhr.setRequestHeader("Content-Type", "application/json");
-
-      const authCheck = await new Promise<{ ok: boolean; status: number }>(
-        (resolve, reject) => {
-          xhr.onload = () => {
-            resolve({
-              ok: xhr.status >= 200 && xhr.status < 300,
-              status: xhr.status,
-            });
-          };
-          xhr.onerror = () =>
-            reject(new Error("Auth check XMLHttpRequest failed"));
-          xhr.timeout = 5000; // 5 second timeout for auth check
-          xhr.ontimeout = () => reject(new Error("Auth check timeout"));
-          xhr.send();
-        },
-      );
-
-      if (!authCheck.ok) {
-        console.log(
-          "getLatestQuizData: Session not valid, user not authenticated",
-        );
-        return null;
-      }
-    } catch (error) {
-      console.log("getLatestQuizData: Auth check failed:", error);
-      return null;
-    }
-
-    try {
-      const url = "/api/auth/latest-quiz-data";
-      console.log("getLatestQuizData: Making request to:", url);
-      console.log("getLatestQuizData: Current user:", {
-        id: user.id,
-        email: user.email,
-      });
-
-      let response: Response;
-
-      // Always use XMLHttpRequest to avoid FullStory interference
-      try {
-        console.log(
-          "getLatestQuizData: Using XMLHttpRequest to avoid FullStory issues",
-        );
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("GET", url, true);
-        xhr.withCredentials = true;
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        response = await Promise.race([
-          new Promise<Response>((resolve, reject) => {
-            xhr.onload = () => {
-              const responseText = xhr.responseText;
-              console.log("Auth API response:", xhr.status, responseText);
-              resolve({
-                ok: xhr.status >= 200 && xhr.status < 300,
-                status: xhr.status,
-                statusText: xhr.statusText,
-                json: () => {
-                  try {
-                    return Promise.resolve(JSON.parse(responseText));
-                  } catch (e) {
-                    return Promise.reject(new Error("Invalid JSON response"));
-                  }
-                },
-                text: () => Promise.resolve(responseText),
-                headers: new Headers(),
-                url: url,
-                redirected: false,
-                type: "basic",
-                clone: () => response,
-                body: null,
-                bodyUsed: false,
-                arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
-                blob: () => Promise.resolve(new Blob()),
-                formData: () => Promise.resolve(new FormData()),
-              } as Response);
-            };
-            xhr.onerror = () =>
-              reject(new Error("XMLHttpRequest network error"));
-            xhr.ontimeout = () => reject(new Error("XMLHttpRequest timeout"));
-            xhr.timeout = 10000; // 10 second timeout
-            xhr.send();
-          }),
-          // Additional timeout safety net
-          new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error("Request timeout after 15 seconds")),
-              15000,
-            ),
-          ),
-        ]);
-      } catch (xhrError) {
-        console.log(
-          "getLatestQuizData: XMLHttpRequest failed, trying fetch as last resort",
-        );
-
-        // Try fetch as last resort
-        try {
-          response = await fetch(url, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-        } catch (fetchError) {
-          console.error(
-            "getLatestQuizData: Both XMLHttpRequest and fetch failed:",
-            {
-              xhrError,
-              fetchError,
-            },
-          );
-          throw new Error("All request methods failed");
-        }
-      }
-
-      console.log("getLatestQuizData: Response status:", response.status);
-      console.log(
-        "getLatestQuizData: Response headers:",
-        Object.fromEntries(response.headers.entries()),
-      );
-
-      if (response.ok) {
-        const quizData = await response.json();
-        console.log(
-          "getLatestQuizData: Success, quiz data:",
-          quizData ? "Found" : "None",
-        );
-        return quizData;
-      } else {
-        // For error responses, safely read the body once
-        let errorMessage = `HTTP ${response.status} ${response.statusText}`;
-        try {
-          const responseText = await response.text();
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch {
-            // If not JSON, use the text as is
-            errorMessage = responseText || errorMessage;
-          }
-        } catch {
-          // If can't read body, use status text
-        }
-        console.error(
-          "getLatestQuizData: Request failed:",
-          `Status: ${response.status}, StatusText: ${response.statusText}, Error: ${errorMessage}`,
-        );
-      }
+      const response = await apiGet(API_ROUTES.AUTH_LATEST_QUIZ_DATA);
+      return response;
     } catch (error) {
       console.error("getLatestQuizData: Network error:", error);
+      throw error;
     }
-
-    return null;
   };
 
   const hasValidSession = (): boolean => {
@@ -605,27 +298,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const verifyAndRefreshAuth = async (): Promise<boolean> => {
     try {
-      const response = await fetch("/api/auth/me", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        console.log("verifyAndRefreshAuth: Session valid, user refreshed");
-        return true;
-      } else {
-        console.log("verifyAndRefreshAuth: Session invalid");
-        setUser(null);
-        return false;
-      }
+      const response = await apiGet(API_ROUTES.AUTH_ME);
+      setUser(response);
+      setIsAuthenticated(true);
+      return true;
     } catch (error) {
       console.error("verifyAndRefreshAuth: Error:", error);
       setUser(null);
+      setIsAuthenticated(false);
       return false;
     }
   };
@@ -635,6 +315,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const value = {
     user,
     isLoading,
+    isAuthenticated,
     login,
     signup,
     logout,

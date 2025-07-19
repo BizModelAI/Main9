@@ -385,8 +385,32 @@ export function setupAuthRoutes(app: Express) {
         });
       }
 
-      console.log("Signup successful, returning temporary user data");
+      console.log("Signup successful, establishing session and returning temporary user data");
+      
+      // Get the actual user ID from storage
+      const tempUser = await storage.getTemporaryUser(sessionId);
+      if (tempUser) {
+        // Establish session for the temporary user with the correct numeric ID
+        setUserIdInRequest(req, tempUser.id);
+        
+        // Force session save
+        req.session.save((err: any) => {
+          if (err) {
+            console.error("Signup: Failed to save session:", err);
+            // Continue anyway - the user can still proceed
+          }
+          
       // Return a temporary user object for frontend
+          res.json({
+            id: tempUser.id,
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            isTemporary: true,
+          });
+        });
+      } else {
+        // Fallback if user not found
       res.json({
         id: `temp_${sessionId}`,
         email: email,
@@ -394,6 +418,7 @@ export function setupAuthRoutes(app: Express) {
         lastName: lastName,
         isTemporary: true,
       });
+      }
     } catch (error) {
       console.error("Unexpected error in /api/auth/signup:", error);
       console.error(

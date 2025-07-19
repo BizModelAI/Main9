@@ -19,20 +19,15 @@ const getIncomeRangeLabel = (value: number): string => {
   return `$${value}`;
 };
 
+// Import centralized utility functions
+import { getInvestmentRange, getTimeCommitmentRange } from "../utils/quizUtils.js";
+
 const getInvestmentRangeLabel = (value: number): string => {
-  if (value === 0) return "$0";
-  if (value === 125) return "Under $250";
-  if (value === 625) return "$250–$1,000";
-  if (value === 1500) return "$1,000+";
-  return `$${value}`;
+  return getInvestmentRange(value);
 };
 
 const getTimeCommitmentRangeLabel = (value: number): string => {
-  if (value === 3) return "Less than 5 hours";
-  if (value === 7) return "5–10 hours";
-  if (value === 17) return "10–25 hours";
-  if (value === 35) return "25+ hours";
-  return `${value} hours`;
+  return getTimeCommitmentRange(value);
 };
 
 const getTimelineLabel = (value: string): string => {

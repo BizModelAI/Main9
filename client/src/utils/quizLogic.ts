@@ -122,21 +122,12 @@ export function getNextAdaptiveQuestion(
   currentStep: number,
   data: Partial<QuizData>,
 ): boolean {
-  // Logic to determine if adaptive questions should be shown
-
-  if (
-    currentStep === 4 &&
-    data.upfrontInvestment &&
-    data.upfrontInvestment > 500
-  ) {
+  // Simplified adaptive question logic
+  if (currentStep === 4 && data.upfrontInvestment && data.upfrontInvestment > 500) {
     return true; // Show inventory comfort question
   }
 
-  if (
-    currentStep === 12 &&
-    (data.familiarTools?.includes("canva") ||
-      (data.creativeWorkEnjoyment && data.creativeWorkEnjoyment >= 4))
-  ) {
+  if (currentStep === 12 && (data.familiarTools?.includes("canva") || data.creativeWorkEnjoyment >= 4)) {
     return true; // Show digital content comfort question
   }
 

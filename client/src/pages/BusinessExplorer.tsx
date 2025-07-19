@@ -90,7 +90,6 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     const fetchQuizData = async () => {
       if (!isRealUser || propQuizData) return; // Only fetch for real users
 
-      console.log("BusinessExplorer: Fetching quiz data for user:", user ? user.email : null);
       setIsLoadingQuizData(true);
 
       // First test session health
@@ -100,42 +99,14 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
-        console.log(
-          "BusinessExplorer: Session check status:",
-          sessionCheck.status,
-        );
 
         if (sessionCheck.ok) {
           const sessionUser = await sessionCheck.json();
-          console.log("BusinessExplorer: Session user:", {
-            id: sessionUser.id,
-            email: sessionUser.email,
-          });
         } else {
-          console.log(
-            "BusinessExplorer: Session check failed with status:",
-            sessionCheck.status,
-          );
           if (sessionCheck.status === 401) {
-            console.log("BusinessExplorer: User not authenticated - 401 error");
           }
         }
       } catch (error) {
-        console.error("BusinessExplorer: Session check failed:", error);
-      }
-
-      try {
-        const latestQuizData = await getLatestQuizData();
-        if (latestQuizData) {
-          console.log("BusinessExplorer: Successfully loaded quiz data");
-          setQuizData(latestQuizData);
-        } else {
-          console.log("BusinessExplorer: No quiz data found");
-        }
-      } catch (error) {
-        console.error("BusinessExplorer: Error fetching quiz data:", error);
-      } finally {
-        setIsLoadingQuizData(false);
       }
     };
 
@@ -159,16 +130,11 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
         }));
         setPersonalizedPaths(consistentPaths);
       } catch (error) {
-        console.error(
-          "Failed to load consistent paths in BusinessExplorer:",
-          error,
-        );
-        setPersonalizedPaths([]);
       }
     };
 
     loadPersonalizedPaths();
-  }, [quizData, hasUnlockedAnalysis]);
+  }, [quizData, user?.isPaid]);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -178,20 +144,8 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
   // Calculate fit scores for business models if quiz data exists
   const businessModelsWithFitScores = useMemo(() => {
     let models: (BusinessModel & { fitScore?: number; fitCategory?: string })[];
-    if (!quizData || !hasUnlockedAnalysis) {
-      // Development mode fallback disabled
-      if (false && user && hasUnlockedAnalysis) {
-        return businessModels.map((model, index) => {
-          const mockScore = 85 - index * 3; // Descending scores for demo
-          const fitCategory = getFitCategory(mockScore);
-          return {
-            ...model,
-            fitScore: mockScore,
-            fitCategory,
-          };
-        });
-      }
-
+    if (!quizData || !user?.isPaid) {
+      // For unpaid users or no quiz data, show models without fit scores
       models = businessModels.map((model) => ({
         ...model,
         fitScore: 0,
@@ -203,11 +157,9 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     }
 
     models = businessModels.map((model) => {
-      // Find matching business path by name or similar logic
+      // Find matching business path by ID for exact matching
       const matchingPath = personalizedPaths.find(
-        (path) =>
-          path.name.toLowerCase().includes(model.title.toLowerCase()) ||
-          model.title.toLowerCase().includes(path.name.toLowerCase()),
+        (path) => path.id === model.id
       );
 
       const fitScore = matchingPath?.fitScore || 0;
@@ -221,12 +173,12 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     });
 
     // Sort by fit score when quiz data is available (highest to lowest)
-    if (quizData && hasUnlockedAnalysis) {
+    if (quizData && user?.isPaid) {
       models.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
     }
 
     return models;
-  }, [quizData, hasUnlockedAnalysis, personalizedPaths]);
+  }, [quizData, user?.isPaid, personalizedPaths]);
 
   const filteredModels = businessModelsWithFitScores.filter((model) => {
     const categoryMatch =
@@ -247,83 +199,37 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
   };
 
   const handleLearnMore = (businessId: string) => {
-    // For logged-in users, allow direct access to basic features
+    // Simplified logic: authenticated users get access, others need quiz completion
     if (user) {
-      console.log(
-        "BusinessExplorer: Logged user, navigating directly to business model",
-      );
-      navigate(`/business/${businessId}`);
+      navigate(`/business-model/${businessId}`);
       return;
     }
 
-    // For logged-in users with quiz data, allow access regardless of hasCompletedQuiz flag
-    const userHasQuizData = user && quizData;
-
-    // Check if user has completed quiz (either flag is true OR user has quiz data OR can access business model)
-    if (
-      !hasCompletedQuiz &&
-      !userHasQuizData &&
-      !canAccessBusinessModel(businessId)
-    ) {
-      console.log("BusinessExplorer: User needs to complete quiz first");
+    if (!hasCompletedQuiz) {
       setPaywallType("quiz-required");
       setShowPaywallModal(true);
       return;
     }
 
-    // Check if user can access business model details (has paid)
-    if (canAccessBusinessModel(businessId)) {
-      // User has paid, navigate directly
-      console.log(
-        "BusinessExplorer: User can access business model, navigating",
-      );
-      navigate(`/business/${businessId}`);
-    } else {
-      // User has completed quiz but hasn't paid
-      console.log(
-        "BusinessExplorer: User needs to pay for business model access",
-      );
+    // User has completed quiz but needs to pay
       setSelectedBusinessId(businessId);
       setPaywallType("learn-more");
-
-      // Force account creation for new users
-      if (!user) {
         setShowPaymentModal(true);
-      } else {
-        setShowPaywallModal(true);
-      }
-    }
   };
 
   const handlePaywallUnlock = () => {
     if (paywallType === "quiz-required") {
-      // Navigate to quiz
       navigate("/quiz");
-    } else if (paywallType === "learn-more") {
-      // Development bypass disabled to ensure paywall always works
-      // Always redirect to proper payment flow
+    } else {
       setShowPaywallModal(false);
       setShowPaymentModal(true);
-
-      // Development bypass disabled:
-      // if (import.meta.env.MODE === "development") {
-      //   // DEV: Simulate payment and unlock access
-      //   setHasUnlockedAnalysis(true);
-      //   localStorage.setItem("hasAnyPayment", "true");
-      //   setShowPaywallModal(false);
-      //   navigate(`/business/${selectedBusinessId}`);
-      // } else {
-      //   // In production, redirect to proper payment flow
-      //   setShowPaywallModal(false);
-      //   setShowPaymentModal(true);
-      // }
     }
   };
 
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
     // Navigate to the business model page
-    navigate(`/business/${selectedBusinessId}`);
+    navigate(`/business-model/${selectedBusinessId}`);
   };
 
   const handlePaywallClose = () => {
@@ -376,7 +282,7 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
               </select>
             </div>
             {/* Fit Category Filter - Only show if user has paid */}
-            {hasUnlockedAnalysis && quizData && (
+            {user?.isPaid && quizData && (
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium text-gray-700">
                   Fit Level:
@@ -411,8 +317,8 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
                 onShowDetails={() => handleShowDetails(model)}
               showFitBadge={
                 !!(
-                  hasUnlockedAnalysis &&
-                  (quizData || (import.meta.env.MODE === "development" && user))
+                  user?.isPaid &&
+                  quizData
                 )
               }
               fitCategory={model.fitCategory}
@@ -585,7 +491,7 @@ const BusinessModelCard = ({
           </div>
           <div className="flex flex-col gap-1 items-end">
             {/* Show fit percentage if user has paid and quiz data exists */}
-            {showFitBadge && fitScore !== undefined && (
+            {showFitBadge && fitScore !== undefined && fitScore > 0 && (
               <div className="text-right">
                 <div className="text-2xl font-bold text-blue-600">
                   {Math.round(fitScore)}%
@@ -761,7 +667,7 @@ const BusinessModelDetailsModal = ({
           </Card>
 
           {/* Fit Badge */}
-          {showFitBadge && fitScore !== undefined && (
+          {showFitBadge && fitScore !== undefined && fitScore > 0 && (
             <Card className="mb-6 bg-white rounded-2xl shadow-lg">
               <CardContent className="flex items-center justify-between p-4">
                 <div>
@@ -939,7 +845,7 @@ const BusinessModelDetailsModal = ({
               </Card>
 
               {/* Type Fit and Percentage - Only show for logged-in users */}
-              {showFitBadge && fitScore !== undefined && (
+              {showFitBadge && fitScore !== undefined && fitScore > 0 && (
                 <Card className="bg-white rounded-2xl shadow-lg">
                   <CardHeader>
                     <CardTitle>Your Fit</CardTitle>

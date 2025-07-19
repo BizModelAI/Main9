@@ -72,27 +72,27 @@ function MainAppContent() {
   const [showCongratulations, setShowCongratulations] = React.useState(false);
   const [dataExpired, setDataExpired] = React.useState(false);
 
+  // Set user email from auth context if available
+  React.useEffect(() => {
+    if (user?.email) {
+      setUserEmail(user.email);
+      localStorage.setItem("userEmail", user.email);
+    }
+  }, [user?.email]);
+
   // Restore data from localStorage on app start, but NOT on /quiz (handled in Quiz.tsx)
   React.useEffect(() => {
     if (window.location.pathname === "/quiz") {
       // All cache clearing and quiz data reset is handled in Quiz.tsx
       return;
     }
-    console.log(
-      "App component initializing - restoring data from localStorage",
-    );
     const savedQuizData = localStorage.getItem("quizData");
     const savedUserEmail = localStorage.getItem("userEmail");
     const savedLoadedReportData = localStorage.getItem("loadedReportData");
 
-    console.log("Saved quiz data found:", !!savedQuizData);
-    console.log("Saved user email found:", !!savedUserEmail);
-    console.log("Saved loaded report data found:", !!savedLoadedReportData);
-
     if (savedQuizData) {
       try {
         const parsed = JSON.parse(savedQuizData);
-        console.log("Restoring quiz data from localStorage");
         setQuizData(parsed);
       } catch (error) {
         console.error("Error parsing saved quiz data:", error);
@@ -106,7 +106,6 @@ function MainAppContent() {
     if (savedLoadedReportData) {
       try {
         const parsed = JSON.parse(savedLoadedReportData);
-        console.log("Restoring loaded report data from localStorage");
         setLoadedReportData(parsed);
       } catch (error) {
         console.error("Error parsing saved loaded report data:", error);
@@ -117,10 +116,6 @@ function MainAppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const hasLoggedQuizSkip = React.useRef(false);
-
-  console.log("MainAppContent - Current location:", location?.pathname);
-  console.log("MainAppContent - quizData:", !!quizData);
-  console.log("MainAppContent - userEmail:", userEmail);
 
   // Handle email links with attempt ID and email parameters
   React.useEffect(() => {
@@ -136,7 +131,6 @@ function MainAppContent() {
         const attempt = searchParams.get("attempt");
         
         if (email && attempt) {
-          console.log(`Email link detected: email=${email}, attempt=${attempt}`);
           
           const loadEmailLinkData = async () => {
             try {
@@ -147,14 +141,12 @@ function MainAppContent() {
                 
                 if (data.status === "expired") {
                   // Show expired data message
-                  console.log("Data has expired");
                   setDataExpired(true);
                   return;
                 }
                 
                 if (data.status === "paid" || data.status === "unpaid") {
                   // Load the quiz data and set up the results page
-                  console.log(`Loading quiz data for ${data.status} user`);
                   setQuizData(data.quizData);
                   setUserEmail(data.email);
                   
@@ -192,16 +184,13 @@ function MainAppContent() {
       if (savedQuizData) {
         try {
           const parsed = JSON.parse(savedQuizData);
-          console.log(
-            "React state lost quiz data - restoring from localStorage",
-          );
           setQuizData(parsed);
         } catch (error) {
           console.error("Error restoring quiz data from localStorage:", error);
         }
       }
     }
-  });
+  }, [quizData]);
 
   // Clean up expired localStorage data for anonymous users
   React.useEffect(() => {
@@ -213,7 +202,6 @@ function MainAppContent() {
         const now = Date.now();
 
         if (now > expireTime) {
-          console.log("Anonymous quiz data expired, cleaning up localStorage");
           localStorage.removeItem("quizData");
           localStorage.removeItem("quizDataTimestamp");
           localStorage.removeItem("quizDataExpires");
@@ -222,7 +210,6 @@ function MainAppContent() {
           const savedQuizData = localStorage.getItem("quizData");
           if (!savedQuizData && quizData) {
             setQuizData(null);
-            console.log("Cleared expired quiz data from React state");
           }
         }
       }
@@ -253,9 +240,6 @@ function MainAppContent() {
 
   // Handler for AI loading completion
   const handleAILoadingComplete = (data: any) => {
-    console.log(
-      "AI loading complete, checking if congratulations should be shown",
-    );
     setLoadedReportData(data);
     setShowAILoading(false);
 
@@ -359,25 +343,17 @@ function MainAppContent() {
       // Don't auto-load quiz data when user is on /quiz page (they want to start fresh)
       if (location?.pathname === "/quiz") {
         if (!hasLoggedQuizSkip.current) {
-          console.log(
-            "MainAppContent - On /quiz page, skipping auto-load of existing quiz data",
-          );
           hasLoggedQuizSkip.current = true;
         }
         return;
       }
 
       if (!quizData) {
-        console.log(
-          "MainAppContent - No quiz data in state, checking localStorage...",
-        );
-
         // First try localStorage (works for both authenticated and non-authenticated users)
         const savedQuizData = localStorage.getItem("quizData");
         if (savedQuizData) {
           try {
             const parsed = JSON.parse(savedQuizData);
-            console.log("MainAppContent - Found quiz data in localStorage");
             setQuizData(parsed);
             return; // Found data in localStorage, no need to fetch from server
           } catch (error) {
@@ -390,17 +366,12 @@ function MainAppContent() {
 
         // If no localStorage data and user is authenticated, try server
         if (user && isRealUser) {
-          console.log("MainAppContent - User authenticated, trying server...");
           try {
             const response = await fetch("/api/auth/latest-quiz-data", {
               credentials: "include",
             });
             if (response.ok) {
               const data = await response.json();
-              console.log(
-                "MainAppContent - Received quiz data from server:",
-                data,
-              );
               if (data.quizData) {
                 setQuizData(data.quizData);
               }
@@ -424,7 +395,7 @@ function MainAppContent() {
     };
 
     loadQuizData();
-  }, [quizData, setQuizData, user, isRealUser]);
+  }, [quizData, user, isRealUser]);
 
   React.useEffect(() => {
     // Clear AI insights when navigating to home page
@@ -725,32 +696,14 @@ const QuizWithNavigation: React.FC<{
   const { calculateAndStoreScores } = useBusinessModelScores();
 
   const handleQuizComplete = async (data: QuizData) => {
-    console.log("Quiz completed with 3-tier caching system");
     setQuizData(data);
 
     // Get stored email if user provided one during the session
     const storedEmail = localStorage.getItem("userEmail");
 
-    console.log("Quiz completion - current state:", {
-      hasUser: !!user,
-      userType: user
-        ? String(user.id).startsWith("temp_")
-          ? "temporary"
-          : "authenticated"
-        : "none",
-      hasStoredEmail: !!storedEmail,
-      userEmail: user?.email,
-      storedEmail,
-    });
-
     try {
       // TIER 1 & 2: For authenticated users (both paid and temporary), save to database
       if (user) {
-        console.log(
-          "Saving quiz data for authenticated/temporary user:",
-          user.email,
-        );
-
         // Use the legacy endpoint for authenticated users to maintain compatibility
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/api/auth/save-quiz-data", true);
@@ -778,7 +731,6 @@ const QuizWithNavigation: React.FC<{
         });
 
         if (response.ok) {
-          console.log("Quiz data saved successfully for authenticated user");
           const responseData = JSON.parse(response.text);
           if (responseData.quizAttemptId) {
             localStorage.setItem(
@@ -796,9 +748,6 @@ const QuizWithNavigation: React.FC<{
       }
       // TIER 2: User has provided email but not authenticated - will be handled by EmailCapture component
       else if (storedEmail) {
-        console.log(
-          "User has provided email but not authenticated - EmailCapture will handle database storage",
-        );
         // EmailCapture component will create temporary account when email is provided
         // No action needed here - quiz data is stored in component state and localStorage as backup
         localStorage.setItem("quizData", JSON.stringify(data));
@@ -806,19 +755,11 @@ const QuizWithNavigation: React.FC<{
       }
       // TIER 3: Anonymous users - localStorage with 1-hour expiration
       else {
-        console.log(
-          "Anonymous user - storing quiz data in localStorage with 1-hour expiration",
-        );
         const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour from now
 
         localStorage.setItem("quizData", JSON.stringify(data));
         localStorage.setItem("quizDataTimestamp", Date.now().toString());
         localStorage.setItem("quizDataExpires", expiresAt.toString());
-
-        console.log(
-          "Quiz data stored locally, expires at:",
-          new Date(expiresAt),
-        );
       }
     } catch (error) {
       console.error("Error in quiz completion caching:", error);
@@ -832,11 +773,7 @@ const QuizWithNavigation: React.FC<{
       const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
       const attemptId = quizAttemptId ? parseInt(quizAttemptId) : undefined;
 
-      console.log(" Calculating business model scores for completed quiz...");
       await calculateAndStoreScores(data, attemptId);
-      console.log(
-        "✅ Business model scores calculated and stored successfully",
-      );
     } catch (scoresError) {
       console.error("❌ Error calculating business model scores:", scoresError);
       // Don't block the flow - scores can be calculated later if needed
@@ -850,7 +787,6 @@ const QuizWithNavigation: React.FC<{
   };
 
   const handleCongratulationsComplete = (email?: string) => {
-    console.log("Congratulations complete, navigating to results");
     console.log("Current quizData state:", quizData);
     console.log("Current loadedReportData state:", loadedReportData);
 
@@ -864,7 +800,6 @@ const QuizWithNavigation: React.FC<{
 
     // Store quiz data and loaded report data before navigation
     if (quizData) {
-      console.log("Storing quizData in localStorage");
       localStorage.setItem("quizData", JSON.stringify(quizData));
     } else {
       console.error(
@@ -873,15 +808,12 @@ const QuizWithNavigation: React.FC<{
     }
 
     if (loadedReportData) {
-      console.log("Storing loadedReportData in localStorage");
       localStorage.setItem(
         "loadedReportData",
         JSON.stringify(loadedReportData),
       );
     }
 
-    console.log("Navigating to /results in 100ms");
-    // Small delay to ensure state update is processed
     setTimeout(() => {
       navigate("/results");
     }, 100);
@@ -911,7 +843,6 @@ const QuizWithNavigation: React.FC<{
       "Skip button clicked! Generating mock data and navigating directly to results...",
     );
     const mockData = generateMockQuizData();
-    console.log("Generated mock data:", mockData);
 
     // Set the data and navigate directly, bypassing all loading states
     setQuizData(mockData);
@@ -1155,6 +1086,14 @@ function App() {
                   />
                   <Route
                     path="/business-guide"
+                    element={
+                      <Layout>
+                        <BusinessGuide />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/guide/:businessId"
                     element={
                       <Layout>
                         <BusinessGuide />

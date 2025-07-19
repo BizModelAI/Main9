@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { usePaywall } from "../contexts/PaywallContext";
 import { EnhancedPaymentWrapper } from "./EnhancedPaymentForm";
+import { API_ROUTES, apiPost } from "../utils/apiClient";
 
 interface PaymentAccountModalProps {
   isOpen: boolean;
@@ -81,6 +82,10 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         );
       }
     }
+    
+    // Clean up email storage
+    localStorage.removeItem("userEmail");
+    
     onClose();
   };
 
@@ -248,26 +253,33 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         parsedQuizData,
       );
 
-      // Immediately save quiz data and get quizAttemptId
-      let quizAttemptId;
-      try {
-        const saveResponse = await fetch("/api/save-quiz-data", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ quizData: parsedQuizData, email: formData.email }),
-        });
-        if (saveResponse.ok) {
-          const saveData = await saveResponse.json();
-          if (saveData.quizAttemptId) {
-            quizAttemptId = saveData.quizAttemptId;
-            localStorage.setItem("currentQuizAttemptId", quizAttemptId.toString());
+      // Check if quiz data already exists before saving
+      let quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      
+      if (!quizAttemptId) {
+        try {
+          const saveResponse = await fetch("/api/save-quiz-data", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ quizData: parsedQuizData, email: formData.email }),
+          });
+          if (saveResponse.ok) {
+            const saveData = await saveResponse.json();
+            if (saveData.quizAttemptId) {
+              quizAttemptId = saveData.quizAttemptId;
+              localStorage.setItem("currentQuizAttemptId", quizAttemptId.toString());
+            }
           }
+        } catch (saveErr) {
+          console.error("Error saving quiz data after signup:", saveErr);
         }
-      } catch (saveErr) {
-        console.error("Error saving quiz data after signup:", saveErr);
       }
 
       console.log("PaymentAccountModal: Signup and quiz save successful, moving to payment");
+      
+      // Store email in localStorage for payment form access
+      localStorage.setItem("userEmail", formData.email);
+      
       await fetchReportPricing();
       setStep("payment");
     } catch (err: any) {
@@ -353,10 +365,15 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
 
       // Update auth context
       await login(loginEmail, formData.password);
+      
+      // Store email in localStorage for payment form access
+      localStorage.setItem("userEmail", loginEmail);
 
-      // Save quiz data for logged-in users (they can take unlimited quizzes if they have access pass)
+      // Check if quiz data already exists before saving
       const savedQuizData = localStorage.getItem("quizData");
-      if (savedQuizData) {
+      const existingQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      
+      if (savedQuizData && !existingQuizAttemptId) {
         try {
           const quizData = JSON.parse(savedQuizData);
           const saveResponse = await fetch("/api/auth/save-quiz-data", {
@@ -391,6 +408,10 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         } catch (error) {
           console.error("Error saving quiz data:", error);
         }
+      } else if (existingQuizAttemptId) {
+        // Quiz data already exists, just set completion flag
+        setHasCompletedQuiz(true);
+        localStorage.setItem("hasCompletedQuiz", "true");
       }
 
       // In the new pay-per-report model, logged-in users proceed to payment for report unlock
@@ -409,9 +430,11 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
     localStorage.setItem("hasAnyPayment", "true");
     localStorage.setItem("hasUnlockedAnalysis", "true");
 
-    // Save quiz data from localStorage to user's account
+    // Check if quiz data already exists before saving
     const savedQuizData = localStorage.getItem("quizData");
-    if (savedQuizData) {
+    const existingQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+    
+    if (savedQuizData && !existingQuizAttemptId) {
       try {
         const quizData = JSON.parse(savedQuizData);
         const response = await fetch("/api/auth/save-quiz-data", {
@@ -441,8 +464,16 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
       } catch (error) {
         console.error("Error saving quiz data:", error);
       }
+    } else if (existingQuizAttemptId) {
+      // Quiz data already exists, just set completion flag
+      setHasCompletedQuiz(true);
+      localStorage.setItem("hasCompletedQuiz", "true");
+      console.log("Quiz data already exists, using existing attempt");
     }
 
+    // Clean up email storage after successful payment
+    localStorage.removeItem("userEmail");
+    
     // Close the modal and trigger success handler
     onSuccess();
 
@@ -476,29 +507,15 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
 
         if (storedQuizAttemptId) {
           // User has a valid quiz attempt, create payment intent
-          const response = await fetch("/api/create-report-unlock-payment", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({
+          try {
+            const data = await apiPost(API_ROUTES.CREATE_REPORT_UNLOCK_PAYMENT, {
               userId: user.id,
               quizAttemptId: parseInt(storedQuizAttemptId),
-            }),
-          });
-
-          if (response.ok) {
-            try {
-              const data = await response.json();
-              setAmount(parseFloat(data.amount) || 4.99);
-              setIsFirstReport(data.isFirstReport || false);
-            } catch (parseError) {
-              console.error("Failed to parse JSON response:", parseError);
-              // Fallback to pricing endpoint
-              await fetchUserPricing();
-            }
-          } else {
+            });
+            setAmount(parseFloat(data.amount) || 4.99);
+            setIsFirstReport(data.isFirstReport || false);
+          } catch (error) {
+            console.error("Failed to create payment intent:", error);
             // Fallback to pricing endpoint
             await fetchUserPricing();
           }

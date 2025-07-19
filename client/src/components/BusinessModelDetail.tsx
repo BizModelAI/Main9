@@ -323,51 +323,10 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
       setBusinessModel(model);
     }
 
-    // Handle access control and AI analysis generation
-    // Development mode access disabled
-    if (false && user) {
-      console.log(
-        "BusinessModelDetail: Development mode - authenticated user gets access",
-      );
-      // Continue to generate analysis
-    }
-    // For authenticated users, allow immediate access to basic features
-    else if (isRealUser) {
-      console.log(
-        "BusinessModelDetail: Authenticated user, allowing basic access",
-      );
-      // Continue to generate analysis
-    }
-    // For authenticated users, check if they can access business models
-    else if (isRealUser && canAccessBusinessModel(businessId)) {
-      console.log(
-        "BusinessModelDetail: User can access business model, allowing access",
-      );
-      // Continue to generate analysis
-    }
-    // For authenticated users who have completed the quiz, allow access
-    else if (isRealUser && hasCompletedQuiz) {
-      console.log(
-        "BusinessModelDetail: User has completed quiz, allowing access",
-      );
-      // Continue to generate analysis
-    }
-    // For non-authenticated users, check if they've completed the quiz
-    else if (!isRealUser && !hasCompletedQuiz) {
-      console.log(
-        "BusinessModelDetail: Non-authenticated user without quiz completion, showing payment modal",
-      );
+    // Simplified access control
+    if (!isRealUser && !hasCompletedQuiz) {
+      console.log("BusinessModelDetail: Non-authenticated user without quiz completion, showing payment modal");
       setShowPaymentModal(true);
-      setModelInsights(null);
-      setIsLoadingModelInsights(false);
-      return;
-    }
-    // For authenticated users who don't meet the above criteria, show paywall
-    else if (isRealUser && !hasCompletedQuiz && !canAccessBusinessModel(businessId)) {
-      console.log(
-        "BusinessModelDetail: Authenticated user without access, showing paywall",
-      );
-      setShowPaywallModal(true);
       setModelInsights(null);
       setIsLoadingModelInsights(false);
       return;

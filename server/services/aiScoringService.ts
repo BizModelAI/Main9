@@ -1,6 +1,12 @@
 import OpenAI from "openai";
 import { QuizData, BusinessPath } from "../../shared/types.js";
 import { businessPaths } from "../../shared/businessPaths.js";
+import { 
+  getRatingDescription, 
+  getIncomeGoalRange, 
+  getTimeCommitmentRange, 
+  getInvestmentRange 
+} from "../utils/quizUtils.js";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -232,20 +238,20 @@ export class AIScoringService {
 
         YOUR PROFILE:
     - Main Motivation: ${quizData.mainMotivation}
-    - Income Goal: ${this.getIncomeGoalRange(quizData.successIncomeGoal)}
+    - Income Goal: ${getIncomeGoalRange(quizData.successIncomeGoal)}
     - Timeline: ${quizData.firstIncomeTimeline}
-    - Budget: ${this.getInvestmentRange(quizData.upfrontInvestment)}
-    - Weekly Time: ${this.getTimeCommitmentRange(quizData.weeklyTimeCommitment)}
-        - Tech Skills: ${this.getRatingDescription(quizData.techSkillsRating)}
-    - Communication Comfort: ${this.getRatingDescription(quizData.directCommunicationEnjoyment)}
-    - Risk Tolerance: ${this.getRatingDescription(quizData.riskComfortLevel)}
-    - Self Motivation: ${this.getRatingDescription(quizData.selfMotivationLevel)}
-    - Creative Work Enjoyment: ${this.getRatingDescription(quizData.creativeWorkEnjoyment)}
+    - Budget: ${getInvestmentRange(quizData.upfrontInvestment)}
+    - Weekly Time: ${getTimeCommitmentRange(quizData.weeklyTimeCommitment)}
+        - Tech Skills: ${getRatingDescription(quizData.techSkillsRating)}
+    - Communication Comfort: ${getRatingDescription(quizData.directCommunicationEnjoyment)}
+    - Risk Tolerance: ${getRatingDescription(quizData.riskComfortLevel)}
+    - Self Motivation: ${getRatingDescription(quizData.selfMotivationLevel)}
+    - Creative Work Enjoyment: ${getRatingDescription(quizData.creativeWorkEnjoyment)}
     - Work Style: ${quizData.workCollaborationPreference}
     - Learning Preference: ${quizData.learningPreference}
-        - Brand Face Comfort: ${this.getRatingDescription(quizData.brandFaceComfort)}
-    - Organization Level: ${this.getRatingDescription(quizData.organizationLevel)}
-    - Consistency Level: ${this.getRatingDescription(quizData.longTermConsistency)}
+        - Brand Face Comfort: ${getRatingDescription(quizData.brandFaceComfort)}
+    - Organization Level: ${getRatingDescription(quizData.organizationLevel)}
+    - Consistency Level: ${getRatingDescription(quizData.longTermConsistency)}
 
     BUSINESS MODELS TO ANALYZE:
     ${JSON.stringify(businessModels, null, 2)}
@@ -482,34 +488,7 @@ export class AIScoringService {
     return recommendations;
   }
 
-  private getRatingDescription(rating: number): string {
-    if (rating >= 4.5) return "Very High";
-    if (rating >= 4) return "High";
-    if (rating >= 3) return "Moderate";
-    if (rating >= 2) return "Low";
-    return "Very Low";
-  }
-
-  private getIncomeGoalRange(value: number): string {
-    if (value <= 500) return "Less than $500/month";
-    if (value <= 1250) return "$500–$2,000/month";
-    if (value <= 3500) return "$2,000-$5,000/month";
-    return "$5,000+/month";
-  }
-
-  private getTimeCommitmentRange(value: number): string {
-    if (value <= 3) return "Less than 5 hours/week";
-    if (value <= 7) return "5–10 hours/week";
-    if (value <= 17) return "10–25 hours/week";
-    return "25+ hours/week";
-  }
-
-  private getInvestmentRange(value: number): string {
-    if (value <= 0) return "$0 (bootstrap only)";
-    if (value <= 125) return "Under $250";
-    if (value <= 625) return "$250–$1,000";
-    return "$1,000+";
-  }
+  // Utility functions now imported from ../utils/quizUtils.js
 }
 
 export const aiScoringService = AIScoringService.getInstance();

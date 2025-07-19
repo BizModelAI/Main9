@@ -14,6 +14,7 @@ import {
   Calendar,
   Edit,
   ChevronLeft,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { businessModelService } from "../utils/businessModelService";
@@ -38,6 +39,7 @@ const Dashboard: React.FC = () => {
     null,
   );
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+
 
   // Load real business model scores from user's quiz data
   useEffect(() => {
@@ -121,6 +123,8 @@ const Dashboard: React.FC = () => {
     loadBusinessModelScores();
   }, [user, authLoading, isRealUser, getLatestQuizData]);
 
+
+
   // Check if user has ever selected a business model on component mount
   React.useEffect(() => {
     const savedModel = localStorage.getItem("selectedBusinessModel");
@@ -171,6 +175,11 @@ const Dashboard: React.FC = () => {
       JSON.stringify(businessModel),
     );
     localStorage.setItem("hasEverSelectedModel", "true");
+
+    // Scroll to top after modal closes
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
   };
 
   const handleChangeBusinessModel = () => {
@@ -201,12 +210,12 @@ const Dashboard: React.FC = () => {
     completedAt?: string,
     isHistoricalView?: boolean,
   ) => {
-    console.log("Quiz selected in Dashboard:", {
-      quizData,
-      aiContent,
-      completedAt,
-      isHistoricalView,
-    });
+    // console.log("Quiz selected in Dashboard:", {
+    //   quizData,
+    //   aiContent,
+    //   completedAt,
+    //   isHistoricalView,
+    // });
 
     // Set historical quiz date if provided
     if (completedAt) {
@@ -245,13 +254,18 @@ const Dashboard: React.FC = () => {
       useLink: true,
     },
     {
-      title: "View Full Results",
+      title: "View Full Report",
       description: "See your complete personalized business analysis",
-      href: "/results",
+      href: "/results?showFullReport=true",
       icon: Target,
       color: "purple",
       gradient: "from-purple-500 to-purple-600",
       useLink: false,
+      onClick: () => {
+        console.log("View Full Report clicked - navigating to full report");
+        // Navigate to full report for the latest quiz attempt
+        navigate("/results?showFullReport=true", { replace: true });
+      }
     },
     {
       title: "Explore All Models",
@@ -406,9 +420,7 @@ const Dashboard: React.FC = () => {
                     return (
                       <button
                         key={index}
-                        onClick={() =>
-                          handleNavigateWithScrollToTop(action.href)
-                        }
+                        onClick={action.onClick || (() => handleNavigateWithScrollToTop(action.href))}
                         className="group flex flex-col items-center p-6 rounded-2xl hover:bg-gray-50 transition-all duration-300 border border-gray-100 hover:border-gray-200 text-center w-full"
                       >
                         <div
@@ -584,13 +596,13 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                     <div className="flex items-center mb-2">
-                      <Award className="h-5 w-5 text-yellow-300 mr-2" />
+                      <Wallet className="h-5 w-5 text-green-300 mr-2" />
                       <span className="text-blue-100 text-sm font-medium">
-                        Difficulty
+                        Startup Cost
                       </span>
                     </div>
                     <div className="text-white font-bold text-lg">
-                      {selectedBusinessModel.difficulty}
+                      {selectedBusinessModel.startupCost}
                     </div>
                   </div>
                 </div>
@@ -610,7 +622,7 @@ const Dashboard: React.FC = () => {
                     }}
                     className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-all duration-300 flex items-center justify-center"
                   >
-                    View Full Analysis
+                    View Full Results
                   </button>
                 </div>
               </div>

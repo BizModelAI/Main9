@@ -257,7 +257,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
         "Time management and self-discipline":
           "Skills to manage multiple projects, meet deadlines, and work independently without direct supervision. This includes creating schedules, prioritizing tasks, and maintaining productivity while working from home.",
       },
-      "content-creation-ugc": {
+      "content-creation": {
         "Smartphone with good camera quality":
           "A modern smartphone with at least 1080p video recording capability and good low-light performance. Most content today is shot on phones, so camera quality directly impacts your content's professional appearance.",
         "Basic understanding of social media platforms":
@@ -275,7 +275,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
   // Get business-specific guide content
   const getGuideContent = () => {
     switch (businessId) {
-      case "content-creation-ugc":
+      case "content-creation":
         return {
           prerequisites: [
             "Smartphone with good camera quality",
@@ -1323,7 +1323,7 @@ const BusinessGuide: React.FC<BusinessGuideProps> = ({ quizData }) => {
 
               <div className="text-center">
                 <button
-                  onClick={() => navigate(`/business/${businessId}`)}
+                  onClick={() => navigate(`/business-model/${businessId}`)}
                   className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
                 >
                   <BookOpen className="h-5 w-5 mr-2" />

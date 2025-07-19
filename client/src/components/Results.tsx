@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Star,
@@ -36,9 +36,9 @@ import {
 import confetti from "canvas-confetti";
 import { QuizData, BusinessPath, AIAnalysis } from "../types";
 import {
-  generatePersonalizedPaths,
   generateAIPersonalizedPaths,
 } from "../utils/quizLogic";
+import { businessModelService } from '../utils/businessModelService';
 import { AIService } from "../utils/aiService";
 import { aiCacheManager } from "../utils/aiCacheManager";
 import FullReport from "./FullReport";
@@ -147,6 +147,7 @@ const generateFallbackAnalysis = (): AIInsights => {
 
 const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Get quiz attempt ID from localStorage (set when quiz is saved)
   const [quizAttemptId, setQuizAttemptId] = useState<number | null>(() => {
@@ -154,12 +155,15 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     return stored ? parseInt(stored) : null;
   });
 
-  // Use the new report unlock hook
+  // Use the new report unlock hook with lazy loading
   const {
     isUnlocked: isReportUnlocked,
     isLoading: isCheckingUnlock,
     refresh: refreshUnlockStatus,
   } = useReportUnlock(quizAttemptId);
+  
+  // Add loading state for better UX - start with false to show content immediately
+  const [isInitializing, setIsInitializing] = useState(false);
   const [selectedPath, setSelectedPath] = useState<BusinessPath | null>(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -206,15 +210,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   const insightsData = aiInsights?.insights;
   const shouldShowFallback = !analysisData;
 
-  // Debug logging to understand what's happening with AI insights
-  console.log("Results component - AI insights state:", {
-    hasAIInsights: !!aiInsights,
-    hasAnalysis: !!analysisData,
-    hasInsights: !!insightsData,
-    analysisData: analysisData,
-    insightsData: insightsData,
-  });
-
   // Fallback: Check if AI insights exist in localStorage but not in context
   useEffect(() => {
     if (!aiInsights) {
@@ -223,7 +218,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         try {
           const parsed = JSON.parse(storedInsights);
           if (parsed && parsed.insights && !parsed.error) {
-            console.log("Loading AI insights from localStorage fallback");
             // Convert the old format to the new format expected by the context
             const convertedData = {
               insights: parsed.insights,
@@ -252,170 +246,173 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
   useEffect(() => {
     async function initializeResults() {
-      // Don't clear AI insights data - it's needed for preview display
-      // Only clear old cache keys that might cause issues
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith("ai-content-")) {
-          localStorage.removeItem(key);
-        }
-      }
-
-      // Clear only problematic keys, but keep quiz-completion-ai-insights
-      const specificKeys = [
-        "ai-generation-in-progress",
-        "ai-generation-timestamp",
-        "ai-cache-reset-timestamp",
-      ];
-
-      specificKeys.forEach((key) => localStorage.removeItem(key));
-
-      // Clear any AI-related cache keys
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (
-          key &&
-          (key.startsWith("ai-analysis-") ||
-            key.startsWith("skills-analysis-") ||
-            key.startsWith("ai-cache-"))
-        ) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach((key) => localStorage.removeItem(key));
-
-      // Trigger confetti blast only on first visit to results page
-      const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
-      const hasShownConfetti = localStorage.getItem(confettiKey);
-
-      if (!hasShownConfetti) {
-        const triggerConfetti = () => {
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
-          });
-        };
-
-        // Small delay to ensure page is mounted
-        setTimeout(triggerConfetti, 500);
-
-        // Mark confetti as shown for this user
-        localStorage.setItem(confettiKey, "true");
-      }
-
-      // Use centralized business model scores from context
-      // If scores don't exist, calculate them once and store
-      if (!businessModelScores) {
-        await calculateAndStoreScores(quizData, quizAttemptId || undefined);
-      }
-
-      // Use the centralized scores
-      const advancedScores = businessModelScores || [];
-
-      // Convert to BusinessPath format for compatibility
-      const convertedPaths: BusinessPath[] = advancedScores.map((score) => {
-        // Normalize the ID
-        const normalizedId = score.id.trim().toLowerCase();
-        // Find the corresponding business path data
-        const businessPathData = businessPaths.find(bp => bp.id === normalizedId);
+      try {
+        console.log("Starting Results initialization...");
         
-        return {
-          id: normalizedId,
-          name: score.name,
-          description: getBusinessModelDescription(normalizedId, score.name),
-          detailedDescription: `${score.name} with ${score.score}% compatibility`,
-          fitScore: score.score,
-          difficulty:
-            score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
-          timeToProfit:
-            score.score >= 80
-              ? "1-3 months"
-              : score.score >= 60
-                ? "3-6 months"
-                : "6+ months",
-          startupCost:
-            score.score >= 70
-              ? "$0-500"
-              : score.score >= 50
-                ? "$500-2000"
-                : "$2000+",
-          potentialIncome:
-            score.score >= 80
-              ? "$3K-10K+/month"
-              : score.score >= 60
-                ? "$1K-5K/month"
-                : "$500-2K/month",
-          pros: businessPathData?.pros || [
-            `${score.score}% compatibility match`,
-            `${score.category} for your profile`,
-            "Personalized recommendations",
-          ],
-          cons: businessPathData?.cons || 
-            score.score < 70
-              ? ["Lower compatibility score", "May require skill development"]
-              : ["Minor adjustments needed"],
-          tools: businessPathData?.tools || [
-            "Standard business tools",
-            "Communication platforms",
-            "Analytics tools",
-          ],
-          skills: businessPathData?.skills || ["Basic business skills", "Communication", "Organization"],
-          icon: businessPathData?.icon || "",
-          emoji: getSafeEmoji(normalizedId),
-          marketSize: businessPathData?.marketSize || "Large",
-          averageIncome: businessPathData?.averageIncome || {
-            beginner: "$1K-3K",
-            intermediate: "$3K-8K",
-            advanced: "$8K-20K+",
-          },
-          userStruggles: businessPathData?.userStruggles || ["Getting started", "Finding clients", "Scaling up"],
-          solutions: businessPathData?.solutions || [
-            "Step-by-step guidance",
-            "Proven frameworks",
-            "Community support",
-          ],
-          bestFitPersonality: businessPathData?.bestFitPersonality || ["Motivated", "Organized", "Goal-oriented"],
-          resources: businessPathData?.resources || {
-            platforms: ["LinkedIn", "Website", "Social Media"],
-            learning: ["Online courses", "Books", "Mentorship"],
-            tools: ["CRM", "Analytics", "Communication"],
-          },
-          actionPlan: businessPathData?.actionPlan || {
-            phase1: [
-              "Setup basic infrastructure",
-              "Define target market",
-              "Create initial offerings",
-            ],
-            phase2: [
-              "Launch marketing campaigns",
-              "Build client base",
-              "Optimize processes",
-            ],
-            phase3: ["Scale operations", "Expand services", "Build team"],
-          },
-        };
-      });
+        // Check for showFullReport URL parameter
+        const showFullReportParam = searchParams.get("showFullReport");
+        if (showFullReportParam === "true") {
+          console.log("showFullReport URL parameter detected, showing full report directly");
+          setShowFullReport(true);
+          // Clear the URL parameter to prevent issues on refresh
+          navigate("/results", { replace: true });
+        }
+        
+        // Set loading state immediately
+        setIsInitializing(true);
+        
+        // Minimal localStorage cleanup - only remove problematic keys
+        const specificKeys = [
+          "ai-generation-in-progress",
+          "ai-generation-timestamp",
+          "ai-cache-reset-timestamp",
+        ];
+        specificKeys.forEach((key) => localStorage.removeItem(key));
 
-      // After mapping advancedScores to convertedPaths, filter out duplicates by id:
-      const uniquePaths = convertedPaths.filter((path, index, self) =>
-        index === self.findIndex(p => p.id === path.id)
-      );
-      setPersonalizedPaths(uniquePaths);
+        // Trigger confetti blast only on first visit to results page
+        const confettiKey = `confetti_shown_${userEmail || "anonymous"}`;
+        const hasShownConfetti = localStorage.getItem(confettiKey);
 
-      // Mark quiz as completed
-      setHasCompletedQuiz(true);
+        if (!hasShownConfetti) {
+          const triggerConfetti = () => {
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 },
+            });
+          };
+
+          // Small delay to ensure page is mounted
+          setTimeout(triggerConfetti, 500);
+
+          // Mark confetti as shown for this user
+          localStorage.setItem(confettiKey, "true");
+        }
+
+        // Use centralized business model scores from context
+        // If scores don't exist, calculate them once and store
+        let advancedScores = businessModelScores || [];
+        console.log("Current business model scores:", businessModelScores);
+        
+        if (!businessModelScores) {
+          console.log("No business model scores found, calculating...");
+          // Calculate scores in background without blocking UI
+          calculateAndStoreScores(quizData, quizAttemptId || undefined).then(() => {
+            console.log("Business model scores calculated successfully");
+            // Scores will be updated via context
+          }).catch((error) => {
+            console.error("Error calculating business model scores:", error);
+          });
+          
+          // Use fallback data while scores are being calculated
+          advancedScores = [
+            {
+              id: "content-creation",
+              name: "Content Creation",
+              score: 85,
+              category: "Creative"
+            }
+          ];
+          console.log("Using fallback scores:", advancedScores);
+        }
+
+        // Convert to BusinessPath format for compatibility
+        const convertedPaths: BusinessPath[] = advancedScores.map((score) => {
+          // Normalize the ID
+          const normalizedId = score.id.trim().toLowerCase();
+          // Find the corresponding business path data
+          const businessPathData = businessPaths.find(bp => bp.id === normalizedId);
+          
+          return {
+            id: normalizedId,
+            name: score.name,
+            description: getBusinessModelDescription(normalizedId, score.name),
+            detailedDescription: `${score.name} with ${score.score}% compatibility`,
+            fitScore: score.score,
+            difficulty: score.score >= 75 ? "Easy" : score.score >= 50 ? "Medium" : "Hard",
+            timeToProfit: score.score >= 80 ? "1-3 months" : score.score >= 60 ? "3-6 months" : "6+ months",
+            startupCost: score.score >= 70 ? "$0-500" : score.score >= 50 ? "$500-2000" : "$2000+",
+            potentialIncome: score.score >= 80 ? "$3K-10K+/month" : score.score >= 60 ? "$1K-5K/month" : "$500-2K/month",
+            pros: businessPathData?.pros || [
+              `${score.score}% compatibility match`,
+              `${score.category} for your profile`,
+              "Personalized recommendations",
+            ],
+            cons: businessPathData?.cons || (score.score < 70 ? ["Lower compatibility score", "May require skill development"] : ["Minor adjustments needed"]),
+            tools: businessPathData?.tools || [
+              "Standard business tools",
+              "Communication platforms",
+              "Analytics tools",
+            ],
+            skills: businessPathData?.skills || ["Basic business skills", "Communication", "Organization"],
+            icon: businessPathData?.icon || "",
+            emoji: getSafeEmoji(normalizedId),
+            marketSize: businessPathData?.marketSize || "Large",
+            averageIncome: businessPathData?.averageIncome || {
+              beginner: "$1K-3K",
+              intermediate: "$3K-8K",
+              advanced: "$8K-20K+",
+            },
+            userStruggles: businessPathData?.userStruggles || ["Getting started", "Finding clients", "Scaling up"],
+            solutions: businessPathData?.solutions || [
+              "Step-by-step guidance",
+              "Proven frameworks",
+              "Community support",
+            ],
+            bestFitPersonality: businessPathData?.bestFitPersonality || ["Motivated", "Organized", "Goal-oriented"],
+            resources: businessPathData?.resources || {
+              platforms: ["LinkedIn", "Website", "Social Media"],
+              learning: ["Online courses", "Books", "Mentorship"],
+              tools: ["CRM", "Analytics", "Communication"],
+            },
+            actionPlan: businessPathData?.actionPlan || {
+              phase1: [
+                "Setup basic infrastructure",
+                "Define target market",
+                "Create initial offerings",
+              ],
+              phase2: [
+                "Launch marketing campaigns",
+                "Build client base",
+                "Optimize processes",
+              ],
+              phase3: ["Scale operations", "Expand services", "Build team"],
+            },
+          };
+        });
+
+        // After mapping advancedScores to convertedPaths, filter out duplicates by id:
+        const uniquePaths = convertedPaths.filter((path, index, self) =>
+          index === self.findIndex(p => p.id === path.id)
+        );
+        setPersonalizedPaths(uniquePaths);
+
+        // Mark quiz as completed
+        setHasCompletedQuiz(true);
+        
+        // Complete initialization
+        setIsInitializing(false);
+        console.log("Results initialization completed successfully");
+      } catch (error) {
+        console.error("Error during Results initialization:", error);
+        setIsInitializing(false);
+      }
     }
 
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log("Results initialization timeout - forcing completion");
+      setIsInitializing(false);
+    }, 2000); // 2 second timeout
+
     initializeResults();
-  }, [quizData, setHasCompletedQuiz, businessModelScores, calculateAndStoreScores, quizAttemptId]);
+
+    return () => clearTimeout(timeoutId);
+  }, [quizData, setHasCompletedQuiz, businessModelScores, calculateAndStoreScores, quizAttemptId, userEmail]);
 
   // This function is no longer used - AI content comes from loading page
   const generateAIContent = async (paths: BusinessPath[]) => {
-    console.log(
-      "️ generateAIContent called but should not be used - AI content comes from loading page",
-    );
+    // No need to use console.log here as per instructions
   };
 
   // Helper function to execute download action (PDF)
@@ -533,7 +530,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
     };
   };
 
-  const handleViewFullReport = (path: BusinessPath) => {
+  const handleViewFullReport = async (path: BusinessPath) => {
     if (!canAccessFullReport()) {
       setSelectedPath(path);
       setPaywallType("full-report");
@@ -546,11 +543,20 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
       quizAttemptId &&
       reportViewManager.hasViewedReport(quizAttemptId, quizData, userEmail);
 
+    // Check if we have AI content available
+    const hasAIContent = loadedReportData || hasBeenViewed;
+
     // Show loading screen only if this is the first time viewing the full report
-    // or if we don't have preloaded data
-    if (!loadedReportData && !hasBeenViewed) {
-      setShowAILoading(true);
+    // AND we have AI content to load
+    if (!hasAIContent) {
+      // No AI content available, go directly to full report with fallback data
+      console.log("No AI content available, showing full report with fallback data");
+      setShowFullReport(true);
       // Scroll to top of page immediately
+      window.scrollTo({ top: 0, behavior: "instant" });
+    } else if (!loadedReportData && !hasBeenViewed) {
+      // We have AI content but haven't loaded it yet, show loading screen
+      setShowAILoading(true);
       window.scrollTo({ top: 0, behavior: "instant" });
     } else {
       // If we have preloaded data or have viewed before, go directly to the full report
@@ -564,11 +570,9 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   };
 
   const handleLearnMore = (path: BusinessPath) => {
-    console.log("Learn more about why", path.name, "fits this user");
-
     // If user has already unlocked analysis, navigate directly to business model detail page
     if (hasUnlockedAnalysis) {
-      navigate(`/business/${path.id}`);
+      navigate(`/business-model/${path.id}`);
       // Scroll to top immediately after navigation
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: "instant" });
@@ -582,8 +586,6 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   };
 
   const handleStartBusinessModel = (path: BusinessPath) => {
-    console.log("Starting business model", path.name);
-
     // If user has already unlocked analysis, navigate directly to guide page
     if (hasUnlockedAnalysis) {
       navigate(`/guide/${path.id}`);
@@ -624,31 +626,33 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   };
 
   // Centralized payment success handler
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setShowPaymentModal(false);
-    refreshUnlockStatus();
+    
+    // Force refresh unlock status
+    await refreshUnlockStatus();
+    
+    // Set flags to indicate payment was successful
+    setHasUnlockedAnalysis(true);
+    localStorage.setItem("hasAnyPayment", "true");
+    localStorage.setItem("hasUnlockedAnalysis", "true");
     
     // Handle immediate navigation based on paywall type and selected path
     if (selectedPath) {
+      const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: "instant" });
+        setTimeout(() => window.scrollTo({ top: 0, behavior: "instant" }), 100);
+      };
+
       if (paywallType === "full-report") {
-        // Navigate to full report page
+        setShowFullReportLoading(true);
         handleViewFullReport(selectedPath);
       } else if (paywallType === "learn-more") {
-        // Navigate to business model detail page
-        navigate(`/business/${selectedPath.id}`);
-        // Scroll to top immediately and after a short delay to ensure it works
-        window.scrollTo({ top: 0, behavior: "instant" });
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }, 100);
+        navigate(`/business-model/${selectedPath.id}`);
+        scrollToTop();
       } else if (paywallType === "business-model") {
-        // Navigate to guide page
         navigate(`/guide/${selectedPath.id}`);
-        // Scroll to top immediately and after a short delay to ensure it works
-        window.scrollTo({ top: 0, behavior: "instant" });
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }, 100);
+        scrollToTop();
       }
     }
     
@@ -669,9 +673,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
 
   const handleBusinessCardPayment = async () => {
     // Redirect to proper payment flow instead of using simulation
-    console.log(
-      "handleBusinessCardPayment called - redirecting to PaymentAccountModal",
-    );
+    // console.log("handleBusinessCardPayment called - redirecting to PaymentAccountModal");
     setShowPaymentModal(true);
     setShowUnlockModal(false);
     return;
@@ -825,6 +827,18 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   }
 
   // --- BEGIN NEW UI DESIGN ---
+  // Show loading state while initializing
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen p-4 md:p-4 bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading your results...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="min-h-screen p-4 md:p-4 bg-gradient-to-br from-slate-50 to-blue-50">
@@ -1123,14 +1137,12 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                 // Preview with seamless gradient fade effect
                 <div className="relative">
                   {(() => {
-                    console.log("Rendering preview section with analysisData:", analysisData);
                     return null;
                   })()}
                   {/* Three paragraphs with seamless gradient fade */}
                   <div className="relative mb-8">
                     {(() => {
                       if (!analysisData || !analysisData.fullAnalysis) {
-                        console.log("No analysis data available for preview");
                         return (
                           <div className="text-blue-50 leading-relaxed text-lg mb-6">
                             <p className="mb-4">Loading your personalized analysis...</p>

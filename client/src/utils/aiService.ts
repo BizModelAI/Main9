@@ -69,6 +69,87 @@ Personality Traits:
 `.trim();
   }
 
+  private buildResultsPreviewPrompt(quizData: QuizData, topPaths: BusinessPath[]): string {
+      const userProfile = this.createUserProfile(quizData, topPaths[0]);
+
+    return `Based on your quiz data and your top business model, generate the following:
+
+### Preview Insights
+Write 3 paragraphs analyzing why you are a strong fit for ${topPaths[0].name}, based on your quiz results.
+
+   - Paragraph 1: Explain why this business model aligns with your goals, constraints, and personality traits. Be specific about how your exact quiz responses connect to this business model's requirements.
+   - Paragraph 2: Describe your natural advantages in executing this model (skills, traits, or behaviors). Reference specific traits from your quiz that give you an edge in this field.
+   - Paragraph 3: Identify one potential challenge you may face based on your profile, and how to overcome it. Be honest but constructive about areas where you might need to grow.
+
+   Each paragraph must be a minimum of 3 sentences. Longer, more detailed paragraphs are encouraged. Do not write any paragraph shorter than 3 sentences.
+   Use specific references to your traits and quiz responses. Avoid generic phrases. Keep the tone personal, professional, and directly addressing you.
+
+### Key Insights
+- 4 bullet points summarizing the most important findings about your business style, risk tolerance, or strategic fit.
+
+### Success Predictors
+- 4 bullet points explaining which traits or behaviors from your quiz predict a high chance of success. These should be personal, specific, and based on your actual quiz data.
+
+CRITICAL RULES:
+- Use only the data from your profile.
+- Do NOT invent data or use generic filler.
+- Use clear, concise language that directly addresses you.
+- Ban phrases like "powerful foundation", "natural strengths", "unique combination of traits".
+- Every paragraph must reference specific traits from your quiz.
+- Max 550 characters per paragraph.
+- Always use "you" and "your" instead of "the user" or "the user's".
+
+YOUR PROFILE:
+${userProfile}`;
+  }
+
+  private buildPersonalizedInsightsPrompt(quizData: QuizData, topPaths: BusinessPath[], bottomPaths: BusinessPath[]): string {
+    const userProfile = this.createUserProfile(quizData);
+    
+    return `Based only on your quiz data and the provided top 3 and bottom 3 business matches, generate the following. This is for a full business analysis report. Be specific and use only known data.
+
+### Personalized Recommendations
+Write 3-4 paragraphs with specific, actionable recommendations for your top business model matches. Focus on next steps, skill development, and strategic approaches based on your profile.
+
+### Potential Challenges
+Write 2-3 paragraphs identifying potential challenges you may face based on your quiz responses, and how to overcome them. Be honest but constructive.
+
+### Top Fit Explanation
+Write 2-3 paragraphs explaining why your top 3 business models are strong matches for you:
+1. ${topPaths[0]?.name || "N/A"} (${topPaths[0]?.fitScore || "N/A"}%)
+2. ${topPaths[1]?.name || "N/A"} (${topPaths[1]?.fitScore || "N/A"}%)
+3. ${topPaths[2]?.name || "N/A"} (${topPaths[2]?.fitScore || "N/A"}%)
+
+### Bottom Fit Explanation
+Write 2-3 paragraphs explaining why your bottom 3 business models are poor matches for you, and what would need to change for them to become viable:
+1. ${bottomPaths[0]?.name || "N/A"} (${bottomPaths[0]?.fitScore || "N/A"}%)
+2. ${bottomPaths[1]?.name || "N/A"} (${bottomPaths[1]?.fitScore || "N/A"}%)
+3. ${bottomPaths[2]?.name || "N/A"} (${bottomPaths[2]?.fitScore || "N/A"}%)
+
+CRITICAL RULES:
+- Use ONLY the following data:
+  ${userProfile}
+- Use clean, specific, professional language only.
+- Do NOT invent numbers, ratings, or filler traits.
+- Always use "you" and "your" instead of "the user" or "the user's".
+- Be specific about how your quiz responses connect to each business model.`;
+  }
+
+  private buildCharacteristicsPrompt(quizData: QuizData): string {
+    const userProfile = this.createUserProfile(quizData);
+    
+    return `Based on your quiz responses, identify 6 key personality characteristics that define your entrepreneurial style. Return ONLY a JSON object with this exact structure:
+
+{
+  "characteristics": ["characteristic 1", "characteristic 2", "characteristic 3", "characteristic 4", "characteristic 5", "characteristic 6"]
+}
+
+Each characteristic should be 2-4 words maximum. Focus on traits that directly relate to business success and entrepreneurship.
+
+YOUR PROFILE:
+${userProfile}`;
+  }
+
   // Call 1: Results Preview (quiz-loading page) - FREE PREVIEW
   async generateResultsPreview(
     quizData: QuizData,
@@ -81,122 +162,78 @@ Personality Traits:
     try {
       // First check if we have existing AI content in database
       const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
-      if (quizAttemptId) {
+          if (quizAttemptId) {
+        console.log(`🔍 Checking for existing preview content for quiz attempt ${quizAttemptId}`);
         const existingContent = await this.getAIContentFromDatabase(
-          quizAttemptId,
-          "preview",
+              quizAttemptId,
+              "preview",
         );
         if (existingContent) {
-          console.log("Using existing preview insights from database");
+          console.log(`✅ Using existing preview insights from database for quiz attempt ${quizAttemptId}`);
           return existingContent;
         }
       }
 
-      console.log("Generating fresh preview insights");
-      const userProfile = this.createUserProfile(quizData, topPaths[0]);
-
-      const response = await this.makeOpenAIRequest({
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an AI business coach. Use JSON output. Use a professional and direct tone. Do not invent data.",
-          },
-          {
-            role: "user",
-            content: `Based on your quiz data and your top business model, generate the following in JSON format:
-
-1. "previewInsights": Write 3 paragraphs analyzing why you are a strong fit for ${topPaths[0].name}, based on your quiz results.
-   - Paragraph 1: Explain why this business model aligns with your goals, constraints, and personality traits. Be specific about how your exact quiz responses connect to this business model's requirements.
-   - Paragraph 2: Describe your natural advantages in executing this model (skills, traits, or behaviors). Reference specific traits from your quiz that give you an edge in this field.
-   - Paragraph 3: Identify one potential challenge you may face based on your profile, and how to overcome it. Be honest but constructive about areas where you might need to grow.
-   Each paragraph must be a minimum of 3 sentences. Longer, more detailed paragraphs are encouraged. Do not write any paragraph shorter than 3 sentences.
-   Use specific references to your traits and quiz responses. Avoid generic phrases. Keep the tone personal, professional, and directly addressing you.
-
-2. "keyInsights": 4 bullet points summarizing the most important findings about your business style, risk tolerance, or strategic fit.
-
-3. "successPredictors": 4 bullet points explaining which traits or behaviors from your quiz predict a high chance of success. These should be personal, specific, and based on your actual quiz data.
-
-Format your entire output as:
-{
-  "previewInsights": "...",
-  "keyInsights": ["...", "...", "...", "..."],
-  "successPredictors": ["...", "...", "...", "..."]
-}
-
-CRITICAL RULES:
-- Use only the data from your profile.
-- Do NOT invent data or use generic filler.
-- Use clear, concise language that directly addresses you.
-- Do NOT include any headers or formatting outside the JSON.
-- Ban phrases like "powerful foundation", "natural strengths", "unique combination of traits".
-- Every paragraph must reference specific traits from your quiz.
-- Max 550 characters per paragraph.
-- Always use "you" and "your" instead of "the user" or "the user's".
-
-YOUR PROFILE:
-${userProfile}`,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 800,
+      console.log(`🔄 Generating fresh preview insights for quiz attempt ${quizAttemptId || 'unknown'}`);
+      
+      // Generate fresh content
+      const response = await fetch("/api/openai-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          prompt: this.buildResultsPreviewPrompt(quizData, topPaths),
+        }),
       });
 
-      if (response && response.content) {
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.content;
+
+      // Parse the response
+      const insightsMatch = content.match(/### Key Insights\n([\s\S]*?)(?=\n###|$)/);
+      const predictorsMatch = content.match(/### Success Predictors\n([\s\S]*?)(?=\n###|$)/);
+
+      const keyInsights = insightsMatch
+        ? insightsMatch[1]
+            .split("\n")
+            .filter((line: string) => line.trim().startsWith("-"))
+            .map((line: string) => line.trim().substring(1).trim())
+        : [];
+
+      const successPredictors = predictorsMatch
+        ? predictorsMatch[1]
+            .split("\n")
+            .filter((line: string) => line.trim().startsWith("-"))
+            .map((line: string) => line.trim().substring(1).trim())
+        : [];
+
+      const previewInsights = content
+        .replace(/### Key Insights[\s\S]*?### Success Predictors[\s\S]*/g, "")
+        .trim();
+
+      const result = {
+        previewInsights,
+        keyInsights,
+        successPredictors,
+      };
+
+      // Save to database if we have a quiz attempt ID
+      if (quizAttemptId) {
         try {
-          // Clean up the response content to ensure valid JSON
-          let cleanContent = response.content.trim();
-
-          // Remove any potential markdown code blocks
-          cleanContent = cleanContent
-            .replace(/```json\s*/g, "")
-            .replace(/```\s*/g, "");
-
-          // Find the JSON object (between first { and last })
-          const firstBrace = cleanContent.indexOf("{");
-          const lastBrace = cleanContent.lastIndexOf("}");
-
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
-          }
-
-          const insights = JSON.parse(cleanContent);
-
-          // Save to database instead of localStorage cache
-          if (quizAttemptId) {
-            await this.saveAIContentToDatabase(
-              quizAttemptId,
-              "preview",
-              insights,
-            );
-          }
-
-          return insights;
-        } catch (parseError) {
-          console.error("JSON parse error for response:", response.content);
-          console.error("Parse error details:", parseError);
-
-          // Return a fallback structure
-          return {
-            previewInsights:
-              "Unable to generate detailed insights at this time. Please try again.",
-            keyInsights: [
-              "Technical analysis temporarily unavailable",
-              "Personalized recommendations being processed",
-              "Business fit assessment in progress",
-              "Success predictors under review",
-            ],
-            successPredictors: [
-              "Your quiz responses indicate strong entrepreneurial potential",
-              "Multiple business models show compatibility with your profile",
-              "Time commitment and risk tolerance align with opportunities",
-              "Skills assessment suggests good foundation for success",
-            ],
-          };
+          await this.saveAIContentToDatabase(quizAttemptId, "preview", result);
+          console.log(`💾 Saved preview insights to database for quiz attempt ${quizAttemptId}`);
+        } catch (saveError) {
+          console.error("Failed to save preview insights to database:", saveError);
         }
       }
 
-      throw new Error("No valid response from AI service");
+      return result;
     } catch (error) {
       console.error("Error generating results preview:", error);
       throw error;
@@ -209,159 +246,73 @@ ${userProfile}`,
     topPaths: BusinessPath[],
     bottomPaths: BusinessPath[],
   ): Promise<{
-    personalizedRecommendations: string[];
-    potentialChallenges: string[];
-    top3Fits: { model: string; reason: string }[];
-    bottom3Avoid: {
-      model: string;
-      reason: string;
-      futureConsideration?: string;
-    }[];
+    personalizedRecommendations: string;
+    potentialChallenges: string;
+    topFitExplanation: string;
+    bottomFitExplanation: string;
   }> {
     try {
       // First check if we have existing AI content in database
       const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
       if (quizAttemptId) {
+        console.log(`🔍 Checking for existing fullReport content for quiz attempt ${quizAttemptId}`);
         const existingContent = await this.getAIContentFromDatabase(
           quizAttemptId,
           "fullReport",
         );
         if (existingContent) {
-          console.log("Using existing full report insights from database");
+          console.log(`✅ Using existing full report insights from database for quiz attempt ${quizAttemptId}`);
           return existingContent;
         }
       }
 
-      console.log("Generating fresh full report insights");
-      const userProfile = this.createUserProfile(quizData);
-
-      const response = await this.makeOpenAIRequest({
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an AI business coach. Use JSON output. Use a professional and direct tone. Do not invent data.",
-          },
-          {
-            role: "user",
-            content: `Based only on your quiz data and the provided top 3 and bottom 3 business matches, generate the following JSON output. This is for a full business analysis report. Do NOT include formatting or markdown. Be specific and use only known data.
-
-Return exactly this structure:
-
-{
-  "personalizedRecommendations": ["...", "...", "...", "...", "...", "..."],
-  "potentialChallenges": ["...", "...", "...", "..."],
-  "top3Fits": [
-    {
-      "model": "${topPaths[0]?.name || "Business Model"}",
-      "reason": "One short paragraph explaining why this is a strong match for you"
-    },
-    {
-      "model": "${topPaths[1]?.name || "Business Model"}",
-      "reason": "One short paragraph explaining why this is a strong match for you"
-    },
-    {
-      "model": "${topPaths[2]?.name || "Business Model"}",
-      "reason": "One short paragraph explaining why this is a strong match for you"
-    }
-  ],
-  "bottom3Avoid": [
-    {
-      "model": "${bottomPaths[0]?.name || "Business Model"}",
-      "reason": "Why this model doesn't align with your current profile",
-      "futureConsideration": "How it could become viable for you in the future (optional)"
-    },
-    {
-      "model": "${bottomPaths[1]?.name || "Business Model"}",
-      "reason": "Why this model doesn't align with your current profile",
-      "futureConsideration": "How it could become viable for you in the future (optional)"
-    },
-    {
-      "model": "${bottomPaths[2]?.name || "Business Model"}",
-      "reason": "Why this model doesn't align with your current profile",
-      "futureConsideration": "How it could become viable for you in the future (optional)"
-    }
-  ]
-}
-
-CRITICAL RULES:
-- Use ONLY the following data:
-  ${userProfile}
-  - Top matches (already determined by algorithm):
-    1. ${topPaths[0]?.name || "N/A"} (${topPaths[0]?.fitScore || "N/A"}%)
-    2. ${topPaths[1]?.name || "N/A"} (${topPaths[1]?.fitScore || "N/A"}%)
-    3. ${topPaths[2]?.name || "N/A"} (${topPaths[2]?.fitScore || "N/A"}%)
-  - Bottom matches (already determined by algorithm):
-    1. ${bottomPaths[0]?.name || "N/A"} (${bottomPaths[0]?.fitScore || "N/A"}%)
-    2. ${bottomPaths[1]?.name || "N/A"} (${bottomPaths[1]?.fitScore || "N/A"}%)
-    3. ${bottomPaths[2]?.name || "N/A"} (${bottomPaths[2]?.fitScore || "N/A"}%)
-- DO NOT generate previewInsights or keySuccessIndicators (already created).
-- Use clean, specific, professional language only.
-- Do NOT invent numbers, ratings, or filler traits.`,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 1200,
+      console.log(`🔄 Generating fresh full report insights for quiz attempt ${quizAttemptId || 'unknown'}`);
+      
+      // Generate fresh content
+      const response = await fetch("/api/openai-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          prompt: this.buildPersonalizedInsightsPrompt(quizData, topPaths, bottomPaths),
+        }),
       });
 
-      if (response && response.content) {
-        try {
-          // Clean up the response content to ensure valid JSON
-          let cleanContent = response.content.trim();
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
 
-          // Remove any potential markdown code blocks
-          cleanContent = cleanContent
-            .replace(/```json\s*/g, "")
-            .replace(/```\s*/g, "");
+      const data = await response.json();
+      const content = data.content;
 
-          // Find the JSON object (between first { and last })
-          const firstBrace = cleanContent.indexOf("{");
-          const lastBrace = cleanContent.lastIndexOf("}");
+      // Parse the response
+      const recommendationsMatch = content.match(/### Personalized Recommendations\n([\s\S]*?)(?=\n###|$)/);
+      const challengesMatch = content.match(/### Potential Challenges\n([\s\S]*?)(?=\n###|$)/);
+      const topFitMatch = content.match(/### Top Fit Explanation\n([\s\S]*?)(?=\n###|$)/);
+      const bottomFitMatch = content.match(/### Bottom Fit Explanation\n([\s\S]*?)(?=\n###|$)/);
 
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
-          }
+      const result = {
+        personalizedRecommendations: recommendationsMatch ? recommendationsMatch[1].trim() : "",
+        potentialChallenges: challengesMatch ? challengesMatch[1].trim() : "",
+        topFitExplanation: topFitMatch ? topFitMatch[1].trim() : "",
+        bottomFitExplanation: bottomFitMatch ? bottomFitMatch[1].trim() : "",
+      };
 
-          const insights = JSON.parse(cleanContent);
-
-          // Save to database instead of localStorage cache
+      // Save to database if we have a quiz attempt ID
           if (quizAttemptId) {
-            await this.saveAIContentToDatabase(
-              quizAttemptId,
-              "fullReport",
-              insights,
-            );
-          }
-
-          return insights;
-        } catch (parseError) {
-          console.error(
-            "JSON parse error in generatePersonalizedInsights:",
-            response.content,
-          );
-          console.error("Parse error details:", parseError);
-
-          // Return fallback insights structure
-          return {
-            personalizedRecommendations: [
-              "Technical analysis temporarily unavailable",
-              "Please refresh the page to retry",
-              "Contact support if issue persists",
-            ],
-            potentialChallenges: ["System temporarily unavailable"],
-            top3Fits: [
-              { model: "Analysis unavailable", reason: "System error" },
-            ],
-            bottom3Avoid: [
-              { model: "Analysis unavailable", reason: "System error" },
-            ],
-          };
+        try {
+          await this.saveAIContentToDatabase(quizAttemptId, "fullReport", result);
+          console.log(`💾 Saved full report insights to database for quiz attempt ${quizAttemptId}`);
+        } catch (saveError) {
+          console.error("Failed to save full report insights to database:", saveError);
         }
       }
 
-      throw new Error("No valid response from AI service");
+      return result;
     } catch (error) {
-      console.error("Error generating full report insights:", error);
+      console.error("Error generating personalized insights:", error);
       throw error;
     }
   }
@@ -380,20 +331,22 @@ CRITICAL RULES:
       // First check if we have existing AI content in database
       const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
       if (quizAttemptId) {
+        console.log(`🔍 Checking for existing model_${modelName} content for quiz attempt ${quizAttemptId}`);
         const existingContent = await this.getAIContentFromDatabase(
           quizAttemptId,
           `model_${modelName}`,
         );
         if (existingContent) {
           console.log(
-            `Using existing model insights for ${modelName} from database`,
+            `✅ Using existing model insights for ${modelName} from database (NO API CALL)`,
           );
           return existingContent;
         }
+        console.log(`❌ No existing model_${modelName} content found, will generate new API call`);
       }
 
       console.log(
-        ` Generating fresh model insights for ${modelName} (${fitType})`,
+        `🚀 Generating fresh model insights for ${modelName} (${fitType}) (API CALL)`,
       );
       const userProfile = this.createUserProfile(quizData);
 
@@ -754,11 +707,9 @@ ${userProfile}`,
     contentType: string,
   ): Promise<any | null> {
     try {
-      // Check if we should retrieve from database (authenticated users or users who provided email)
-      const shouldUseDatabase = await this.shouldSaveToDatabase();
+      console.log(`🔍 Checking database for ${contentType} content for quiz attempt ${quizAttemptId}`);
 
-      if (shouldUseDatabase) {
-        // TIER 1 & 2: Try to get from database
+      // ALWAYS check database first for existing content
         const response = await fetch(
           `/api/quiz-attempts/${quizAttemptId}/ai-content?type=${contentType}`,
           {
@@ -773,29 +724,17 @@ ${userProfile}`,
         if (response.ok) {
           const data = await response.json();
           if (data && data.content) {
-            console.log(` Retrieved ${contentType} AI content from database`);
+          console.log(`✅ Found existing ${contentType} AI content in database for quiz attempt ${quizAttemptId}`);
             return data.content;
           }
-        } else if (response.status !== 404) {
-          console.error(
-            `❌ Failed to get ${contentType} AI content from database:`,
-            response.status,
-          );
-        }
-      } else {
-        // TIER 3: Try to get from localStorage for anonymous users
-        console.log(
-          ` Retrieving ${contentType} AI content from localStorage (anonymous user)`,
-        );
-        return this.getAIContentFromLocalStorage(contentType);
       }
-    } catch (error) {
-      console.error(`❌ Error getting ${contentType} AI content:`, error);
-      // Fallback to localStorage
-      return this.getAIContentFromLocalStorage(contentType);
-    }
 
+      console.log(`❌ No existing ${contentType} AI content found in database for quiz attempt ${quizAttemptId}`);
+      return null;
+    } catch (error) {
+      console.error(`Error checking database for ${contentType} content:`, error);
     return null;
+    }
   }
 
   private getAIContentFromLocalStorage(contentType: string): any | null {
@@ -1054,6 +993,85 @@ ${userProfile}`,
         "❌ Error cleaning up expired AI content from localStorage:",
         error,
       );
+    }
+  }
+
+  async generateAllCharacteristics(
+    quizData: QuizData,
+  ): Promise<{
+    characteristics: string[];
+  }> {
+    try {
+      // First check if we have existing AI content in database
+      const quizAttemptId = localStorage.getItem("currentQuizAttemptId");
+      if (quizAttemptId) {
+        console.log(`🔍 Checking for existing characteristics content for quiz attempt ${quizAttemptId}`);
+        const existingContent = await this.getAIContentFromDatabase(
+          quizAttemptId,
+          "characteristics",
+        );
+        if (existingContent) {
+          console.log(`✅ Using existing characteristics from database for quiz attempt ${quizAttemptId}`);
+          return existingContent;
+        }
+      }
+
+      console.log(`🔄 Generating fresh characteristics for quiz attempt ${quizAttemptId || 'unknown'}`);
+      
+      // Generate fresh content
+      const response = await fetch("/api/openai-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          prompt: this.buildCharacteristicsPrompt(quizData),
+          maxTokens: 200,
+          responseFormat: { type: "json_object" },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.content;
+
+      // Parse the JSON response
+      let characteristics: string[] = [];
+      try {
+        const parsed = JSON.parse(content);
+        characteristics = parsed.characteristics || [];
+      } catch (parseError) {
+        console.error("Error parsing characteristics JSON:", parseError);
+        characteristics = [
+          "Entrepreneurial mindset",
+          "Strategic thinking",
+          "Risk management",
+          "Adaptability",
+          "Goal-oriented",
+          "Self-motivated"
+        ];
+      }
+
+      const result = { characteristics };
+
+      // Save to database if we have a quiz attempt ID
+      if (quizAttemptId) {
+        try {
+          await this.saveAIContentToDatabase(quizAttemptId, "characteristics", result);
+          console.log(`💾 Saved characteristics to database for quiz attempt ${quizAttemptId}`);
+        } catch (saveError) {
+          console.error("Failed to save characteristics to database:", saveError);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error generating characteristics:", error);
+      throw error;
     }
   }
 }

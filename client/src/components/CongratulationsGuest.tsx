@@ -141,6 +141,9 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
 
       // Save quiz data and create temporary account
       if (quizData) {
+        const existingQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+        
+        if (!existingQuizAttemptId) {
         const response = await fetch("/api/save-quiz-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -166,6 +169,12 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
           localStorage.setItem("quizAttemptId", quizAttemptId.toString());
         }
         localStorage.setItem("userEmail", email.trim());
+        } else {
+          // Quiz data already exists, just use the existing attempt
+          quizAttemptId = existingQuizAttemptId;
+          saveSuccess = true;
+          localStorage.setItem("userEmail", email.trim());
+        }
       }
       
       // Send the preview email (unpaid user)

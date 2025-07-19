@@ -388,9 +388,16 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
             })(),
           };
         } else {
-          // Guest user: send email
+          // Guest user or temporary user: send email
           const email = user?.email || localStorage.getItem('userEmail') || undefined;
-          if (!email) throw new Error('Email is required for guest payment');
+          if (!email) {
+            console.error('Payment form: No email found', {
+              userEmail: user?.email,
+              localStorageEmail: localStorage.getItem('userEmail'),
+              user: user
+            });
+            throw new Error('Email is required for guest payment');
+          }
           requestBody = {
             email,
             quizAttemptId: quizAttemptId || (() => {

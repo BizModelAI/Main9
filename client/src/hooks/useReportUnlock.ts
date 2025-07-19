@@ -1,5 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
+
+// Simple debounce function
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 interface ReportUnlockStatus {
   isUnlocked: boolean;
@@ -53,9 +66,15 @@ export const useReportUnlock = (
     }
   };
 
+  // Debounce the API call to avoid multiple rapid requests
+  const debouncedCheckUnlockStatus = useCallback(
+    debounce(checkUnlockStatus, 300),
+    [user, quizAttemptId]
+  );
+
   useEffect(() => {
-    checkUnlockStatus();
-  }, [user, quizAttemptId]);
+    debouncedCheckUnlockStatus();
+  }, [user, quizAttemptId, debouncedCheckUnlockStatus]);
 
   return {
     isUnlocked,

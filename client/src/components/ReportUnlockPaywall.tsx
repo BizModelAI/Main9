@@ -16,6 +16,7 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import { API_ROUTES, apiPost } from "../utils/apiClient";
 
 const stripePromise = loadStripe(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
@@ -52,24 +53,11 @@ const ReportPaymentForm: React.FC<ReportPaymentFormProps> = ({
     if (!user) return;
 
     try {
-      const response = await fetch("/api/create-report-unlock-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          userId: user.id,
-          quizAttemptId: quizAttemptId,
-        }),
+      const data = await apiPost(API_ROUTES.CREATE_REPORT_UNLOCK_PAYMENT, {
+        userId: user.id,
+        quizAttemptId: quizAttemptId,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create payment");
-      }
-
-      const data = await response.json();
       setClientSecret(data.clientSecret);
       onPricingUpdate(data.amount || "4.99", data.isFirstReport || false);
     } catch (error) {

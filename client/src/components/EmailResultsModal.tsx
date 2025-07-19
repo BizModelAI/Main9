@@ -145,6 +145,9 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
 
       // If user is not logged in and hasn't provided an email, save quiz data and email for 3 months
       if (!hasEmail && inputEmail) {
+        const existingQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
+        
+        if (!existingQuizAttemptId) {
         const saveRes = await fetch("/api/save-quiz-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -170,6 +173,11 @@ const EmailResultsModal: React.FC<EmailResultsModalProps> = ({
         // Update quizAttemptId if provided by the save operation
         if (saveData.attemptId) {
           localStorage.setItem("quizAttemptId", saveData.attemptId.toString());
+          }
+        } else {
+          // Quiz data already exists, just use the email
+          setEmailUsed(inputEmail);
+          emailToUse = inputEmail;
         }
       }
 

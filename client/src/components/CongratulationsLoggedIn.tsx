@@ -86,6 +86,10 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
     try {
       await onSendEmailPreview();
       setEmailSent(true);
+      // Auto-redirect after 1 second, just like guest congratulations
+      setTimeout(() => {
+        onStartAIGeneration();
+      }, 1000);
     } finally {
       setIsSubmitting(false);
     }
@@ -222,7 +226,7 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
               >
                 <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                 <span className="text-green-800 font-medium">
-                  <span className="emoji">✅</span> Email sent successfully! Generating your full
+                  Email sent successfully! Generating your full
                   report...
                 </span>
               </motion.div>
@@ -237,10 +241,10 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
                 className="space-y-3"
               >
                 {/* Send Email Button */}
-                <Button
+                <button
                   onClick={handleSendEmail}
                   disabled={isSubmitting}
-                  className="w-full flex items-center justify-center"
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center"
                 >
                   {isSubmitting ? (
                     <>
@@ -251,7 +255,7 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
                       <Mail className="mr-2 h-4 w-4" /> Send Email
                     </>
                   )}
-                </Button>
+                </button>
                 {/* Continue Button */}
                 <button
                   onClick={handleContinue}

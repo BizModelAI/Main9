@@ -843,14 +843,35 @@ export class DatabaseStorage implements IStorage {
   async recordQuizAttempt(
     attempt: Omit<InsertQuizAttempt, "id">,
   ): Promise<QuizAttempt> {
-    // Use transaction for concurrent safety
-    return await this.ensureDb().transaction(async (tx) => {
-      const [quizAttempt] = await tx
+    console.log("recordQuizAttempt called with:", attempt);
+    
+    try {
+      // Use direct insert for maximum reliability
+      console.log("Starting direct insert for quiz attempt creation");
+      const [quizAttempt] = await this.ensureDb()
         .insert(quizAttempts)
         .values(attempt)
         .returning();
+      
+      console.log("Quiz attempt created successfully:", quizAttempt);
+      
+      // Verify the insert worked by querying it back
+      const [verification] = await this.ensureDb()
+        .select()
+        .from(quizAttempts)
+        .where(eq(quizAttempts.id, quizAttempt.id));
+      
+      console.log("Verification query result:", verification ? [verification] : []);
+      
+      if (!verification) {
+        throw new Error(`Quiz attempt ${quizAttempt.id} was not persisted to database`);
+      }
+      
       return quizAttempt;
-    });
+    } catch (error) {
+      console.error("Error in recordQuizAttempt:", error);
+      throw error;
+    }
   }
 
   async getQuizAttemptsCount(userId: number): Promise<number> {
@@ -874,10 +895,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuizAttempt(attemptId: number): Promise<QuizAttempt | undefined> {
+    console.log(`Storage getQuizAttempt: Looking for attempt ID ${attemptId}`);
     const [attempt] = await this.ensureDb()
       .select()
       .from(quizAttempts)
       .where(eq(quizAttempts.id, attemptId));
+    console.log(`Storage getQuizAttempt: Result for ID ${attemptId}:`, attempt);
     return attempt;
   }
 
@@ -1227,6 +1250,43 @@ export class DatabaseStorage implements IStorage {
       console.log(
         `Payment ${paymentId} completed successfully with version ${updatedPayment.version}`,
       );
+
+      // Convert temporary user to permanent if this is their first completed payment
+      if (currentPayment.userId) {
+        const [user] = await tx
+          .select()
+          .from(users)
+          .where(eq(users.id, currentPayment.userId))
+          .limit(1);
+
+        if (user && user.isTemporary) {
+          // Check if this is their first completed payment
+          const completedPayments = await tx
+            .select()
+            .from(payments)
+            .where(
+              and(
+                eq(payments.userId, currentPayment.userId),
+                eq(payments.status, "completed"),
+              ),
+            );
+
+          // If this is the first completed payment, convert to permanent user
+          if (completedPayments.length === 1) {
+            await tx
+              .update(users)
+              .set({
+                isTemporary: false,
+                updatedAt: new Date(),
+              })
+              .where(eq(users.id, currentPayment.userId));
+
+            console.log(
+              `Converted temporary user ${currentPayment.userId} to permanent after first payment`,
+            );
+          }
+        }
+      }
     });
   }
 
@@ -1527,6 +1587,20 @@ export class DatabaseStorage implements IStorage {
           .returning();
 
         console.log("Successfully stored temporary user:", newUser?.id);
+        
+        // If quiz data is provided, also create a quiz attempt in the same transaction
+        if (data.quizData) {
+          const [quizAttempt] = await tx
+            .insert(quizAttempts)
+            .values({
+              userId: newUser.id,
+              quizData: data.quizData,
+            })
+            .returning();
+          
+          console.log("Successfully created quiz attempt in same transaction:", quizAttempt?.id);
+        }
+        
         return newUser;
       });
     } catch (error) {

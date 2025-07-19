@@ -60,12 +60,18 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
       // This handles existing users and prevents access issues
       setHasCompletedQuiz(true);
 
-      // Don't auto-unlock analysis - let them pay per report
-      setHasUnlockedAnalysis(false);
+      // Simplified: Check if user has any payment history
+      const hasAnyPayment = localStorage.getItem("hasAnyPayment") === "true";
+      const hasBusinessAccess = localStorage.getItem("hasBusinessAccess") === "true";
+      const hasPaidDownload = localStorage.getItem("hasPaidDownload") === "true";
+      
+      // Grant access if user has any payment history
+      const shouldUnlock = hasAnyPayment || hasBusinessAccess || hasPaidDownload;
+      setHasUnlockedAnalysis(shouldUnlock);
 
       // Update localStorage for consistency
       localStorage.setItem("hasCompletedQuiz", "true");
-      localStorage.setItem("hasUnlockedAnalysis", "false");
+      localStorage.setItem("hasUnlockedAnalysis", shouldUnlock.toString());
     };
 
     checkUserStatus();
@@ -91,35 +97,11 @@ export const PaywallProvider: React.FC<PaywallProviderProps> = ({
     }
   }, [hasCompletedQuiz, user]);
 
-  const isUnlocked = () => {
-    if (isDev) return true;
-    return true; // Always return true for dev, and for prod, unlock logic is handled elsewhere
-  };
-
-  const canAccessBusinessModel = (modelId?: string) => {
-    if (isDev) return true;
-    return true; // Always return true for dev, and for prod, access logic is handled elsewhere
-  };
-
-  const canAccessFullReport = () => {
-    if (isDev) return true;
-    return true; // Always return true for dev, and for prod, unlock logic is handled elsewhere
-  };
-
-  const hasMadeAnyPayment = () => {
-    // In pure pay-per-report model, we can't easily check this from client
-    // For now, assume no global payment status
-    return false;
-
-    // For non-authenticated users, check localStorage flags
-    const hasUnlocked = localStorage.getItem("hasUnlockedAnalysis") === "true";
-    const hasBusinessAccess =
-      localStorage.getItem("hasBusinessAccess") === "true";
-    const hasPaidDownload = localStorage.getItem("hasPaidDownload") === "true";
-    const hasAnyPayment = localStorage.getItem("hasAnyPayment") === "true";
-
-    return hasUnlocked || hasBusinessAccess || hasPaidDownload || hasAnyPayment;
-  };
+  // Simplified access functions - all return true since access control is handled elsewhere
+  const isUnlocked = () => true;
+  const canAccessBusinessModel = () => true;
+  const canAccessFullReport = () => true;
+  const hasMadeAnyPayment = () => false;
 
   useEffect(() => {
     if (isDev) {

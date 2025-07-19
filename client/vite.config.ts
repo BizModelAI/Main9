@@ -17,9 +17,26 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "..", "shared"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1000, // Increase warning limit to 1MB
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['framer-motion', 'lucide-react', 'react-icons'],
+          charts: ['recharts'],
+          // Business logic chunks
+          business: ['@shared/businessPaths', '@shared/businessModelTraits'],
+          utils: ['@shared/utils', '@shared/scoring'],
+        },
+      },
+    },
+  },
   server: {
     host: true,
-    port: 5173,
+    port: 5073,
     proxy: {
       '/api': {
         target: 'http://localhost:5073',

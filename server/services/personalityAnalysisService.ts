@@ -42,7 +42,7 @@ export class PersonalityAnalysisService {
 
   async analyzePersonality(quizData: QuizData): Promise<PersonalityAnalysis> {
     try {
-      const prompt = this.buildPersonalityPrompt(quizData);
+      const prompt = await this.buildPersonalityPrompt(quizData);
 
       if (!openai) {
         throw new Error("OpenAI API key not configured");
@@ -77,13 +77,9 @@ export class PersonalityAnalysisService {
     }
   }
 
-  private buildPersonalityPrompt(quizData: QuizData): string {
-    // Helper function to convert numerical ratings to descriptive text
-    const getRatingDescription = (rating: number): string => {
-      if (rating >= 4) return "high";
-      if (rating >= 3) return "moderate";
-      return "low";
-    };
+  private async buildPersonalityPrompt(quizData: QuizData): Promise<string> {
+    // Import centralized utility function
+    const { getRatingDescription } = await import("../utils/quizUtils.js");
 
     return `
     Analyze your personality traits based on your quiz responses. Be extremely precise and avoid generic scores.

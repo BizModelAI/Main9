@@ -130,9 +130,9 @@ async function setupRoutes() {
 async function setupApiRoutes() {
   try {
     console.log("Importing and registering routes...");
-    console.log("About to import routes.js...");
+    console.log("About to import routes.ts...");
     const { registerRoutes } = await import("./routes.js");
-    console.log("Routes.js imported successfully");
+    console.log("Routes.ts imported successfully");
     console.log("About to call registerRoutes...");
     await registerRoutes(app);
     console.log("Routes registered successfully");
@@ -220,57 +220,7 @@ app.get("/api/health/detailed", async (req: Request, res: Response) => {
   res.status(statusCode).json(health);
 });
 
-// Database test endpoint for debugging signup issues
-app.get("/api/test/database", async (req: Request, res: Response) => {
-  res.header("Content-Type", "application/json");
-
-  const results = {
-    timestamp: new Date().toISOString(),
-    tests: {} as any,
-  };
-
-  try {
-    // Test 1: Basic connection
-    const { pool } = await import("./db.js");
-    if (!pool) {
-      throw new Error("Database pool not available");
-    }
-    const client = await pool.connect();
-    await client.query("SELECT 1 as test");
-    client.release();
-    results.tests.basicConnection = {
-      status: "success",
-      message: "Database connection working",
-    };
-
-    // Test 2: Storage functions
-    const { storage } = await import("./storage.js");
-
-    // Test getUserByUsername
-    try {
-      const testUser = await storage.getUserByEmail("nonexistent@test.com");
-      results.tests.getUserByUsername = {
-        status: "success",
-        message: "getUserByUsername working",
-        result:
-          testUser === undefined ? "no user found (expected)" : "user found",
-      };
-    } catch (error) {
-      results.tests.getUserByUsername = {
-        status: "error",
-        message: error instanceof Error ? error.message : String(error),
-      };
-    }
-
-    res.json(results);
-  } catch (error) {
-    results.tests.basicConnection = {
-      status: "error",
-      message: error instanceof Error ? error.message : String(error),
-    };
-    res.status(500).json(results);
-  }
-});
+// Test endpoint removed for production
 
 const port = process.env.PORT || 5073;
 
@@ -523,9 +473,6 @@ Promise.race([
 
     // Try basic fallback server
     console.log("Starting fallback server...");
-    app.get("/api/health", (req: Request, res: Response) => {
-      res.json({ status: "Server is running (fallback mode)!" });
-    });
 
     app.get("*", (req: Request, res: Response) => {
       res.send(`
@@ -544,7 +491,6 @@ Promise.race([
       `);
     });
 
-    app.listen(port, () => {
-      console.log(`Fallback server running on port ${port}`);
-    });
+    // Don't start another server - just log the error
+    console.log(`Server startup failed. Please check the logs above for errors.`);
   });

@@ -9,7 +9,6 @@ interface EmojiMapping {
 const BUSINESS_MODEL_EMOJIS: EmojiMapping = {
   // Content & Media
   "content-creation": "📱",
-  "content-creation-ugc": "📱",
   "youtube-automation": "📺",
   "blogging": "✍️",
   "podcasting": "🎙️",

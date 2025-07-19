@@ -60,34 +60,26 @@ export const AIInsightsProvider: React.FC<AIInsightsProviderProps> = ({ children
   useEffect(() => {
     const loadFromStorage = () => {
       try {
-        console.log('AIInsightsContext: Loading from localStorage...');
         const stored = localStorage.getItem('ai-insights-data');
-        console.log('AIInsightsContext: Stored data:', stored);
         
         if (stored) {
           const parsed = JSON.parse(stored);
-          console.log('AIInsightsContext: Parsed data:', parsed);
           
           // Add null/undefined check before accessing timestamp
           if (parsed && typeof parsed.timestamp === 'number') {
             // Check if data is still valid (1 hour for anonymous users)
             const isExpired = Date.now() - parsed.timestamp > 60 * 60 * 1000;
-            console.log('AIInsightsContext: Data expired?', isExpired);
             
             if (!isExpired) {
-              console.log('AIInsightsContext: Setting AI insights from localStorage');
               setAIInsightsState(parsed);
             } else {
-              console.log('AIInsightsContext: Removing expired data');
               localStorage.removeItem('ai-insights-data');
             }
           } else {
             // Remove invalid or corrupted data
-            console.log('AIInsightsContext: Removing invalid data');
             localStorage.removeItem('ai-insights-data');
           }
         } else {
-          console.log('AIInsightsContext: No stored data found');
         }
       } catch (error) {
         console.error('Error loading AI insights from storage:', error);
@@ -98,12 +90,10 @@ export const AIInsightsProvider: React.FC<AIInsightsProviderProps> = ({ children
   }, []);
 
   const setAIInsights = (data: AIInsightsData) => {
-    console.log('AIInsightsContext: setAIInsights called with data:', data);
     setAIInsightsState(data);
     // Store in localStorage immediately
     try {
       localStorage.setItem('ai-insights-data', JSON.stringify(data));
-      console.log('AIInsightsContext: Data stored in localStorage');
     } catch (error) {
       console.error('Error storing AI insights in localStorage:', error);
     }

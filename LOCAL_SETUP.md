@@ -64,7 +64,7 @@ yarn dev
 
 The application will be available at:
 
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:5073
 - Backend API: http://localhost:5000
 
 ## Project Structure
@@ -98,11 +98,11 @@ The application will be available at:
 ### Port Conflicts
 
 - If port 5000 is in use, change `PORT` in `.env`
-- If port 5173 is in use, update `vite.config.ts`
+- If port 5073 is in use, update `vite.config.ts`
 
 ## Testing the Setup
 
-1. Visit http://localhost:5173
+1. Visit http://localhost:5073
 2. Check the health endpoint: http://localhost:5000/api/health/detailed
 3. Try creating an account and taking the quiz
 

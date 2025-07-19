@@ -19,26 +19,15 @@ export const useNavigationGuard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Check if user has unsaved quiz results
+  // Simplified: Check if user has unsaved quiz results
   const checkPendingQuizResults = useCallback(() => {
     const quizData = localStorage.getItem("quizData");
-    const hasCompletedQuiz =
-      localStorage.getItem("hasCompletedQuiz") === "true";
-    const hasUnlockedAnalysis =
-      localStorage.getItem("hasUnlockedAnalysis") === "true";
+    const hasCompletedQuiz = localStorage.getItem("hasCompletedQuiz") === "true";
+    const hasUnlockedAnalysis = localStorage.getItem("hasUnlockedAnalysis") === "true";
     const currentQuizAttemptId = localStorage.getItem("currentQuizAttemptId");
 
-    // For access pass users: check if they have unsaved quiz results that haven't been paid for
-    // For non-access pass users: check if they have quiz data but haven't paid for access
-    const hasPending = !!(
-      quizData &&
-      hasCompletedQuiz &&
-      user &&
-      // Users without unlocked analysis: need to pay for reports
-      (!hasUnlockedAnalysis ||
-        // Logged users: need to save quiz attempt and optionally pay for report unlock
-        !currentQuizAttemptId)
-    );
+    // User has pending results if they have quiz data but haven't unlocked analysis or saved attempt
+    const hasPending = !!(quizData && hasCompletedQuiz && user && (!hasUnlockedAnalysis || !currentQuizAttemptId));
 
     setGuardState((prev) => ({
       ...prev,
@@ -53,21 +42,16 @@ export const useNavigationGuard = () => {
     checkPendingQuizResults();
   }, [checkPendingQuizResults, location.pathname]);
 
-  // Custom navigation function that checks for pending results
+  // Simplified navigation function
   const navigateWithGuard = useCallback(
     (path: string) => {
-      // Don't guard navigation if already on results page or quiz pages
-      const currentPath = location.pathname;
-      if (
-        currentPath === "/results" ||
-        currentPath === "/quiz" ||
-        currentPath === "/quiz-loading"
-      ) {
+      // Skip guard for quiz-related pages
+      if (["/results", "/quiz", "/quiz-loading"].includes(location.pathname)) {
         navigate(path);
         return;
       }
 
-      // Check if user has pending quiz results
+      // Check for pending results
       if (checkPendingQuizResults()) {
         setGuardState((prev) => ({
           ...prev,

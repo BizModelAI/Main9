@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { QuizData } from "../types";
 import { motion } from "framer-motion";
 import { Brain, CheckCircle } from "lucide-react";
@@ -30,7 +30,7 @@ export default function FullReportLoading({
   ];
 
   // Generate full report data immediately when component mounts
-  const generateFullReportData = async () => {
+  const generateFullReportData = useCallback(async () => {
     try {
       console.log(
         " Generating full report data with consolidated AI (1 call instead of 4)",
@@ -185,7 +185,7 @@ export default function FullReportLoading({
       setFullReportData(fallbackData);
       setApiCallComplete(true);
     }
-  };
+  }, [quizData, userEmail]);
 
   // Progress animation with smooth stage transitions
   useEffect(() => {
@@ -225,7 +225,7 @@ export default function FullReportLoading({
 
     // Start progress animation
     animateProgress();
-  }, []);
+  }, [generateFullReportData]);
 
   // Complete loading and navigate to full report
   useEffect(() => {

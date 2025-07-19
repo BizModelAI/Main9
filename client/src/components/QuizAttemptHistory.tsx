@@ -261,13 +261,13 @@ export const QuizAttemptHistory: React.FC<QuizAttemptHistoryProps> = ({
                 {/* Action Button */}
                 <div className="flex-shrink-0">
                   {isLoadingPaymentStatus ? (
-                    <div className="px-4 py-2 rounded-lg bg-gray-200 text-gray-500 font-semibold text-sm">
+                    <div className="px-4 py-2 rounded-xl bg-gray-200 text-gray-500 font-semibold text-sm">
                       <Loader2 className="w-4 animate-spin inline mr-1" />
                       Loading...
                     </div>
                   ) : isPaid ? (
                     <button
-                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-sm hover:from-blue-700 hover:to-purple-700 transition-all"
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-sm hover:from-blue-700 hover:to-purple-700 transition-all"
                       onClick={() => handleViewFullReport(attempt, true)}
                     >
                       View Full Report
