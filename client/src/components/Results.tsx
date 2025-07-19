@@ -201,19 +201,59 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
   // Basic access is always available, but full reports require payment
   const canViewFullReport = !!user && isReportUnlocked;
 
-  const { aiInsights } = useAIInsights();
+  const { aiInsights, setAIInsights } = useAIInsights();
   const analysisData = aiInsights?.analysis;
   const insightsData = aiInsights?.insights;
   const shouldShowFallback = !analysisData;
+
+  // Debug logging to understand what's happening with AI insights
+  console.log("Results component - AI insights state:", {
+    hasAIInsights: !!aiInsights,
+    hasAnalysis: !!analysisData,
+    hasInsights: !!insightsData,
+    analysisData: analysisData,
+    insightsData: insightsData,
+  });
+
+  // Fallback: Check if AI insights exist in localStorage but not in context
+  useEffect(() => {
+    if (!aiInsights) {
+      const storedInsights = localStorage.getItem('quiz-completion-ai-insights');
+      if (storedInsights) {
+        try {
+          const parsed = JSON.parse(storedInsights);
+          if (parsed && parsed.insights && !parsed.error) {
+            console.log("Loading AI insights from localStorage fallback");
+            // Convert the old format to the new format expected by the context
+            const convertedData = {
+              insights: parsed.insights,
+              analysis: {
+                fullAnalysis: parsed.insights.personalizedSummary || "Analysis not available",
+                keyInsights: parsed.insights.customRecommendations || [],
+                personalizedRecommendations: parsed.insights.customRecommendations || [],
+                successPredictors: parsed.insights.successStrategies || [],
+                riskFactors: ["Initial learning curve", "Income variability", "Time commitment required"],
+              },
+              timestamp: parsed.timestamp || Date.now(),
+              quizAttemptId: parsed.quizAttemptId,
+            };
+            
+            // Update the context with the loaded data
+            setAIInsights(convertedData);
+          }
+        } catch (error) {
+          console.error("Error parsing stored AI insights:", error);
+        }
+      }
+    }
+  }, [aiInsights, setAIInsights]);
 
   const { validateAndFixEmoji } = useEmojiSafeguard();
 
   useEffect(() => {
     async function initializeResults() {
-      // Force clear ALL AI caches to ensure fresh and accurate results
-      // Clear AI cache manager caches
-      // aiCacheManager.clearAllCache();
-      // Instead, manually clear all ai-content-* keys
+      // Don't clear AI insights data - it's needed for preview display
+      // Only clear old cache keys that might cause issues
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith("ai-content-")) {
@@ -221,9 +261,8 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
         }
       }
 
-      // Clear specific localStorage items that might cause inconsistencies
+      // Clear only problematic keys, but keep quiz-completion-ai-insights
       const specificKeys = [
-        "quiz-completion-ai-insights",
         "ai-generation-in-progress",
         "ai-generation-timestamp",
         "ai-cache-reset-timestamp",
@@ -1083,9 +1122,22 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
               ) : (
                 // Preview with seamless gradient fade effect
                 <div className="relative">
+                  {(() => {
+                    console.log("Rendering preview section with analysisData:", analysisData);
+                    return null;
+                  })()}
                   {/* Three paragraphs with seamless gradient fade */}
                   <div className="relative mb-8">
                     {(() => {
+                      if (!analysisData || !analysisData.fullAnalysis) {
+                        console.log("No analysis data available for preview");
+                        return (
+                          <div className="text-blue-50 leading-relaxed text-lg mb-6">
+                            <p className="mb-4">Loading your personalized analysis...</p>
+                          </div>
+                        );
+                      }
+                      
                       const sentences =
                         analysisData.fullAnalysis.split(". ");
                       const thirdLength = Math.ceil(
@@ -1148,7 +1200,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
 
                         <div className="flex items-start space-x-4 mb-6">
-                          <div className="text-3xl mt-1 emoji">🚫</div>
+                          <div className="text-3xl mt-1 emoji">⚠️</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Models to Avoid
@@ -1162,7 +1214,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
 
                         <div className="flex items-start space-x-4 mb-6">
-                          <div className="text-3xl mt-1 emoji">🗺️</div>
+                          <div className="text-3xl mt-1 emoji">🚀</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Step-by-Step Launch Guidance
@@ -1193,7 +1245,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
 
                         <div className="flex items-start space-x-4 mb-6">
-                          <div className="text-3xl mt-1 emoji">💰</div>
+                          <div className="text-3xl mt-1 emoji">📊</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Income Potential & Market Fit
@@ -1205,7 +1257,7 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                         </div>
 
                         <div className="flex items-start space-x-4 mb-6">
-                          <div className="text-3xl mt-1 emoji">🛠️</div>
+                          <div className="text-3xl mt-1 emoji">🔧</div>
                           <div>
                             <h4 className="font-bold text-white text-lg mb-2">
                               Skills You Need to Succeed
@@ -1750,19 +1802,19 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                 >
                   {[
                     {
-                      emoji: "💪",
+                      icon: Brain,
                       title: "Advanced AI Analysis",
                       description:
                         "Deep personality profiling and custom success predictions based on your unique profile",
                     },
                     {
-                      emoji: "📊",
+                      icon: Target,
                       title: "Detailed Action Plans",
                       description:
                         "Week-by-week roadmaps with specific milestones and success metrics",
                     },
                     {
-                      emoji: "🗺️",
+                      icon: BookOpen,
                       title: "Curated Resources",
                       description:
                         "Hand-picked tools, courses, and platforms with ratings and reviews",
@@ -1770,18 +1822,18 @@ const Results: React.FC<ResultsProps> = ({ quizData, onBack, userEmail }) => {
                   ].map((feature, index) => (
                     <motion.div
                       key={index}
-                      className="flex items-start text-left bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6"
+                      className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 text-center"
                       variants={fadeInUp}
                     >
-                      <span className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-xl flex items-center justify-center mr-3 md:mr-4 flex-shrink-0 text-2xl md:text-3xl" style={{ fontFamily: "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif", fontStyle: 'normal', fontWeight: 'normal', lineHeight: 1, fontSize: '2rem' }}>{feature.emoji}</span>
-                      <div>
-                        <h3 className="font-bold text-white mb-1 md:mb-2 text-sm md:text-base">
-                          {feature.title}
-                        </h3>
-                        <p className="text-gray-300 text-xs md:text-sm">
-                          {feature.description}
-                        </p>
+                      <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4">
+                        <feature.icon className="h-6 w-6 md:h-8 md:w-8 text-white" />
                       </div>
+                      <h3 className="font-bold text-white mb-2 md:mb-3 text-sm md:text-base">
+                        {feature.title}
+                      </h3>
+                      <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
+                        {feature.description}
+                      </p>
                     </motion.div>
                   ))}
                 </motion.div>

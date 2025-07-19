@@ -27,6 +27,9 @@ interface AuthContextType {
   updateProfile: (updates: Partial<User>) => Promise<void>;
   getLatestQuizData: () => Promise<QuizData | null>;
   hasValidSession: () => boolean;
+  verifyAndRefreshAuth: () => Promise<boolean>;
+  forceLogout: () => void;
+  isRealUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -627,6 +630,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const isRealUser = !!user && !user.isTemporary;
+
   const value = {
     user,
     isLoading,
@@ -637,6 +642,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     updateProfile,
     getLatestQuizData,
     hasValidSession,
+    verifyAndRefreshAuth,
+    forceLogout,
+    isRealUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

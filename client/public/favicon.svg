@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
-  <ellipse cx="250" cy="250" rx="250" ry="250" fill="#6366d6"/>
-  <path d="M490,250 Q400,270 250,490 Q270,400 10,250 Q270,270 250,10 Q270,270 490,250 Z" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Blue circle background -->
+  <circle cx="50" cy="50" r="50" fill="#6366d6"/>
+  
+  <!-- White arrow/play button shape pointing right -->
+  <path d="M35 25 L35 75 L75 50 Z" fill="white"/>
 </svg> 

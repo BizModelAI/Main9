@@ -9,7 +9,7 @@ const UserMenu: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { user, logout } = useAuth();
+  const { user, logout, isRealUser } = useAuth();
   const navigate = useNavigate();
 
   // Close menu when clicking outside
@@ -45,7 +45,7 @@ const UserMenu: React.FC = () => {
     navigate("/");
   };
 
-  const menuItems = user
+  const menuItems = isRealUser
     ? [
         {
           icon: LayoutDashboard,

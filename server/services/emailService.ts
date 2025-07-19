@@ -53,9 +53,10 @@ export interface EmailOptions {
 
 export class EmailService {
   private static instance: EmailService;
-  private emailCache = new Map<string, { lastSent: number; count: number }>();
-  private readonly EMAIL_COOLDOWN = 60 * 1000; // 1 minute
-  private readonly MAX_EMAILS_PER_HOUR = 5;
+  private emailCache = new Map<string, { lastSent: number; count: number; firstEmailTime: number }>();
+  private readonly INITIAL_COOLDOWN = 60 * 1000; // 1 minute for first 5 emails
+  private readonly EXTENDED_COOLDOWN = 5 * 60 * 1000; // 5 minutes after first 5 emails
+  private readonly INITIAL_EMAIL_LIMIT = 5; // First 5 emails get 1-minute cooldown
 
   private constructor() {}
 
@@ -67,33 +68,47 @@ export class EmailService {
   }
 
   private async checkEmailRateLimit(email: string): Promise<boolean> {
+    const result = await this.checkEmailRateLimitWithInfo(email);
+    return result.allowed;
+  }
+
+  private async checkEmailRateLimitWithInfo(email: string): Promise<{ allowed: boolean; info?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     const now = Date.now();
     const emailKey = email.toLowerCase();
     const cached = this.emailCache.get(emailKey);
 
     if (!cached) {
-      this.emailCache.set(emailKey, { lastSent: now, count: 1 });
-      return true;
+      this.emailCache.set(emailKey, { lastSent: now, count: 1, firstEmailTime: now });
+      return { allowed: true };
     }
+
+    // Determine which cooldown period to use
+    const isWithinInitialPeriod = cached.count <= this.INITIAL_EMAIL_LIMIT;
+    const currentCooldown = isWithinInitialPeriod ? this.INITIAL_COOLDOWN : this.EXTENDED_COOLDOWN;
+    const type = isWithinInitialPeriod ? 'cooldown' : 'extended';
 
     // Check if within cooldown period
-    if (now - cached.lastSent < this.EMAIL_COOLDOWN) {
-      console.log(`Email rate limit hit for ${email}: too soon since last email`);
-      return false;
+    if (now - cached.lastSent < currentCooldown) {
+      const remainingTime = currentCooldown - (now - cached.lastSent);
+      console.log(`Email rate limit hit for ${email}: too soon since last email (${type} period)`);
+      return { 
+        allowed: false, 
+        info: { 
+          remainingTime: Math.ceil(remainingTime / 1000), // Convert to seconds
+          type 
+        } 
+      };
     }
 
-    // Check hourly limit
-    const oneHourAgo = now - (60 * 60 * 1000);
-    if (cached.lastSent > oneHourAgo && cached.count >= this.MAX_EMAILS_PER_HOUR) {
-      console.log(`Email rate limit hit for ${email}: exceeded hourly limit`);
-      return false;
-    }
-
-    // Reset count if more than an hour has passed
-    const newCount = cached.lastSent < oneHourAgo ? 1 : cached.count + 1;
-    this.emailCache.set(emailKey, { lastSent: now, count: newCount });
+    // Update the cache with new email
+    const newCount = cached.count + 1;
+    this.emailCache.set(emailKey, { 
+      lastSent: now, 
+      count: newCount, 
+      firstEmailTime: cached.firstEmailTime 
+    });
     
-    return true;
+    return { allowed: true };
   }
 
   private cleanupEmailCache(): void {
@@ -105,14 +120,15 @@ export class EmailService {
     }
   }
 
-  async sendEmail(options: EmailOptions): Promise<boolean> {
+  async sendEmail(options: EmailOptions): Promise<{ success: boolean; rateLimitInfo?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     // Clean up old cache entries
     this.cleanupEmailCache();
 
     // Check rate limit
-    if (!(await this.checkEmailRateLimit(options.to))) {
+    const rateLimitCheck = await this.checkEmailRateLimitWithInfo(options.to);
+    if (!rateLimitCheck.allowed) {
       console.log(`Rate limit exceeded for email: ${options.to}`);
-      return false;
+      return { success: false, rateLimitInfo: rateLimitCheck.info };
     }
 
     if (!process.env.RESEND_API_KEY) {
@@ -125,10 +141,10 @@ export class EmailService {
         console.log("Subject:", options.subject);
         console.log("HTML Preview:", options.html.substring(0, 200) + "...");
         console.log("=== END EMAIL LOG ===");
-        return true; // Return success in development mode
+        return { success: true }; // Return success in development mode
       }
       
-      return false;
+      return { success: false };
     }
 
     try {
@@ -149,17 +165,17 @@ export class EmailService {
       if (error) {
         console.error("Resend API error:", error);
         console.error("Error details:", JSON.stringify(error, null, 2));
-        return false;
+        return { success: false };
       }
 
       console.log("Email sent successfully to:", options.to);
       console.log("Email ID:", data?.id);
       console.log("Email data:", data);
-      return true;
+      return { success: true };
     } catch (error) {
       console.error("Error sending email:", error);
       console.error("Full error details:", JSON.stringify(error, null, 2));
-      return false;
+      return { success: false };
     }
   }
 
@@ -174,7 +190,7 @@ export class EmailService {
     }
   }
 
-  async sendQuizResults(email: string, quizData: QuizData): Promise<boolean> {
+  async sendQuizResults(email: string, quizData: QuizData): Promise<{ success: boolean; rateLimitInfo?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     const subject = "Your BizModelAI Business Path Results";
     const html = this.generateQuizResultsHTML(quizData);
 
@@ -185,7 +201,7 @@ export class EmailService {
     });
   }
 
-  async sendWelcomeEmail(email: string): Promise<boolean> {
+  async sendWelcomeEmail(email: string): Promise<{ success: boolean; rateLimitInfo?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     const subject = "Welcome to BizModelAI!";
     const html = this.generateWelcomeHTML();
 
@@ -196,7 +212,7 @@ export class EmailService {
     });
   }
 
-  async sendFullReport(email: string, quizData: QuizData): Promise<boolean> {
+  async sendFullReport(email: string, quizData: QuizData): Promise<{ success: boolean; rateLimitInfo?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     const subject = "Your Complete BizModelAI Business Report";
     const html = this.generateFullReportHTML(quizData);
 
@@ -210,7 +226,7 @@ export class EmailService {
   async sendPasswordResetEmail(
     email: string,
     resetUrl: string,
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; rateLimitInfo?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     const subject = "Reset Your BizModelAI Password";
     const html = this.generatePasswordResetHTML(resetUrl);
 
@@ -227,7 +243,7 @@ export class EmailService {
     subject: string;
     message: string;
     category: string;
-  }): Promise<boolean> {
+  }): Promise<{ success: boolean; rateLimitInfo?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     const subject = `New Contact Form: ${formData.subject}`;
     const html = this.generateContactFormNotificationHTML(formData);
 
@@ -241,7 +257,7 @@ export class EmailService {
   async sendContactFormConfirmation(
     userEmail: string,
     userName: string,
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; rateLimitInfo?: { remainingTime: number; type: 'cooldown' | 'extended' } }> {
     const subject = "We received your message - BizModelAI";
     const html = this.generateContactFormConfirmationHTML(userName);
 

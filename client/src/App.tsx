@@ -63,7 +63,7 @@ const LoadingPage = AIReportLoading;
 import { QuizData } from "./types";
 
 function MainAppContent() {
-  const { user } = useAuth();
+  const { user, isRealUser } = useAuth();
   const [quizData, setQuizData] = React.useState<QuizData | null>(null);
   const [showEmailCapture, setShowEmailCapture] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
@@ -389,7 +389,7 @@ function MainAppContent() {
         }
 
         // If no localStorage data and user is authenticated, try server
-        if (user) {
+        if (user && isRealUser) {
           console.log("MainAppContent - User authenticated, trying server...");
           try {
             const response = await fetch("/api/auth/latest-quiz-data", {
@@ -424,7 +424,7 @@ function MainAppContent() {
     };
 
     loadQuizData();
-  }, [quizData, setQuizData, user]);
+  }, [quizData, setQuizData, user, isRealUser]);
 
   React.useEffect(() => {
     // Clear AI insights when navigating to home page
@@ -473,7 +473,6 @@ function MainAppContent() {
   }
 
   if (
-    location?.pathname === "/ai-loading" ||
     location?.pathname === "/quiz-loading"
   ) {
     return (
@@ -494,7 +493,7 @@ const AIReportLoadingWrapper: React.FC<{
   setShowCongratulations: (show: boolean) => void;
 }> = ({ quizData, setShowCongratulations }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isRealUser } = useAuth();
   const [showCongratulations, setLocalShowCongratulations] = React.useState(false);
   const [loadedData, setLoadedData] = React.useState<any>(null);
 
@@ -527,7 +526,7 @@ const AIReportLoadingWrapper: React.FC<{
         onComplete={handleAILoadingComplete}
         onExit={() => navigate("/quiz")}
       />
-      {showCongratulations && quizData && user && (
+      {showCongratulations && quizData && isRealUser && (
         <CongratulationsLoggedIn
           onContinue={handleCongratulationsComplete}
           onSendEmailPreview={() => {}}
@@ -535,7 +534,7 @@ const AIReportLoadingWrapper: React.FC<{
           onStartAIGeneration={handleCongratulationsComplete}
         />
       )}
-      {showCongratulations && quizData && !user && (
+      {showCongratulations && quizData && !isRealUser && (
         <CongratulationsGuest
           onEmailSubmit={handleCongratulationsComplete}
           onContinueAsGuest={handleCongratulationsComplete}
@@ -1228,7 +1227,6 @@ function App() {
                   {/* Direct routes (no layout) */}
                   <Route path="/quiz" element={<MainAppContent />} />
                   <Route path="/results" element={<MainAppContent />} />
-                  <Route path="/ai-loading" element={<MainAppContent />} />
                   <Route path="/quiz-loading" element={<MainAppContent />} />
                   <Route
                     path="/download-report"

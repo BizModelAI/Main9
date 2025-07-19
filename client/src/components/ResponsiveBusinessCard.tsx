@@ -25,10 +25,10 @@ const ResponsiveBusinessCard: React.FC<ResponsiveBusinessCardProps> = ({
   onGetStarted,
   isTopMatch = false,
 }) => {
-  const { validateAndFixEmoji } = useEmojiSafeguard();
+  const { validateAndFixEmoji, getSafeEmojiForBusiness } = useEmojiSafeguard();
   
-  // Safeguard the emoji
-  const safeEmoji = validateAndFixEmoji(business.emoji || '', business.id);
+  // Use getSafeEmojiForBusiness directly for the emoji
+  const safeEmoji = getSafeEmojiForBusiness(business.id);
 
   return (
     <motion.div
@@ -43,7 +43,7 @@ const ResponsiveBusinessCard: React.FC<ResponsiveBusinessCardProps> = ({
       <div className="p-4">
         {/* Header */}
         <div className="flex items-center mb-3">
-          <span className="text-2xl mr-3">{safeEmoji}</span>
+          <span className="text-2xl mr-3 emoji">{safeEmoji}</span>
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
               {business.name}

@@ -26,7 +26,7 @@ import { getSafeEmoji } from '../utils/contentUtils';
 import BusinessCard from "../components/BusinessCard";
 
 const Dashboard: React.FC = () => {
-  const { user, getLatestQuizData, isLoading: authLoading } = useAuth();
+  const { user, getLatestQuizData, isLoading: authLoading, isRealUser } = useAuth();
   const navigate = useNavigate();
   const [selectedBusinessModel, setSelectedBusinessModel] = useState<any>(null);
   const [showBusinessSelection, setShowBusinessSelection] = useState(false);
@@ -41,6 +41,10 @@ const Dashboard: React.FC = () => {
 
   // Load real business model scores from user's quiz data
   useEffect(() => {
+    if (!isRealUser) {
+      navigate('/login');
+      return;
+    }
     const loadBusinessModelScores = async () => {
       setIsLoadingScores(true);
       try {
@@ -115,7 +119,7 @@ const Dashboard: React.FC = () => {
     };
 
     loadBusinessModelScores();
-  }, [user, getLatestQuizData, authLoading, refreshKey]);
+  }, [user, authLoading, isRealUser, getLatestQuizData]);
 
   // Check if user has ever selected a business model on component mount
   React.useEffect(() => {

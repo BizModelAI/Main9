@@ -223,11 +223,6 @@ export const ReportUnlockPaywall: React.FC<ReportUnlockPaywallProps> = ({
             <span className="font-semibold text-gray-900">Report Unlock</span>
             <span className="text-xl font-bold text-gray-900">${amount}</span>
           </div>
-          <p className="text-gray-600 text-sm mt-1">
-            {isFirstReport
-              ? "First report unlock - includes full analysis"
-              : "Additional report unlock"}
-          </p>
         </div>
 
         <Elements

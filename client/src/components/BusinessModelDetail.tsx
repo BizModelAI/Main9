@@ -149,7 +149,7 @@ const BusinessModelDetail: React.FC<BusinessModelDetailProps> = ({
 
   const { hasCompletedQuiz, canAccessBusinessModel, setHasUnlockedAnalysis } =
     usePaywall();
-  const { user, getLatestQuizData } = useAuth();
+  const { user, isRealUser, getLatestQuizData } = useAuth();
 
   // Calculate fit category based on actual quiz data if available
   const fitCategory = useMemo(() => {
@@ -332,28 +332,28 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
       // Continue to generate analysis
     }
     // For authenticated users, allow immediate access to basic features
-    else if (user) {
+    else if (isRealUser) {
       console.log(
         "BusinessModelDetail: Authenticated user, allowing basic access",
       );
       // Continue to generate analysis
     }
     // For authenticated users, check if they can access business models
-    else if (user && canAccessBusinessModel(businessId)) {
+    else if (isRealUser && canAccessBusinessModel(businessId)) {
       console.log(
         "BusinessModelDetail: User can access business model, allowing access",
       );
       // Continue to generate analysis
     }
     // For authenticated users who have completed the quiz, allow access
-    else if (user && hasCompletedQuiz) {
+    else if (isRealUser && hasCompletedQuiz) {
       console.log(
         "BusinessModelDetail: User has completed quiz, allowing access",
       );
       // Continue to generate analysis
     }
     // For non-authenticated users, check if they've completed the quiz
-    else if (!user && !hasCompletedQuiz) {
+    else if (!isRealUser && !hasCompletedQuiz) {
       console.log(
         "BusinessModelDetail: Non-authenticated user without quiz completion, showing payment modal",
       );
@@ -363,7 +363,7 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
       return;
     }
     // For authenticated users who don't meet the above criteria, show paywall
-    else if (user && !hasCompletedQuiz && !canAccessBusinessModel(businessId)) {
+    else if (isRealUser && !hasCompletedQuiz && !canAccessBusinessModel(businessId)) {
       console.log(
         "BusinessModelDetail: Authenticated user without access, showing paywall",
       );
@@ -381,7 +381,7 @@ ${fitCategory === "Best Fit" ? "This represents an excellent match for your curr
     if (quizData && path) {
       generateModelInsights(quizData, path);
       generateSkillsAnalysis(quizData, model);
-    } else if (user && path) {
+    } else if (isRealUser && path) {
       // Fallback for paid users when quiz data API fails: create mock quiz data
       const mockQuizData: QuizData = {
         // Round 1: Motivation & Vision

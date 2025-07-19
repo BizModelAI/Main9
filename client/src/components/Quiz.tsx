@@ -684,6 +684,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
   const [showRoundIntro, setShowRoundIntro] = useState(true);
   const [currentRound, setCurrentRound] = useState(1);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const { toast } = useToast();
   const { clearScores } = useBusinessModelScores();
@@ -813,7 +814,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
             (Array.isArray(formData[currentStepData?.field]) &&
               (formData[currentStepData?.field] as any[]).length > 0));
 
-        if (canProceed && !isAnimating) {
+        if (canProceed && !isAnimating && !isCompleting) {
           handleNext();
         }
       }
@@ -821,7 +822,7 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [showRoundIntro, formData, currentStep, isAnimating]);
+  }, [showRoundIntro, formData, currentStep, isAnimating, isCompleting]);
 
   const handleNext = async () => {
     if (isAnimating) return;
@@ -850,6 +851,10 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
         }, 300);
       }
     } else {
+      // Set completing state to show 100% progress bar
+      setIsCompleting(true);
+      
+      // Wait 1 second with progress bar at 100%
       setTimeout(async () => {
         console.log("Quiz completed with data:", formData);
 
@@ -864,7 +869,8 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
 
         onComplete(formData as QuizData);
         setIsAnimating(false);
-      }, 300);
+        setIsCompleting(false);
+      }, 1000);
     }
   };
 
@@ -1003,8 +1009,9 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
         (formData[currentStepData?.field] as any[]).length > 0));
 
   // Calculate progress percentage - 0% on question 1, 100% on completion
-  const progressPercentage =
-    currentStep === 0 ? 0 : (currentStep / quizSteps.length) * 100;
+  const progressPercentage = isCompleting 
+    ? 100 
+    : currentStep === 0 ? 0 : (currentStep / quizSteps.length) * 100;
 
   // Move isDev and handleDevSkip to the top of the Quiz component so they are always in scope for JSX.
   const isDev = process.env.NODE_ENV === "development";
@@ -1456,19 +1463,28 @@ const Quiz: React.FC<QuizProps> = ({ onComplete, onBack, userId }) => {
               <div className="flex flex-col items-center">
                 <button
                   onClick={handleNext}
-                  disabled={!canProceed || isAnimating}
+                  disabled={!canProceed || isAnimating || isCompleting}
                   className={`flex items-center px-10 py-4 rounded-full font-bold text-lg transition-all duration-300 ${
-                    canProceed && !isAnimating
+                    canProceed && !isAnimating && !isCompleting
                       ? "bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white hover:shadow-xl transform hover:scale-105"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
-                  {isLastStep ? "Get My Results" : "Next"}
-                  {!isLastStep && <ChevronRight className="h-5 w-5 ml-2" />}
+                  {isCompleting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      {isLastStep ? "Get My Results" : "Next"}
+                      {!isLastStep && <ChevronRight className="h-5 w-5 ml-2" />}
+                    </>
+                  )}
                 </button>
 
                 {/* Enter key hint */}
-                {canProceed && (
+                {canProceed && !isCompleting && (
                   <p className="text-xs text-gray-400 mt-2 hidden md:block">
                     Or press enter to continue
                   </p>

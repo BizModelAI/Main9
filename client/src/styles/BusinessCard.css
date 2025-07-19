@@ -158,3 +158,9 @@
     transform: none;
   }
 }
+
+.emoji {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif !important;
+  font-style: normal !important;
+  font-weight: normal !important;
+}

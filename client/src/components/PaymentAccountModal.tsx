@@ -51,6 +51,16 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
     confirmPassword: "",
   });
 
+  // Pre-fill email from localStorage if available and not logged in
+  useEffect(() => {
+    if (isOpen && !user && !formData.email) {
+      const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
+      if (storedEmail && storedEmail.length > 4) {
+        setFormData((prev) => ({ ...prev, email: storedEmail }));
+      }
+    }
+  }, [isOpen, user, formData.email]);
+
   // Handle cleanup when user closes modal on payment step
   const handleClose = async () => {
     if (step === "payment" && user) {
@@ -183,6 +193,30 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
     return true;
   };
 
+  // Helper to ensure quizAttemptId is set before payment
+  const ensureQuizAttemptId = async (email: string) => {
+    const quizData = localStorage.getItem("quizData");
+    const parsedQuizData = quizData ? JSON.parse(quizData) : {};
+    let quizAttemptId;
+    try {
+      const saveResponse = await fetch("/api/save-quiz-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quizData: parsedQuizData, email }),
+      });
+      if (saveResponse.ok) {
+        const saveData = await saveResponse.json();
+        if (saveData.quizAttemptId) {
+          quizAttemptId = saveData.quizAttemptId;
+          localStorage.setItem("currentQuizAttemptId", quizAttemptId.toString());
+        }
+      }
+    } catch (saveErr) {
+      console.error("Error saving quiz data before payment:", saveErr);
+    }
+    return quizAttemptId;
+  };
+
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -208,7 +242,26 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
         parsedQuizData,
       );
 
-      console.log("PaymentAccountModal: Signup successful, moving to payment");
+      // Immediately save quiz data and get quizAttemptId
+      let quizAttemptId;
+      try {
+        const saveResponse = await fetch("/api/save-quiz-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quizData: parsedQuizData, email: formData.email }),
+        });
+        if (saveResponse.ok) {
+          const saveData = await saveResponse.json();
+          if (saveData.quizAttemptId) {
+            quizAttemptId = saveData.quizAttemptId;
+            localStorage.setItem("currentQuizAttemptId", quizAttemptId.toString());
+          }
+        }
+      } catch (saveErr) {
+        console.error("Error saving quiz data after signup:", saveErr);
+      }
+
+      console.log("PaymentAccountModal: Signup and quiz save successful, moving to payment");
       await fetchReportPricing();
       setStep("payment");
     } catch (err: any) {
@@ -677,6 +730,7 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="Enter your email"
                       required
+                      readOnly={!user && !!formData.email}
                     />
                   </div>
                 </div>
@@ -870,15 +924,24 @@ export const PaymentAccountModal: React.FC<PaymentAccountModalProps> = ({
             {/* Payment Form */}
             {step === "payment" && (
               <div className="space-y-4">
-                <EnhancedPaymentWrapper
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                  isProcessing={isProcessing}
-                  setIsProcessing={setIsProcessing}
-                  amount={amount}
-                  isFirstReport={isFirstReport}
-                />
-
+                {(() => {
+                  const stored = typeof window !== 'undefined' ? localStorage.getItem("currentQuizAttemptId") : null;
+                  const quizAttemptId = stored ? parseInt(stored) : undefined;
+                  if (!quizAttemptId) {
+                    return <div className="text-red-600 text-center font-bold">Error: Quiz attempt not found. Please retake the quiz or contact support.</div>;
+                  }
+                  return (
+                    <EnhancedPaymentWrapper
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                      isProcessing={isProcessing}
+                      setIsProcessing={setIsProcessing}
+                      amount={amount}
+                      isFirstReport={isFirstReport}
+                      quizAttemptId={quizAttemptId}
+                    />
+                  );
+                })()}
                 {/* Dev Bypass Button for payment step too */}
                 {import.meta.env.MODE === "development" && (
                   <button

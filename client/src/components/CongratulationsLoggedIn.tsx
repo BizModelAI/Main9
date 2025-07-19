@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Mail, ArrowRight, CheckCircle, Clock, Star, User } from "lucide-react";
 import type { QuizData } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { Button } from "./ui/button";
 
 interface LoggedInCongratulationsProps {
   onContinue: () => void;
@@ -80,8 +81,15 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
   const [emailSent, setEmailSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Removed handleSendEmail and all /api/email-results logic due to missing backend route.
-  // If email sending is needed, use /api/send-quiz-results instead.
+  const handleSendEmail = async () => {
+    setIsSubmitting(true);
+    try {
+      await onSendEmailPreview();
+      setEmailSent(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleContinue = () => {
     onStartAIGeneration();
@@ -117,7 +125,7 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2"
               >
-                Congratulations, {user?.name || "there"}!
+                Congratulations, {user?.firstName || user?.name || "there"}!
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -150,7 +158,7 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
                 transition={{ duration: 0.5, delay: 0.8 }}
                 className="text-xl md:text-2xl font-bold text-gray-900 mb-3"
               >
-                Your Results Are Being Prepared
+                Send Your Results
               </motion.h3>
 
               <motion.p
@@ -214,7 +222,7 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
               >
                 <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                 <span className="text-green-800 font-medium">
-                  <span className="emoji">✅</span> Email preview sent successfully! Generating your full
+                  <span className="emoji">✅</span> Email sent successfully! Generating your full
                   report...
                 </span>
               </motion.div>
@@ -228,7 +236,23 @@ const CongratulationsLoggedIn: React.FC<LoggedInCongratulationsProps> = ({
                 transition={{ duration: 0.5, delay: 1.4 }}
                 className="space-y-3"
               >
-                {/* Send Email Preview Button */}
+                {/* Send Email Button */}
+                <Button
+                  onClick={handleSendEmail}
+                  disabled={isSubmitting}
+                  className="w-full flex items-center justify-center"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Mail className="mr-2 h-4 w-4 animate-spin" /> Sending Email...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" /> Send Email
+                    </>
+                  )}
+                </Button>
+                {/* Continue Button */}
                 <button
                   onClick={handleContinue}
                   className="w-full text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center justify-center group text-sm py-2"

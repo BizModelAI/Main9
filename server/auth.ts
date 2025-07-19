@@ -333,7 +333,8 @@ export function setupAuthRoutes(app: Express) {
         });
       }
 
-      if (existingUser) {
+      // Only block signup if a non-temporary user exists
+      if (existingUser && !existingUser.isTemporary) {
         console.log("User already exists, returning 409");
         return res.status(409).json({ error: "User already exists" });
       }
@@ -548,12 +549,12 @@ export function setupAuthRoutes(app: Express) {
           : "https://bizmodelai.com";
         const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-        const success = await emailService.sendPasswordResetEmail(
+        const result = await emailService.sendPasswordResetEmail(
           email,
           resetUrl,
         );
 
-        if (success) {
+        if (result.success) {
           res.json({
             message:
               "If an account with that email exists, we've sent password reset instructions.",
@@ -758,13 +759,14 @@ export function setupAuthRoutes(app: Express) {
       // Send notification to team@bizmodelai.com
       let notificationSent = false;
       try {
-        notificationSent = await emailService.sendContactFormNotification({
+        const notificationResult = await emailService.sendContactFormNotification({
           name,
           email,
           subject,
           message,
           category,
         });
+        notificationSent = notificationResult.success;
       } catch (emailError) {
         console.error("Error sending contact form notification:", emailError);
         return res.status(500).json({
@@ -796,10 +798,11 @@ export function setupAuthRoutes(app: Express) {
       // Send confirmation email to user
       let confirmationSent = false;
       try {
-        confirmationSent = await emailService.sendContactFormConfirmation(
+        const confirmationResult = await emailService.sendContactFormConfirmation(
           email,
           name,
         );
+        confirmationSent = confirmationResult.success;
       } catch (emailError) {
         console.log(
           "Failed to send confirmation email to user, but notification was sent:",

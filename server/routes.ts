@@ -1274,11 +1274,9 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Check for ANY user (paid or temporary) with this email
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        // Get their quiz attempts
-        const attempts = await storage.getQuizAttemptsByUserId(existingUser.id);
-        
         if (!existingUser.isTemporary) {
           // Paid user
+          const attempts = await storage.getQuizAttemptsByUserId(existingUser.id);
           return res.json({
             hasAccount: true,
             userType: "paid",
@@ -1288,15 +1286,11 @@ export async function registerRoutes(app: Express): Promise<void> {
             message: "You have a paid account. Please log in to access your results.",
           });
         } else {
-          // Temporary user
+          // Temporary user - treat as no real account
           return res.json({
-            hasAccount: true,
+            hasAccount: false,
             userType: "temporary",
-            userId: existingUser.id,
-            attemptsCount: attempts.length,
-            latestAttempt: attempts.length > 0 ? attempts[0] : null,
-            expiresAt: existingUser.expiresAt,
-            message: `You have ${attempts.length} previous quiz attempt${attempts.length !== 1 ? 's' : ''}. Your new attempt will be added to your history.`,
+            message: "Temporary user exists, but no real account. You can proceed to payment.",
           });
         }
       }
@@ -1405,17 +1399,34 @@ export async function registerRoutes(app: Express): Promise<void> {
     "/api/create-report-unlock-payment",
     async (req: Request, res: Response) => {
       try {
-        const { userId, quizAttemptId } = req.body;
+        let { userId, quizAttemptId, email } = req.body;
 
-        if (!userId || !quizAttemptId) {
-          return res
-            .status(400)
-            .json({ error: "Missing userId or quizAttemptId" });
+        let user = null;
+        if (userId) {
+          user = await storage.getUser(userId);
+        } else if (email) {
+          // Only treat non-temporary users as existing accounts
+          user = await storage.getUserByEmail(email);
+          if (user && user.isTemporary) {
+            user = null;
+          }
+          if (!user) {
+            // Create a temporary user for payment
+            user = await storage.storeTemporaryUser(
+              `temp_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+              email,
+              { email, isTemporary: true }
+            );
+          }
+          userId = user.id;
         }
 
-        const user = await storage.getUser(userId);
         if (!user) {
-          return res.status(404).json({ error: "User not found" });
+          return res.status(404).json({ error: "User not found and no email provided" });
+        }
+
+        if (!quizAttemptId) {
+          return res.status(400).json({ error: "Missing quizAttemptId" });
         }
 
         // Check if report is already unlocked
@@ -1456,6 +1467,8 @@ export async function registerRoutes(app: Express): Promise<void> {
             type: "report_unlock",
             quizAttemptId: quizAttemptId.toString(),
             isFirstReport: isFirstReport.toString(),
+            isTemporaryUser: user.isTemporary ? "true" : "false",
+            email: user.email,
           },
           description: `BizModelAI Report Unlock - ${isFirstReport ? "First report" : "Additional report"}`,
         });
@@ -2184,15 +2197,22 @@ export async function registerRoutes(app: Express): Promise<void> {
         attemptId: attemptId || null
       };
 
-      const success = await emailService.sendQuizResults(email, quizDataWithEmail);
+      const result = await emailService.sendQuizResults(email, quizDataWithEmail);
       const duration = Date.now() - startTime;
 
-      if (success) {
+      if (result.success) {
         console.log(`API: POST /api/send-quiz-results - Email sent successfully in ${duration}ms`);
         res.json({ success: true, message: "Quiz results sent successfully" });
       } else {
         console.log(`API: POST /api/send-quiz-results - Email failed to send after ${duration}ms`);
-        res.status(500).json({ error: "Failed to send email" });
+        if (result.rateLimitInfo) {
+          res.status(429).json({ 
+            error: "Rate limit exceeded", 
+            rateLimitInfo: result.rateLimitInfo 
+          });
+        } else {
+          res.status(500).json({ error: "Failed to send email" });
+        }
       }
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -2209,12 +2229,19 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "Missing email" });
       }
 
-      const success = await emailService.sendWelcomeEmail(email);
+      const result = await emailService.sendWelcomeEmail(email);
 
-      if (success) {
+      if (result.success) {
         res.json({ success: true, message: "Welcome email sent successfully" });
       } else {
-        res.status(500).json({ error: "Failed to send email" });
+        if (result.rateLimitInfo) {
+          res.status(429).json({ 
+            error: "Rate limit exceeded", 
+            rateLimitInfo: result.rateLimitInfo 
+          });
+        } else {
+          res.status(500).json({ error: "Failed to send email" });
+        }
       }
     } catch (error) {
       console.error("Error sending welcome email:", error);
@@ -2237,12 +2264,19 @@ export async function registerRoutes(app: Express): Promise<void> {
         attemptId: attemptId || null
       };
 
-      const success = await emailService.sendFullReport(email, quizDataWithEmail);
+      const result = await emailService.sendFullReport(email, quizDataWithEmail);
 
-      if (success) {
+      if (result.success) {
         res.json({ success: true, message: "Full report sent successfully" });
       } else {
-        res.status(500).json({ error: "Failed to send email" });
+        if (result.rateLimitInfo) {
+          res.status(429).json({ 
+            error: "Rate limit exceeded", 
+            rateLimitInfo: result.rateLimitInfo 
+          });
+        } else {
+          res.status(500).json({ error: "Failed to send email" });
+        }
       }
     } catch (error) {
       console.error("Error sending full report email:", error);

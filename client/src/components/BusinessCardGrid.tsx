@@ -71,6 +71,9 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
     setShowAllSkills(!showAllSkills);
   };
 
+  // Use getSafeEmoji directly for the emoji
+  const safeEmoji = getSafeEmoji(business.id);
+
   return (
     <motion.div
       className={`relative bg-white rounded-3xl shadow-xl transition-all duration-500 hover:shadow-2xl border-2 group ${
@@ -114,7 +117,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
           <div className="flex items-center flex-1">
-            <span className="text-3xl mr-4 flex-shrink-0">{getSafeEmoji(business.id)}</span>
+            <span className="text-3xl mr-4 flex-shrink-0 emoji">{safeEmoji}</span>
             <div className="flex-1 min-w-0">
               <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{business.name}</h3>
               <div className="flex flex-wrap items-center gap-2">

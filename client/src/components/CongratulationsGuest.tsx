@@ -93,6 +93,8 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState("");
 
+
+
   const validateEmail = (email: string) => {
     // RFC 5322 Official Standard (simplified for practical use)
     // Must have at least one dot after @, and TLD must be at least 2 chars
@@ -363,12 +365,17 @@ const CongratulationsGuest: React.FC<EmailCaptureProps> = ({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 flex items-center justify-center"
+                className="flex flex-col items-center justify-center mb-4"
               >
-                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-green-800 font-medium">
+                <button
+                  type="button"
+                  disabled
+                  className="bg-green-50 border border-green-200 text-green-800 font-medium px-8 py-4 rounded-full text-lg shadow-lg flex items-center justify-center cursor-default"
+                  style={{ minWidth: '320px' }}
+                >
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                   Email sent successfully! Redirecting to your results...
-                </span>
+                </button>
               </motion.div>
             )}
 

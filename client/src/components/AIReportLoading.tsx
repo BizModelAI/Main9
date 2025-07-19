@@ -243,7 +243,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
 
   // Auto-cycle through mobile steps every 4 seconds, only once
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || isLoadingComplete) return;
 
     const interval = setInterval(() => {
       setCurrentMobileStep((prev) => {
@@ -256,7 +256,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
     }, 4200); // Slightly longer timing to match step execution
 
     return () => clearInterval(interval);
-  }, [isMobile, steps.length]);
+  }, [isMobile, steps.length, isLoadingComplete]);
 
   // Sync mobile step with current step execution for better coordination
   useEffect(() => {
@@ -271,6 +271,11 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
 
   // Calculate target progress based on step completion and elapsed time
   useEffect(() => {
+    if (isLoadingComplete) {
+      setTargetProgress(100);
+      return;
+    }
+    
     const totalSteps = steps.length;
     const completedStepsCount = completedSteps.size;
     const activeStepProgress = currentStep >= 0 ? 1 : 0;
@@ -288,16 +293,14 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       stepProgress + activeProgress,
       minProgress,
     );
-    if (isLoadingComplete) {
-      newTargetProgress = 100;
-    } else {
-      newTargetProgress = Math.min(newTargetProgress, 99);
-    }
+    newTargetProgress = Math.min(newTargetProgress, 99);
     setTargetProgress(newTargetProgress);
   }, [currentStep, completedSteps, steps.length, isLoadingComplete, startTime]);
 
   // Smooth progress bar animation toward target
   useEffect(() => {
+    if (isLoadingComplete) return; // Stop animation when loading is complete
+    
     const interval = setInterval(() => {
       setProgress((prev) => {
         const diff = targetProgress - prev;
@@ -306,7 +309,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
       });
     }, 50);
     return () => clearInterval(interval);
-  }, [targetProgress]);
+  }, [targetProgress, isLoadingComplete]);
 
   // Reset startTime on mount or quizData change
   useEffect(() => {
@@ -321,7 +324,7 @@ const AIReportLoading: React.FC<AIReportLoadingProps> = ({
         if (typeof onComplete === "function") {
           onComplete(loadingResults);
         }
-      }, 350); // 350ms delay for visual finish
+      }, 175); // 175ms delay for visual finish
       return () => clearTimeout(timeout);
     }
   }, [isLoadingComplete, progress, onComplete, loadingResults]);
@@ -654,6 +657,10 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
   // Add useRef guard for generateReport
   const hasGeneratedReport = useRef(false);
+  const aiPreviewRequestedRef = useRef(false);
+  // Remove unique instance ID, early localStorage flag checks, and related logic
+  // Restore the effect to its previous, simpler logic
+
   useEffect(() => {
     let isMounted = true;
     let stepTimeouts: NodeJS.Timeout[] = [];
@@ -1205,6 +1212,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
 
     return () => {
       isMounted = false;
+      aiPreviewRequestedRef.current = false;
       stepTimeouts.forEach(clearTimeout);
       if (progressInterval) clearInterval(progressInterval);
     };
@@ -1269,8 +1277,8 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
           <div className="flex justify-center mb-4">
             <motion.div
               className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center"
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              animate={isLoadingComplete ? { scale: 1, rotate: 0 } : { scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 2, repeat: isLoadingComplete ? 0 : Infinity, ease: "easeInOut" }}
             >
               <Brain className="h-6 w-6 text-white" />
             </motion.div>
@@ -1344,7 +1352,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
                     <div className="flex-shrink-0 mr-3">
                       {getStepIcon(steps[currentMobileStep], currentMobileStep)}
                     </div>
-                    {steps[currentMobileStep].status === "active" && (
+                    {steps[currentMobileStep].status === "active" && !isLoadingComplete && (
                       <motion.div
                         className="flex space-x-1 ml-auto"
                         initial={{ opacity: 0 }}
@@ -1424,7 +1432,7 @@ Examples: {"characteristics": ["Highly self-motivated", "Strategic risk-taker", 
                   <div className="flex-shrink-0 mr-3">
                     {getStepIcon(step, index)}
                   </div>
-                  {step.status === "active" && (
+                  {step.status === "active" && !isLoadingComplete && (
                     <motion.div
                       className="flex space-x-1 ml-auto"
                       initial={{ opacity: 0 }}

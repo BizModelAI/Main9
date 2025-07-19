@@ -247,10 +247,21 @@ const PayPalForm: React.FC<{
         );
       }
 
-      const requestBody = {
-        userId: parseInt(user?.id || "0"),
-        quizAttemptId: quizAttemptId,
-      };
+      let requestBody;
+      if (user && user.id && !user.isTemporary) {
+        requestBody = {
+          userId: parseInt(user.id),
+          quizAttemptId: quizAttemptId,
+        };
+      } else {
+        // Guest user: send email
+        const email = user?.email || localStorage.getItem('userEmail') || undefined;
+        if (!email) throw new Error('Email is required for guest payment');
+        requestBody = {
+          email,
+          quizAttemptId: quizAttemptId,
+        };
+      }
 
       // Use PayPal endpoint for report unlock payments
       const endpoint = "/api/create-paypal-payment";
@@ -364,32 +375,30 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
   useEffect(() => {
     // Create payment intent when component mounts (for credit card payments)
     const createPaymentIntent = async () => {
-      if (!user || selectedMethod !== "card") return;
+      if (selectedMethod !== "card") return;
 
       try {
-        // Pay-per-report model: Users must have accounts before paying
-        if (!user.id || user.isTemporary) {
-          throw new Error("User must create an account before making payments");
+        let requestBody;
+        if (user && user.id && !user.isTemporary) {
+          requestBody = {
+            userId: parseInt(user.id),
+            quizAttemptId: quizAttemptId || (() => {
+              const stored = localStorage.getItem("currentQuizAttemptId");
+              return stored ? parseInt(stored) : null;
+            })(),
+          };
+        } else {
+          // Guest user: send email
+          const email = user?.email || localStorage.getItem('userEmail') || undefined;
+          if (!email) throw new Error('Email is required for guest payment');
+          requestBody = {
+            email,
+            quizAttemptId: quizAttemptId || (() => {
+              const stored = localStorage.getItem("currentQuizAttemptId");
+              return stored ? parseInt(stored) : null;
+            })(),
+          };
         }
-
-        // Get quiz attempt ID from prop or localStorage
-        const currentQuizAttemptId =
-          quizAttemptId ||
-          (() => {
-            const stored = localStorage.getItem("currentQuizAttemptId");
-            return stored ? parseInt(stored) : null;
-          })();
-
-        if (!currentQuizAttemptId) {
-          throw new Error(
-            "Quiz attempt ID is required for report unlock payment",
-          );
-        }
-
-        const requestBody = {
-          userId: parseInt(user.id),
-          quizAttemptId: currentQuizAttemptId,
-        };
 
         // Use report unlock payment endpoint
         const endpoint = "/api/create-report-unlock-payment";
@@ -470,10 +479,6 @@ const PaymentForm: React.FC<EnhancedPaymentFormProps> = ({
             ${amount.toFixed(2)}
           </span>
         </div>
-        <p className="text-sm text-blue-700 mt-1">
-          {isFirstReport ? "First report unlock" : "Report unlock"} • Instant
-          access
-        </p>
       </div>
 
       <PaymentMethodSelector
@@ -516,6 +521,7 @@ interface EnhancedPaymentWrapperProps {
   setIsProcessing: (processing: boolean) => void;
   amount?: number;
   isFirstReport?: boolean;
+  quizAttemptId?: number;
 }
 
 export const EnhancedPaymentWrapper: React.FC<EnhancedPaymentWrapperProps> = (

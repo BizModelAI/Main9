@@ -991,9 +991,9 @@ export function calculateBusinessModelMatch(
   // Raw score is 0-100
   const rawScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
 
-  // Rescale to 30-95 range for more dynamic and realistic spread
-  // scaled = 30 + (raw / 100) * (95 - 30)
-  const scaledScore = 30 + (rawScore / 100) * 65;
+  // Rescale to 40-96 range for more dynamic and realistic spread
+  // scaled = 40 + (raw / 100) * (96 - 40)
+  const scaledScore = 40 + (rawScore / 100) * 56;
   return Math.round(scaledScore);
 }
 
@@ -1061,24 +1061,28 @@ export function assignCategories(
  * Enforce a minimum gap and non-uniform spacing between all consecutive scores.
  * Applies globally, not just to the top N. Ensures no two consecutive gaps are the same and all gaps are at least minGap.
  * minGap: minimum allowed gap between consecutive scores (e.g., 3)
+ * maxGap: maximum allowed gap between consecutive scores (e.g., 7)
  */
 export function enforceGlobalMinimumScoreGap(
   results: Array<{ id: string; name: string; score: number; category: string }>,
-  minGap: number = 3
+  minGap: number = 3,
+  maxGap: number = 7
 ): Array<{ id: string; name: string; score: number; category: string }> {
   if (results.length < 2) return results;
   const adjusted = [...results];
   let lastGap = null;
-  let altGap = minGap + 1;
   for (let i = 1; i < adjusted.length; i++) {
     let prev = adjusted[i - 1].score;
     let curr = adjusted[i].score;
     let gap = prev - curr;
-    // If gap is too small or same as last gap, adjust
-    if (gap < minGap || (lastGap !== null && gap === lastGap)) {
-      // Alternate between minGap and altGap to break up repeated gaps
-      let newGap = (lastGap === minGap) ? altGap : minGap;
-      if (gap < newGap) newGap = newGap + 1;
+    // Pick a random gap between minGap and maxGap, not equal to lastGap
+    let possibleGaps = [];
+    for (let g = minGap; g <= maxGap; g++) {
+      if (g !== lastGap) possibleGaps.push(g);
+    }
+    let newGap = possibleGaps[Math.floor(Math.random() * possibleGaps.length)];
+    // If the current gap is less than newGap or same as lastGap, adjust
+    if (gap < newGap || (lastGap !== null && gap === lastGap)) {
       adjusted[i].score = Math.max(0, prev - newGap);
       gap = prev - adjusted[i].score;
     }
@@ -1140,7 +1144,7 @@ export function calculateAllBusinessModelMatches(data: any): Array<{
   results.sort((a, b) => b.score - a.score);
 
   // Enforce global minimum gap and non-uniformity for all results
-  const adjustedResults = enforceGlobalMinimumScoreGap(results, 3);
+  const adjustedResults = enforceGlobalMinimumScoreGap(results, 2, 7);
 
   // Assign categories based on algorithm rules (now using max score for dynamic thresholds)
   const categorizedResults = assignCategories(adjustedResults);

@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { users, quizAttempts } from "../shared/schema.js";
 import { lt, and, eq } from "drizzle-orm";
+import { db } from '../server/db';
 
 // Database connection
 const connectionString = process.env.DATABASE_URL;
@@ -111,17 +112,23 @@ async function cleanupExpiredData() {
   }
 }
 
-// Run the cleanup
-if (require.main === module) {
-  cleanupExpiredData()
-    .then(() => {
-      console.log(" Cleanup script completed successfully");
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error(" Cleanup script failed:", error);
-      process.exit(1);
-    });
+async function deleteAllUsers() {
+  if (!db) {
+    console.error('Database not available.');
+    process.exit(1);
+  }
+  try {
+    await db.delete(users);
+    console.log('✅ All users deleted from the database.');
+  } catch (err) {
+    console.error('❌ Error deleting users:', err);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  deleteAllUsers();
 }
 
 export { cleanupExpiredData };

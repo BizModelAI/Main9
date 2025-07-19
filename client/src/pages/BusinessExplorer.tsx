@@ -20,6 +20,7 @@ import { businessModelService } from "../utils/businessModelService";
 import { getSafeEmoji } from '../utils/contentUtils';
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "../components/ui/card";
+import '../styles/BusinessCard.css';
 
 interface BusinessExplorerProps {
   quizData?: QuizData | null;
@@ -52,7 +53,7 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     setHasUnlockedAnalysis,
     hasUnlockedAnalysis,
   } = usePaywall();
-  const { user, getLatestQuizData } = useAuth();
+  const { user, isRealUser, getLatestQuizData } = useAuth();
 
   const categories = [
     "All",
@@ -87,9 +88,9 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
   // Fetch quiz data for authenticated users
   useEffect(() => {
     const fetchQuizData = async () => {
-      if (!user || propQuizData) return; // If no user or already have quiz data, skip
+      if (!isRealUser || propQuizData) return; // Only fetch for real users
 
-      console.log("BusinessExplorer: Fetching quiz data for user:", user.email);
+      console.log("BusinessExplorer: Fetching quiz data for user:", user ? user.email : null);
       setIsLoadingQuizData(true);
 
       // First test session health
@@ -139,7 +140,7 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
     };
 
     fetchQuizData();
-  }, [user, propQuizData, getLatestQuizData]);
+  }, [isRealUser, propQuizData, getLatestQuizData]);
 
   // Load consistent scoring algorithm paths
   useEffect(() => {
@@ -176,6 +177,7 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
 
   // Calculate fit scores for business models if quiz data exists
   const businessModelsWithFitScores = useMemo(() => {
+    let models: (BusinessModel & { fitScore?: number; fitCategory?: string })[];
     if (!quizData || !hasUnlockedAnalysis) {
       // Development mode fallback disabled
       if (false && user && hasUnlockedAnalysis) {
@@ -190,14 +192,17 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
         });
       }
 
-      return businessModels.map((model) => ({
+      models = businessModels.map((model) => ({
         ...model,
         fitScore: 0,
         fitCategory: undefined,
       }));
+      // Alphabetical sort for unpaid users
+      models.sort((a, b) => a.title.localeCompare(b.title));
+      return models;
     }
 
-    const modelsWithScores = businessModels.map((model) => {
+    models = businessModels.map((model) => {
       // Find matching business path by name or similar logic
       const matchingPath = personalizedPaths.find(
         (path) =>
@@ -217,10 +222,10 @@ const BusinessExplorer: React.FC<BusinessExplorerProps> = ({
 
     // Sort by fit score when quiz data is available (highest to lowest)
     if (quizData && hasUnlockedAnalysis) {
-      modelsWithScores.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
+      models.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
     }
 
-    return modelsWithScores;
+    return models;
   }, [quizData, hasUnlockedAnalysis, personalizedPaths]);
 
   const filteredModels = businessModelsWithFitScores.filter((model) => {
@@ -573,7 +578,7 @@ const BusinessModelCard = ({
         {/* Header */}
         <div className="flex justify-between items-start mb-4 relative">
           <div className="flex items-center flex-1 mr-2">
-            <span className="text-3xl mr-3">{getSafeEmoji(model.id)}</span>
+            <span className="text-3xl mr-3 emoji">{getSafeEmoji(model.id)}</span>
             <h3 className="text-xl font-bold text-gray-900 line-clamp-2">
             {model.title}
           </h3>

@@ -16,7 +16,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 
 const Settings: React.FC = () => {
-  const { user, updateProfile, isLoading } = useAuth();
+  const { user, updateProfile, isLoading, isRealUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
     return searchParams.get("tab") || "profile";
@@ -230,7 +230,7 @@ const Settings: React.FC = () => {
   };
 
   // Show login message if user is not authenticated
-  if (!user || isLoading) {
+  if (!isRealUser || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

@@ -34,10 +34,10 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
   fitCategory,
 }) => {
   const navigate = useNavigate();
-  const { validateAndFixEmoji } = useEmojiSafeguard();
+  const { validateAndFixEmoji, getSafeEmojiForBusiness } = useEmojiSafeguard();
   
-  // Safeguard the emoji
-  const safeEmoji = validateAndFixEmoji(business.emoji || '', business.id);
+  // Use getSafeEmojiForBusiness directly for the emoji
+  const safeEmoji = getSafeEmojiForBusiness(business.id);
 
   const handleLearnMore = () => {
     navigate(`/business-model/${business.id}`);
@@ -67,12 +67,12 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
 
       {/* Header with Emoji and Title */}
       <div className="p-6 pb-4 pt-12 flex-1 flex flex-col">
-        <div className="flex items-center justify-center mb-4">
-          <span className="text-5xl">{safeEmoji}</span>
+        <div className="flex items-center mb-4">
+          <span className="text-3xl mr-3 emoji">{safeEmoji}</span>
+          <h3 className="text-xl font-bold text-gray-900 line-clamp-2">
+            {business.name}
+          </h3>
         </div>
-        <h3 className="text-xl font-bold text-gray-900 text-center mb-2 leading-tight line-clamp-2" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {business.name}
-        </h3>
         <p className="text-gray-600 text-sm text-center leading-relaxed line-clamp-2" style={{
           display: '-webkit-box',
           WebkitLineClamp: 2,
